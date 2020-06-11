@@ -24,14 +24,14 @@ class DatabaseSchema
 			end
 			
 			create_table :ncbi_nodes do |t|
-				t.integer :tax_id, index: true
-				t.integer :parent_tax_id
+				t.integer 	:tax_id, index: true
+				t.integer 	:parent_tax_id
 				t.string 	:rank
-				t.integer :division_id
-				t.integer :genetic_code_id
-				t.integer :mito_genetic_code_id
-				t.boolean :has_specified_species
-				t.integer :plastid_genetic_code_id
+				t.integer 	:division_id
+				t.integer 	:genetic_code_id
+				t.integer 	:mito_genetic_code_id
+				t.boolean 	:has_specified_species
+				t.integer 	:plastid_genetic_code_id
 			end
 
 			create_table :gbif_taxa do |t|
