@@ -57,10 +57,29 @@ OptionParser.new do |opts|
 			abort 'Cannot find Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species'
 		end
 
-		# node_record = 
+		params[:ncbi_divisions] = NcbiDivision.get_id(taxon_name: taxon_name)
+		params[:ncbi_divisions] = [1, 2, 5, 6, 10] if taxon_record.canonical_name  == 'Animalia'
+		taxon_name
 	end
+
 	opts.on('-d', 				'--download_genbank')
 end.parse!(into: params)
+
+p params[:ncbi_divisions]
+
+
+exit
+byebug
+
+file = File.open('/home/nnoll/phd/db_merger/data/NCBI/new_taxdump/division.dmp', 'r')
+file.each do |line|
+	line.chomp!
+	entries = line.scan(/\t?(.*?)\t\|/).flatten
+	p entries
+end
+
+exit
+
 
 ## additional opts, that the user cannot specify
 ## 		taxon_rank
@@ -68,7 +87,6 @@ end.parse!(into: params)
 
 exit
 
-BoldJob.new(taxon: 'Lentulidae', taxonomy: GbifTaxon).run
 
 exit
 

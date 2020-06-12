@@ -21,7 +21,7 @@ class NcbiGenbankImporter
 
 
   def call
-    seqs = Dir[ 'data/GenBank/sequences/*' ].select{ |f| File.file? f }
+    seqs = Dir[ 'data/NCBI/sequences/*' ].select{ |f| File.file? f }
     seqs.each do |s|
       m = s.match(/gbinv\d+/)
       source_file_name = m[0]
@@ -75,9 +75,6 @@ class NcbiGenbankImporter
 
     fh_seqs_o = File.open("results/ncbi_seqs_#{source_file_name}.fas", 'w')
     specimen_data.keys.each do |species_name|
-      # byebug if species_name == 'Abax parallelus'
-      # puts "species_name: #{species_name}"
-      # next unless species_name == 'Tripteroides (Tripteroides) complex sp. 2 MTM-2019'
       nomial = Nomial.generate(name: species_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
       tax_info = nomial.taxonomy
       unless tax_info

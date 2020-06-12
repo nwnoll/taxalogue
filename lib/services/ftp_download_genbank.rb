@@ -1,8 +1,8 @@
-# frozen_string_literal: 
+# frozen_string_literal: true
 
 class FtpDownloadGenbank
   def self.download
-    dir = 'data/GenBank/sequences/'
+    dir = 'data/NCBI/sequences/'
     Dir.mkdir(dir) unless File.exists?(dir)
     division = 'inv'
     ftp = Net::FTP.new('ftp.ncbi.nlm.nih.gov')

@@ -23,9 +23,14 @@ class GbifTaxon < ActiveRecord::Base
     taxa_names = []
     if _higher_than_order(taxon_name)
       taxon = GbifTaxon.find_by_canonical_name(taxon_name)
-      ## BUG need to change classis and search also for phylum, regnum
-      ## depends on taxon.taxon_rank
-      taxa  = GbifTaxon.where(taxon_rank: 'order', classis: taxon.classis)
+      if taxon.taxon_rank == 'class'
+        taxa  = GbifTaxon.where(taxon_rank: 'order', classis: taxon.classis)
+      elsif taxon.taxon_rank == 'phylum'
+        taxa  = GbifTaxon.where(taxon_rank: 'order', phylum: taxon.phylum)
+      elsif taxon.taxon_rank == 'kingdom'
+        taxa  = GbifTaxon.where(taxon_rank: 'order', regnum: taxon.regnum)
+      end
+
       taxa.each { |tax| taxa_names.push(tax.canonical_name) }
 
       return taxa_names
