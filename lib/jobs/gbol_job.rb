@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 class GbolJob
-    attr_reader :taxon_name
     def initialize()
-        @taxon_name = 'all'
     end
   
     def run

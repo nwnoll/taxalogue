@@ -67,6 +67,8 @@ end.parse!(into: params)
 ## 		taxon_rank
 ##		taxon_record
 
+GbifJob.new.run
+exit
 
 # exit
 
@@ -75,6 +77,7 @@ end.parse!(into: params)
 
 # BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
 # exit
+
 
 
 NcbiJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run

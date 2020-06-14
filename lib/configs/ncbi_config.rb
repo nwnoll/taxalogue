@@ -3,7 +3,7 @@
 class NcbiConfig
   attr_reader :name, :markers, :file_structure
   def initialize(name:, markers: nil)
-    @name      = name
+    @name            = name
     @markers         = markers
     @file_structure  = file_structure
   end

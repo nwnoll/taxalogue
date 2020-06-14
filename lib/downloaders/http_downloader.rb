@@ -23,6 +23,7 @@ class HttpDownloader
         p config.file_structure.file_path
         open config.file_structure.file_path, 'w' do |io|
           response.read_body do |chunk|
+            p chunk
             io.write chunk
           end
         end
