@@ -68,11 +68,13 @@ end.parse!(into: params)
 ##		taxon_record
 
 
-GbolJob.new().run
-exit
+# exit
 
-BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
-exit
+# GbolJob.new().run
+# exit
+
+# BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+# exit
 
 
 NcbiJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run

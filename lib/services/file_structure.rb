@@ -15,11 +15,11 @@ class FileStructure
   end
 
   def file_path
-    "#{directory_path}#{_taxon_name}.#{config.file_type}"
+    "#{directory_path}#{_name}.#{config.file_type}"
   end
 
   def directory_path
-    "data/#{_source_name}/#{_taxon_name}/"
+    "data/#{_source_name}/#{_name}/"
   end
 
   private
@@ -27,8 +27,8 @@ class FileStructure
     config.class.to_s.gsub('Config', '').downcase
   end
 
-  def _taxon_name
-    config.taxon_name
+  def _name
+    config.name
   end
 
   def _directory_exists?

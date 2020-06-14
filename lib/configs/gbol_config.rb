@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 class GbolConfig
-    attr_reader :file_structure, :taxon_name
+    attr_reader :file_structure, :name
     def initialize()
         @file_structure  = file_structure
-        @taxon_name      = 'GBOL_Dataset_Release-20200426'
+        @name            = 'GBOL_Dataset_Release-20200426'
     end
   
     def downloader

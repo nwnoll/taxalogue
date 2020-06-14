@@ -21,7 +21,7 @@ class BoldJob
   def _configs
     configs = []
     _groups.each do |name|
-      configs.push(BoldConfig.new(taxon_name: name, markers: markers))
+      configs.push(BoldConfig.new(name: name, markers: markers))
     end
 
     return configs

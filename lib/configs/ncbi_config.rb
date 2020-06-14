@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 class NcbiConfig
-  attr_reader :taxon_name, :markers, :file_structure
-  def initialize(taxon_name:, markers: nil)
-    @taxon_name      = taxon_name
+  attr_reader :name, :markers, :file_structure
+  def initialize(name:, markers: nil)
+    @name      = name
     @markers         = markers
     @file_structure  = file_structure
   end
@@ -25,6 +25,10 @@ class NcbiConfig
   end
 
   def target_file_base
-    "gb#{taxon_name}"
+    "gb#{name}"
+  end
+
+  def file_type
+    'seq.gz'
   end
 end

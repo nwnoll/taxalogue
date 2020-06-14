@@ -20,7 +20,7 @@ class NcbiJob
   def _configs
     configs = []
     _groups.each do |name|
-      configs.push(NcbiConfig.new(taxon_name: name, markers: markers))
+      configs.push(NcbiConfig.new(name: name, markers: markers))
     end
 
     return configs
