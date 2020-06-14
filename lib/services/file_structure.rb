@@ -11,19 +11,18 @@ class FileStructure
   end
 
   def create_directories
-    FileUtils.mkdir_p _directory_path unless _directory_exists?
+    FileUtils.mkdir_p directory_path unless _directory_exists?
   end
 
   def file_path
-    "#{_directory_path}/#{_taxon_name}.tsv"
+    "#{directory_path}#{_taxon_name}.tsv"
+  end
+
+  def directory_path
+    "data/#{_source_name}/#{_taxon_name}/"
   end
 
   private
-
-  def _directory_path
-    "data/#{_source_name}/#{_taxon_name}"
-  end
-
   def _source_name
     config.class.to_s.gsub('Config', '').downcase
   end

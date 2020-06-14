@@ -20,14 +20,14 @@ class BoldJob
   private
   def _configs
     configs = []
-    _taxa_names.each do |name|
+    _groups.each do |name|
       configs.push(BoldConfig.new(taxon_name: name, markers: markers))
     end
 
     return configs
   end
 
-  def _taxa_names
+  def _groups
     taxonomy.taxa_names(taxon)
   end
 end

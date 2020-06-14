@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class NcbiDivision
-    def self.info
+    def self.code_for
         divisions = Hash.new
         path = 'data/NCBI/new_taxdump/division.dmp'
         if File.file?(path)

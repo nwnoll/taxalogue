@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
 class NcbiConfig
-  attr_reader :taxon, :divisions, :markers, :file_structure
-  def initialize(taxon:, markers: nil, file_structure:)
-    @taxon           = taxon
-    @divisions       = divisions
+  attr_reader :taxon_name, :markers, :file_structure
+  def initialize(taxon_name:, markers: nil)
+    @taxon_name      = taxon_name
     @markers         = markers
     @file_structure  = file_structure
   end
@@ -19,10 +18,5 @@ class NcbiConfig
 
   def file_structure
     FileStructure.new(config: self)
-  end
-
-  def divisions
-    params[:ncbi_divisions] = NcbiDivision.get_id(taxon_name: taxon.canonical_name)
-		params[:ncbi_divisions] = [1, 2, 5, 6, 10] if taxon.canonical_name  == 'Animalia'
   end
 end

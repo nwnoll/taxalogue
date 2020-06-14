@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
 class NcbiJob
-  attr_reader :taxon, :markers, :taxonomy, :divisions
-  def initialize(taxon:, markers: nil, taxonomy:, divisions:)
+  attr_reader :taxon, :markers, :taxonomy
+  def initialize(taxon:, markers: nil, taxonomy:)
     @taxon      = taxon
     @markers    = markers
     @taxonomy   = taxonomy
-    @divisions  = divisions
-
   end
 
   def run
@@ -21,14 +19,31 @@ class NcbiJob
   private
   def _configs
     configs = []
-    _taxa_names.each do |t|
-      configs.push(BoldConfig.new(taxon: t, markers: markers))
+    _groups.each do |name|
+      configs.push(NcbiConfig.new(taxon_name: name, markers: markers))
     end
 
     return configs
   end
 
-  def _taxa_names
-    taxonomy.taxa_names(taxon)
+  def _groups
+    return division_codes_for(animal_divisions) if taxon.canonical_name  == 'Animalia'
+    return division_codes_for(division_id)
+  end
+
+  def division_codes_for(ids)
+    codes = []
+    ids.each do |id|
+      codes.push(NcbiDivision.code_for[id])
+    end
+    return codes
+  end
+
+  def animal_divisions
+    [1, 2, 5, 6, 10]
+  end
+
+  def division_id
+    NcbiDivision.get_id(taxon_name: taxon.canonical_name)
   end
 end

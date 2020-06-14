@@ -25,19 +25,19 @@ sections.each do |section|
 	end
 end
 
+db_config_file 	= File.open("db/database.yaml")
+db_config 		= YAML::load(db_config_file)
+
+ActiveRecord::Base.establish_connection(db_config)
+
 params = {}
 CONFIG_FILE = 'default_config.yaml'
 if File.exists? CONFIG_FILE
 	config_options = YAML.load_file(CONFIG_FILE)
 	params.merge!(config_options)
+	params[:taxon_record] = GbifTaxon.find_by_canonical_name(params[:taxon])
 end
 
-Bundler.require
-
-db_config_file 	= File.open("db/database.yaml")
-db_config 		= YAML::load(db_config_file)
-
-ActiveRecord::Base.establish_connection(db_config)
 
 OptionParser.new do |opts|
 	opts.on('-i FASTA', 	String, '--import_fasta')
@@ -64,10 +64,10 @@ OptionParser.new do |opts|
 end.parse!(into: params)
 
 
+NcbiJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
 
-obj =  params[:taxon_record]
-p obj
-BoldJob.new(taxon: obj, taxonomy: GbifTaxon).run
+# BoldJob.new(taxon: obj, taxonomy: GbifTaxon).run
+
 
 exit
 byebug
