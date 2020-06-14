@@ -13,7 +13,9 @@ class HttpDownloader
   def run
     uri = URI(config.address)
 
-    Net::HTTP.start(uri.host, uri.port) do |http|
+    config.address.start_with?('https') ? use_ssl = true : use_ssl = false
+    
+    Net::HTTP.start(uri.host, uri.port, use_ssl: use_ssl) do |http|
       request = Net::HTTP::Get.new uri
 
       http.request request do |response|

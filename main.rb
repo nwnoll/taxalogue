@@ -63,28 +63,24 @@ OptionParser.new do |opts|
 	opts.on('-d', 				'--download_genbank')
 end.parse!(into: params)
 
-
-NcbiJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
-
-# BoldJob.new(taxon: obj, taxonomy: GbifTaxon).run
-
-
-exit
-byebug
-
-file = File.open('/home/nnoll/phd/db_merger/data/NCBI/new_taxdump/division.dmp', 'r')
-file.each do |line|
-	line.chomp!
-	entries = line.scan(/\t?(.*?)\t\|/).flatten
-	p entries
-end
-
-exit
-
-
 ## additional opts, that the user cannot specify
 ## 		taxon_rank
 ##		taxon_record
+
+
+GbolJob.new().run
+exit
+
+BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+exit
+
+
+NcbiJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+
+
+
+exit
+
 
 exit
 

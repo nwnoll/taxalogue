@@ -13,7 +13,11 @@ class BoldConfig
   end
 
   def address
-    "http://www.boldsystems.org/index.php/API_Public/combined?taxon=#{taxon_name}&marker=#{markers}&format=tsv"
+    "http://www.boldsystems.org/index.php/API_Public/combined?taxon=#{taxon_name}&marker=#{markers}&format=#{file_type}"
+  end
+
+  def file_type
+    'tsv'
   end
 
   def file_structure

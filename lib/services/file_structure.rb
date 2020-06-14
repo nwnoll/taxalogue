@@ -15,7 +15,7 @@ class FileStructure
   end
 
   def file_path
-    "#{directory_path}#{_taxon_name}.tsv"
+    "#{directory_path}#{_taxon_name}.#{config.file_type}"
   end
 
   def directory_path

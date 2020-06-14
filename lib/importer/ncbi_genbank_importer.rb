@@ -25,7 +25,6 @@ class NcbiGenbankImporter
     seqs.each do |s|
       m = s.match(/gbinv\d+/)
       source_file_name = m[0]
-      next unless source_file_name == 'gbinv83'
       entry_of = Hash.new
     	Zlib::GzipReader.open(s) do |gz|
     		gb_entry = ''.dup
