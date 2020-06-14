@@ -17,7 +17,7 @@ require_relative "db/database_schema"
 
 Bundler.require
 
-sections = ['services', 'models', 'importer', 'jobs', 'downloader', 'config']
+sections = ['services', 'models', 'importers', 'jobs', 'downloaders', 'configs']
 sections.each do |section|
 	Dir[File.dirname(__FILE__) + "/lib/#{section}/*.rb"].each do |file|
 		# puts File.basename(file, File.extname(file))
