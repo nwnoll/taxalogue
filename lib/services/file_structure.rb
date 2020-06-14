@@ -15,7 +15,7 @@ class FileStructure
   end
 
   def file_path
-    "#{_directory_path}/#{config.taxon}.tsv"
+    "#{_directory_path}/#{_taxon_name}.tsv"
   end
 
   private
@@ -29,7 +29,7 @@ class FileStructure
   end
 
   def _taxon_name
-    config.taxon
+    config.taxon_name
   end
 
   def _directory_exists?

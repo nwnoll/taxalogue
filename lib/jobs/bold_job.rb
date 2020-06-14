@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class BoldJob
-  attr_reader :taxon, :markers, :taxonomy
+  attr_reader :taxon, :markers, :taxonomy, :taxon_name
   def initialize(taxon:, markers: nil, taxonomy:)
     @taxon      = taxon
+    @taxon_name = taxon.canonical_name
     @markers    = markers
     @taxonomy   = taxonomy
   end
@@ -19,8 +20,8 @@ class BoldJob
   private
   def _configs
     configs = []
-    _taxa_names.each do |t|
-      configs.push(BoldConfig.new(taxon: t, markers: markers))
+    _taxa_names.each do |name|
+      configs.push(BoldConfig.new(taxon_name: name, markers: markers))
     end
 
     return configs

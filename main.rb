@@ -51,22 +51,23 @@ OptionParser.new do |opts|
 	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
 
 		taxon_record = GbifTaxon.find_by_canonical_name(taxon_name)
+		params[:taxon_record] = taxon_record
 		if taxon_record
 			params[:taxon_rank] = taxon_record.taxon_rank
 		else
 			abort 'Cannot find Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species'
 		end
-
-		params[:ncbi_divisions] = NcbiDivision.get_id(taxon_name: taxon_name)
-		params[:ncbi_divisions] = [1, 2, 5, 6, 10] if taxon_record.canonical_name  == 'Animalia'
 		taxon_name
 	end
 
 	opts.on('-d', 				'--download_genbank')
 end.parse!(into: params)
 
-p params[:ncbi_divisions]
 
+
+obj =  params[:taxon_record]
+p obj
+BoldJob.new(taxon: obj, taxonomy: GbifTaxon).run
 
 exit
 byebug
@@ -83,7 +84,7 @@ exit
 
 ## additional opts, that the user cannot specify
 ## 		taxon_rank
-##		ncbi_division
+##		taxon_record
 
 exit
 

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 class BoldConfig
-  attr_reader :taxon, :markers, :file_structure
-  def initialize(taxon:, markers: nil)
-    @taxon           = taxon
+  attr_reader :markers, :file_structure, :taxon_name
+  def initialize(taxon_name:, markers: nil)
+    @taxon_name      = taxon_name
     @markers         = _join_markers(markers)
     @file_structure  = file_structure
   end
@@ -13,7 +13,7 @@ class BoldConfig
   end
 
   def address
-    "http://www.boldsystems.org/index.php/API_Public/combined?taxon=#{taxon}&marker=#{markers}&format=tsv"
+    "http://www.boldsystems.org/index.php/API_Public/combined?taxon=#{taxon_name}&marker=#{markers}&format=tsv"
   end
 
   def file_structure

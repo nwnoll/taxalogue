@@ -19,10 +19,9 @@ class GbifTaxon < ActiveRecord::Base
     }
   end
 
-  def self.taxa_names(taxon_name)
+  def self.taxa_names(taxon)
     taxa_names = []
-    if _higher_than_order(taxon_name)
-      taxon = GbifTaxon.find_by_canonical_name(taxon_name)
+    if _higher_than_order(taxon)
       if taxon.taxon_rank == 'class'
         taxa  = GbifTaxon.where(taxon_rank: 'order', classis: taxon.classis)
       elsif taxon.taxon_rank == 'phylum'
@@ -35,7 +34,7 @@ class GbifTaxon < ActiveRecord::Base
 
       return taxa_names
     else
-      taxa_names.push(taxon_name)
+      taxa_names.push(taxon.canonical_name)
 
       return taxa_names
     end
@@ -50,8 +49,7 @@ class GbifTaxon < ActiveRecord::Base
   end
 
   private
-  def self._higher_than_order(taxon_name)
-    taxon = GbifTaxon.find_by_canonical_name(taxon_name)
+  def self._higher_than_order(taxon)
     ['kingdom', 'phylum', 'class'].include?(taxon.taxon_rank) if taxon
   end
 end
