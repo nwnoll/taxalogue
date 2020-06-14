@@ -19,4 +19,12 @@ class NcbiConfig
   def file_structure
     FileStructure.new(config: self)
   end
+
+  def target_directory
+    'genbank'
+  end
+
+  def target_file_base
+    "gb#{taxon_name}"
+  end
 end

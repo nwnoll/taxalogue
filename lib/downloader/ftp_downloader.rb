@@ -12,8 +12,8 @@ class FtpDownloader
     def run
         ftp = Net::FTP.new(config.address)
         ftp.login
-        files = ftp.chdir('genbank')
-        files = ftp.nlst("gb#{config.taxon_name}*")
+        files = ftp.chdir(config.target_directory)
+        files = ftp.nlst("#{config.target_file_base}*")
         files.each do |file|
             local_path = "#{config.file_structure.directory_path}/#{file}"
             puts "... downloading #{file}"
