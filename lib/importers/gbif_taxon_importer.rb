@@ -8,12 +8,7 @@ class GbifTaxonImporter
     @file_name        = file_name
   end
 
-  # def self.call(file_name:)
-  #   new(file_name: file_name).call
-  # end
-
-
-  def call
+  def run
     byebug
     file = File.open(file_name, 'r')
 
@@ -25,12 +20,15 @@ class GbifTaxonImporter
       next if row['taxonRank'] == 'unranked'
       taxa.push(row.to_h.values)
       if taxa.size % 100_000 == 0
-        puts '... importing 100k records'
-        GbifTaxon.import columns, taxa, validate: false
+        _batch_import(columns, taxa)
         taxa = []
       end
     end
-    puts '... importing last few records'
-    GbifTaxon.import columns, taxa, validate: false
+    _batch_import(columns, taxa)
+  end
+
+  private
+  def _batch_import(columns, taxa)
+    # GbifTaxon.import columns, taxa, validate: false
   end
 end

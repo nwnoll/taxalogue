@@ -25,4 +25,16 @@ module Printing
             super
         end
     end
+
+    module GbifTaxonImporter
+        def run
+            puts "... importing GBIF Taxonomy backbone"
+            super
+        end
+
+        def _batch_import(columns, taxa)
+            puts "... ... importing up to 100k records at once"
+            super
+        end
+    end
 end
