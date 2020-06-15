@@ -15,9 +15,13 @@ require 'net/ftp'
 require 'net/http'
 require_relative "db/database_schema"
 
+def constantize(s)
+	Object.const_get(s)
+end
+
 Bundler.require
 
-sections = ['services', 'models', 'importers', 'jobs', 'downloaders', 'configs']
+sections = ['decorators', 'services', 'models', 'importers', 'jobs', 'downloaders', 'configs']
 sections.each do |section|
 	Dir[File.dirname(__FILE__) + "/lib/#{section}/*.rb"].each do |file|
 		# puts File.basename(file, File.extname(file))
@@ -68,8 +72,10 @@ end.parse!(into: params)
 ##		taxon_record
 
 
-# GbifTaxonomyJob.new.run
-# exit
+job = GbifTaxonJob.new
+job.extend(constantize("Printing::#{job.class}"))
+job.run
+exit
 
 # exit
 

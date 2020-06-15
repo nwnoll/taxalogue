@@ -32,6 +32,6 @@ class FileStructure
   end
 
   def _directory_exists?
-    File.directory?(file_path)
+    File.directory?(directory_path)
   end
 end

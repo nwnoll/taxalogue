@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class GbifTaxonomyConfig
+class GbifTaxonConfig
     attr_reader :file_structure, :name
     def initialize()
         @file_structure  = file_structure
@@ -9,6 +9,10 @@ class GbifTaxonomyConfig
   
     def downloader
         HttpDownloader
+    end
+
+    def importer
+        GbifTaxonImporter
     end
   
     def address
