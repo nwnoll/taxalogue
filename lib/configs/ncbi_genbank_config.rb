@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class NcbiConfig
+class NcbiGenbankConfig
   attr_reader :name, :markers, :file_structure
   def initialize(name:, markers: nil)
     @name            = name

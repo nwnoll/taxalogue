@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class GbifJob
+class GbifTaxonomyJob
     def initialize
     end
   
@@ -12,6 +12,6 @@ class GbifJob
   
     private
     def _config
-        GbifConfig.new
+        GbifTaxonomyConfig.new
     end
 end

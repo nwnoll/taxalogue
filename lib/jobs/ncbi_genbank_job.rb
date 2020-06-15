@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class NcbiJob
+class NcbiGenbankJob
   attr_reader :taxon, :markers, :taxonomy
   def initialize(taxon:, markers: nil, taxonomy:)
     @taxon      = taxon
@@ -20,7 +20,7 @@ class NcbiJob
   def _configs
     configs = []
     _groups.each do |name|
-      configs.push(NcbiConfig.new(name: name, markers: markers))
+      configs.push(NcbiGenbankConfig.new(name: name, markers: markers))
     end
 
     return configs

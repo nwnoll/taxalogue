@@ -67,12 +67,13 @@ end.parse!(into: params)
 ## 		taxon_rank
 ##		taxon_record
 
-GbifJob.new.run
-exit
+
+# GbifTaxonomyJob.new.run
+# exit
 
 # exit
 
-# GbolJob.new().run
+# GbolJob.new.run
 # exit
 
 # BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
@@ -80,7 +81,7 @@ exit
 
 
 
-NcbiJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+NcbiGenbankJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
 
 
 

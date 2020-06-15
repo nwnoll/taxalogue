@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-class GbifConfig
+class NcbiTaxonomyConfig
     attr_reader :file_structure, :name
     def initialize()
         @file_structure  = file_structure
-        @name            = 'backbone'
+        @name            = 'new_taxdump'
     end
   
     def downloader
@@ -12,7 +12,7 @@ class GbifConfig
     end
   
     def address
-        'https://hosted-datasets.gbif.org/datasets/backbone/backbone-current.zip'
+        'https://ftp.ncbi.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.zip'
     end
 
     def file_type
@@ -22,5 +22,4 @@ class GbifConfig
     def file_structure
         FileStructure.new(config: self)
     end
-  end
-  
+end
