@@ -11,8 +11,8 @@ class GbifTaxonConfig
         HttpDownloader
     end
 
-    def importer
-        GbifTaxonImporter
+    def importers
+        [GbifTaxonImporter]
     end
   
     def address

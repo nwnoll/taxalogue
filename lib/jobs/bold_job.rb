@@ -11,8 +11,18 @@ class BoldJob
 
   def run
     _configs.each do |config|
-      config.file_structure.create_directories
-      config.downloader.new(config: config).run
+      file_structure = config.file_structure
+      file_structure.extend(constantize("Printing::#{file_structure.class}"))
+      file_structure.create_directory
+
+      downloader = config.downloader.new(config: config)
+      downloader.extend(constantize("Printing::#{downloader.class}"))
+      downloader.run
+
+
+      # p config
+      # config.file_structure.create_directory
+      # config.downloader.new(config: config).run
     end
   end
 

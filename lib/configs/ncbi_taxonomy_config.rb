@@ -10,6 +10,11 @@ class NcbiTaxonomyConfig
     def downloader
         HttpDownloader
     end
+
+    def importers
+        [NcbiRankedLineageImporter, NcbiNodeImporter]
+        # [NcbiNameImporter, NcbiNodeImporter, NcbiRankedLineageImporter]
+    end
   
     def address
         'https://ftp.ncbi.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.zip'

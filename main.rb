@@ -5,6 +5,7 @@ require "active_record"
 require "sqlite3"
 require 'bio'
 require 'fuzzystringmatch'
+require 'zip'
 
 require "yaml"
 require 'optparse'
@@ -72,6 +73,20 @@ end.parse!(into: params)
 ##		taxon_record
 
 
+
+
+
+
+
+
+ncbi_taxonomy_job = NcbiTaxonomyJob.new
+ncbi_taxonomy_job.extend(constantize("Printing::#{ncbi_taxonomy_job.class}"))
+ncbi_taxonomy_job.run
+
+exit
+
+bold_job = BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+exit
 job = GbifTaxonJob.new
 job.extend(constantize("Printing::#{job.class}"))
 job.run
@@ -82,7 +97,6 @@ exit
 # GbolJob.new.run
 # exit
 
-# BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
 # exit
 
 

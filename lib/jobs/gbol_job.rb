@@ -5,7 +5,7 @@ class GbolJob
     end
   
     def run
-        _config.file_structure.create_directories
+        _config.file_structure.create_directory
         _config.downloader.new(config: _config).run
     end
   

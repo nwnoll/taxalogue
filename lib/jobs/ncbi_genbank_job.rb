@@ -10,7 +10,7 @@ class NcbiGenbankJob
 
   def run
     _configs.each do |config|
-      config.file_structure.create_directories
+      config.file_structure.create_directory
       config.downloader.new(config: config).run
     end
   end

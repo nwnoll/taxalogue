@@ -1,26 +1,34 @@
 # frozen_string_literal: true
 
 class NcbiRankedLineageImporter
+	attr_reader :file_name
 
-	def self.import(file_name)
+	def initialize(file_name:)
+	  @file_name        = file_name
+	end
 
-		file = File.open(file_name, "r")
-
-    	lineage_records = []
-		columns =[:tax_id, :name, :species, :genus, :familia,
-							:ordo, :classis, :phylum, :regnum, :super_regnum]
-
-    	file.each do |line|
-      		line.chomp!
-			entries = line.scan(/\t?(.*?)\t\|/).flatten
-			lineage_records.push(entries)
-			if file.lineno % 100_000 == 0
-				puts '... importing 100k records'
-				NcbiRankedLineage.import columns, lineage_records, validates: false
-				lineage_records = []
+	def run
+		Zip::File.open(file_name) do |zip_file|
+			entry = zip_file.find_entry('rankedlineage.dmp')
+			lineage_records = []
+			columns =[:tax_id, :name, :species, :genus, :familia,
+					  :ordo, :classis, :phylum, :regnum, :super_regnum]
+			entry.get_input_stream do |input|
+				input.each_line do |line|
+					lineage = line.scan(/\t?(.*?)\t\|/).flatten
+					lineage_records.push(lineage)
+					if input.lineno % 100_000 == 0
+						_batch_import(columns, lineage_records)
+						lineage_records = []
+					end
+				end
+				_batch_import(columns, lineage_records)
 			end
-    end
-		puts '... importing last few records'
-		NcbiRankedLineage.import columns, lineage_records, validates: false
+		end
+	end
+
+	private
+	def _batch_import(columns, records)
+		# NcbiRankedLineage.import columns, records, validate: false
 	end
 end

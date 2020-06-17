@@ -9,7 +9,6 @@ class GbifTaxonImporter
   end
 
   def run
-    byebug
     file = File.open(file_name, 'r')
 
 
@@ -29,6 +28,6 @@ class GbifTaxonImporter
 
   private
   def _batch_import(columns, taxa)
-    # GbifTaxon.import columns, taxa, validate: false
+    GbifTaxon.import columns, taxa, validate: false
   end
 end

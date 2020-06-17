@@ -10,7 +10,7 @@ class FileStructure
     @config = config
   end
 
-  def create_directories
+  def create_directory
     FileUtils.mkdir_p directory_path unless _directory_exists?
   end
 

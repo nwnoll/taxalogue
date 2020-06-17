@@ -13,7 +13,13 @@ class BoldConfig
   end
 
   def address
-    "http://www.boldsystems.org/index.php/API_Public/combined?taxon=#{name}&marker=#{markers}&format=#{file_type}"
+    "http://www.boldsystems.org/index.php/API_Public/combined?taxon=#{name}&format=#{file_type}"
+    
+    # had to exclude markers, since if the BOLD API cant find taxon it searches for all COI-5P sequences
+    # this will lead to many sequences and a crash
+    # has to be filtered later on
+    # "http://www.boldsystems.org/index.php/API_Public/combined?taxon=#{name}&marker=#{markers}&format=#{file_type}"
+
   end
 
   def file_type
