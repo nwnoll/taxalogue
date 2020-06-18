@@ -15,13 +15,14 @@ class FtpDownloader
         files = ftp.chdir(config.target_directory)
         files = ftp.nlst("#{config.target_file_base}*")
         files.each do |file|
-            local_path = "#{config.file_structure.directory_path}/#{file}"
-            puts "... downloading #{file}"
-            _get_with_progress(ftp, file, local_path)
-            puts "... finished, file is stored at #{local_path}"
-            puts
-          end
-          ftp.close
+          local_path = "#{config.file_structure.directory_path}#{file}"
+          puts "local_path: #{local_path}"
+          puts "... downloading #{file}"
+          _get_with_progress(ftp, file, local_path)
+          puts "... finished, file is stored at #{local_path}"
+          puts
+        end
+        ftp.close
     end
 
     private

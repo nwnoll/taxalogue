@@ -46,13 +46,14 @@ end
 
 OptionParser.new do |opts|
 	opts.on('-i FASTA', 	String, '--import_fasta')
-	opts.on('-l LINEAGE', String, '--import_lineage')
-	opts.on('-g GBOL', 	String, '--import_gbol')
-	opts.on('-o BOLD', 	String, '--import_bold')
-	opts.on('-k GENBANK', String, '--import_genbank')
-	opts.on('-f GBIF', 	String, '--import_gbif')
+	opts.on('-l LINEAGE', 	String, '--import_lineage')
+	opts.on('-g GBOL', 		String, '--import_gbol')
+	opts.on('-o BOLD', 		String, '--import_bold')
+	opts.on('-k GENBANK', 	String, '--import_genbank')
+	opts.on('-f GBIF', 		String, '--import_gbif')
 	opts.on('-n NODES', 	String, '--import_nodes')
 	opts.on('-a NAMES', 	String, '--import_names')
+	opts.on('-d', 					'--download_genbank')
 	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
 
 		taxon_record = GbifTaxon.find_by_canonical_name(taxon_name)
@@ -64,18 +65,24 @@ OptionParser.new do |opts|
 		end
 		taxon_name
 	end
-
-	opts.on('-d', 				'--download_genbank')
 end.parse!(into: params)
 
 ## additional opts, that the user cannot specify
 ## 		taxon_rank
 ##		taxon_record
 
+# BoldImporter.call(file_name: params[:import_bold], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank]) if params[:import_bold]
+bold_importer = BoldImporter.new(file_name: params[:import_bold], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank])
+bold_importer.run
+
+exit
 
 
 
-
+NcbiGenbankJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+exit
+BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+exit
 
 
 
@@ -85,8 +92,6 @@ ncbi_taxonomy_job.run
 
 exit
 
-bold_job = BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
-exit
 job = GbifTaxonJob.new
 job.extend(constantize("Printing::#{job.class}"))
 job.run
@@ -101,7 +106,6 @@ exit
 
 
 
-NcbiGenbankJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
 
 
 
@@ -115,7 +119,6 @@ exit
 
 NcbiGenbankImporter.call(file_name: params[:import_genbank], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank]) if params[:import_genbank]
 exit
-BoldImporter.call(file_name: params[:import_bold], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank]) if params[:import_bold]
 exit
 GbolImporter.call(file_name: params[:import_gbol], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank]) if params[:import_gbol]
 exit
