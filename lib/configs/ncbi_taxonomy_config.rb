@@ -12,8 +12,11 @@ class NcbiTaxonomyConfig
     end
 
     def importers
-        [NcbiRankedLineageImporter, NcbiNodeImporter]
-        # [NcbiNameImporter, NcbiNodeImporter, NcbiRankedLineageImporter]
+        {
+            'NcbiRankedLineageImporter': 'rankedlineage.dmp',
+            'NcbiNodeImporter': 'nodes.dmp',
+            'NcbiNameImporter': 'names.dmp'
+        }
     end
   
     def address

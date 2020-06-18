@@ -91,4 +91,16 @@ module Printing
             super
         end
     end
+
+    module NcbiNameImporter
+        def run
+            Printing.importer_message(self.class)
+            super
+        end
+
+        def _batch_import(columns, records)
+            Printing.batch_import_message
+            super
+        end
+    end
 end

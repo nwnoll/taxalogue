@@ -1,26 +1,35 @@
 # frozen_string_literal: true
 
 class NcbiNameImporter
+	attr_reader :archive_name, :file_name
 
-	def self.import(file_name)
+	def initialize(archive_name:, file_name:)
+		@archive_name	= archive_name
+		@file_name		= file_name
+	end
 
-		file = File.open(file_name, "r")
+	def run
+		Zip::File.open(archive_name) do |zip_file|
+			entry = zip_file.find_entry(file_name)
+			name_records = []
+			columns =[:tax_id, :name, :unique_name, :name_class]
 
-		name_records = []
-		columns =[:tax_id, :name, :unique_name, :name_class]
-
-		file.each do |line|
-			line.chomp!
-			entries = line.scan(/\t?(.*?)\t\|/).flatten
-			name_records.push(entries)
-			if file.lineno % 100_000 == 0
-				puts '... importing 100k records'
-				NcbiName.import columns, name_records, validates: false
-				name_records = []
+			entry.get_input_stream do |input|
+				input.each_line do |line|
+					name = line.scan(/\t?(.*?)\t\|/).flatten
+					name_records.push(name)
+					if input.lineno % 100_000 == 0
+						_batch_import(columns, name_records)
+						name_records = []
+					end
+				end
+				_batch_import(columns, name_records)
 			end
 		end
-		
-		puts '... importing last few records'
-		NcbiName.import columns, name_records, validates: false
+	end
+
+	private
+	def _batch_import(columns, records)
+		# NcbiName.import columns, records, validate: false
 	end
 end

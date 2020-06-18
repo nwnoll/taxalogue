@@ -1,15 +1,16 @@
 # frozen_string_literal: true
 
 class NcbiNodeImporter
-	attr_reader :file_name
+	attr_reader :archive_name, :file_name
 
-	def initialize(file_name:)
-	  @file_name        = file_name
+	def initialize(archive_name:, file_name:)
+		@archive_name	= archive_name
+		@file_name		= file_name
 	end
 
 	def run
-		Zip::File.open(file_name) do |zip_file|
-			entry = zip_file.find_entry('nodes.dmp')
+		Zip::File.open(archive_name) do |zip_file|
+			entry = zip_file.find_entry(file_name)
 			node_records = []
 			columns =[	:tax_id, :parent_tax_id, :rank, :division_id, :genetic_code_id,
 			:mito_genetic_code_id, :has_specified_species, :plastid_genetic_code_id]
