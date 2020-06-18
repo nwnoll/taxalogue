@@ -14,6 +14,7 @@ require 'pp'
 require 'open-uri'
 require 'net/ftp'
 require 'net/http'
+require 'csv'
 require_relative "db/database_schema"
 
 def constantize(s)
