@@ -1,4 +1,4 @@
-# forzen_string_literal: true
+# frozen_string_literal: true
 
 class SpecimensOfTaxon
     def self.generate(file_name:, query_taxon:, query_taxon_rank:)
