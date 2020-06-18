@@ -15,6 +15,7 @@ require 'open-uri'
 require 'net/ftp'
 require 'net/http'
 require 'csv'
+
 require_relative "db/database_schema"
 
 def constantize(s)
@@ -23,7 +24,7 @@ end
 
 Bundler.require
 
-sections = ['decorators', 'services', 'models', 'importers', 'jobs', 'downloaders', 'configs']
+sections = ['decorators', 'services', 'models', 'importers', 'jobs', 'downloaders', 'configs', 'outputs']
 sections.each do |section|
 	Dir[File.dirname(__FILE__) + "/lib/#{section}/*.rb"].each do |file|
 		# puts File.basename(file, File.extname(file))
