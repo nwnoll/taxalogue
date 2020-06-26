@@ -45,7 +45,7 @@ end
 class Monomial
   require_relative 'output_formatting'
   include TaxonSearch
-  include OutputFormatting
+  include StringFormatting
 
   attr_reader :name, :query_taxon, :query_taxon_rank
   def initialize(name:, query_taxon:, query_taxon_rank:)

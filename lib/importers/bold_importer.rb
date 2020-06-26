@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class BoldImporter
-  include OutputFormatting
+  include StringFormatting
   attr_reader :file_name, :query_taxon, :query_taxon_rank
 
   def initialize(file_name:, query_taxon:, query_taxon_rank:)
@@ -22,8 +22,8 @@ class BoldImporter
       next unless taxonomic_info
 
       seqs_and_ids_by_taxon_name[taxon_name].each do |data|
-        Output::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
-        Output::Fasta.write_to_file(fasta: fasta, data: data, taxonomic_info: taxonomic_info)
+        OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
+        OutputFormat::Fasta.write_to_file(fasta: fasta, data: data, taxonomic_info: taxonomic_info)
       end
     end
   end

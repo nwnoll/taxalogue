@@ -2,7 +2,7 @@
 
 require 'csv'
 class GbolImporter
-  include OutputFormatting
+  include StringFormatting
 
   attr_reader :file_name, :query_taxon, :query_taxon_rank
 

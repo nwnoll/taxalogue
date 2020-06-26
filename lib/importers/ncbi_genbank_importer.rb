@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class NcbiGenbankImporter
-  include OutputFormatting
+  include StringFormatting
 
   attr_reader :file_name, :query_taxon, :query_taxon_rank
 

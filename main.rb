@@ -37,6 +37,8 @@ db_config 		= YAML::load(db_config_file)
 
 ActiveRecord::Base.establish_connection(db_config)
 
+byebug
+
 params = {}
 CONFIG_FILE = 'default_config.yaml'
 if File.exists? CONFIG_FILE

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-class Output::Tsv
-    extend OutputFormatting
+class OutputFormat::Tsv
+    extend StringFormatting
 
     @@count = 0
 

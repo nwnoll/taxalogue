@@ -2,7 +2,7 @@
 
 require 'csv'
 
-module OutputFormatting
+module StringFormatting
   def _header_gbif_taxon_object(taxon_name)
     _to_taxon_info(_gbif_taxon_object(taxon_name))
   end
