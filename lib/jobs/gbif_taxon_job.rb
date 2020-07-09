@@ -6,16 +6,17 @@ class GbifTaxonJob
   
     def run
         file_structure = _config.file_structure
-        file_structure.extend(constantize("Printing::#{file_structure.class}"))
+        file_structure.extend(Helper.constantize("Printing::#{file_structure.class}"))
         file_structure.create_directory
 
         downloader = _config.downloader.new(config: _config)
-        downloader.extend(constantize("Printing::#{downloader.class}"))
+        downloader.extend(Helper.constantize("Printing::#{downloader.class}"))
         downloader.run
 
-        _config.importers.each do |importer_class|
-            importer = importer_class.new(file_name: _config.file_structure.file_path)
-            importer.extend(constantize("Printing::#{importer.class}"))
+        _config.importers.each do |importer_name, import_file|
+            importer_class  = Helper.constantize(importer_name)
+            importer        = importer_class.new(archive_name: _config.file_structure.file_path, file_name: import_file)
+            importer.extend(Helper.constantize("Printing::#{importer_name}"))
             importer.run
         end
     end

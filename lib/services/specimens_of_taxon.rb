@@ -5,7 +5,7 @@ class SpecimensOfTaxon
         seqs_and_ids_by_taxon_name = Hash.new
         file                       = File.open(file_name, 'r')
 
-        index_by_column_name       = generate_index_by_column_name(file: file)
+        index_by_column_name       = Helper.generate_index_by_column_name(file: file, separator: "\t")
 
         file.each do |row|
             specimen_data = row.scrub!.chomp.split("\t")
@@ -13,17 +13,6 @@ class SpecimensOfTaxon
         end
         
         return seqs_and_ids_by_taxon_name
-    end
-
-    def self.generate_index_by_column_name(file:)
-        column_names          =  file.first.chomp.split("\t")
-        num_columns           = column_names.size
-        index_by_column_name  = Hash.new
-        (0...num_columns).each do |index|
-            index_by_column_name[column_names[index]] = index
-        end
-    
-        return index_by_column_name
     end
 
     def self.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name, specimen_data, index_by_column_name)

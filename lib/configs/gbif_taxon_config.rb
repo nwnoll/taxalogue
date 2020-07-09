@@ -12,7 +12,9 @@ class GbifTaxonConfig
     end
 
     def importers
-        [GbifTaxonImporter]
+        {
+            'GbifTaxonImporter': 'taxon.tsv',
+        }
     end
   
     def address

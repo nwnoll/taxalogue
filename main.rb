@@ -15,8 +15,10 @@ require 'open-uri'
 require 'net/ftp'
 require 'net/http'
 require 'csv'
+require 'fileutils'
 
 require_relative "db/database_schema"
+require_relative 'lib/helpers/helper'
 
 def constantize(s)
 	Object.const_get(s)
