@@ -2,8 +2,9 @@
 
 class NcbiGenbankImporter
   include StringFormatting
-
   attr_reader :file_name, :query_taxon, :query_taxon_rank
+
+  UNUSED_FIRST_LINES_NUM = 10
 
   def _possible_taxa
     ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'phylum_name']
@@ -15,22 +16,18 @@ class NcbiGenbankImporter
     @query_taxon_rank = query_taxon_rank
   end
 
-  def self.call(file_name:, query_taxon:, query_taxon_rank:)
-    new(file_name: file_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank).call
-  end
 
-
-  def call
-    seqs = Dir[ 'data/NCBI/sequences/*' ].select{ |f| File.file? f }
-    seqs.each do |s|
-      m = s.match(/gbinv\d+/)
-      source_file_name = m[0]
+  def run
+    file_names = Dir[ 'data/NCBI/sequences/*' ].select{ |f| File.file? f }
+    file_names.each do |file|
+      m = file.match(/gbinv\d+/)
+      base_name = m[0]
       entry_of = Hash.new
-    	Zlib::GzipReader.open(s) do |gz|
+      Zlib::GzipReader.open(file) do |gz_file|
     		gb_entry = ''.dup
-      	gz.each_line do |line|
-    			next if gz.lineno <= 10
-    			if line =~ /^\/\//
+      	gz_file.each_line do |line|
+          next if gz_file.lineno <= UNUSED_FIRST_LINES_NUM
+          if line =~ /#{gb_entry_end}/
     				gb = Bio::GenBank.new(gb_entry)
             gb.each_gene do |gene|
               gene.qualifiers.each do |qualifier|
@@ -48,8 +45,12 @@ class NcbiGenbankImporter
     		  end
         end
     	end
-      _generate_outputs(entry_of, source_file_name)
+      _generate_outputs(entry_of, base_name)
     end
+  end
+
+  def gb_entry_end
+    "^\/\/"
   end
 
   def add_values(hash:, identifier:, organism:, sequence:)
@@ -68,11 +69,11 @@ class NcbiGenbankImporter
     end
   end
 
-  def _generate_outputs(specimen_data, source_file_name)
-    tsv = File.open("results/ncbi_output_#{source_file_name}.tsv", 'w')
+  def _generate_outputs(specimen_data, base_name)
+    tsv = File.open("results/ncbi_output_#{base_name}.tsv", 'w')
     tsv.puts _tsv_header
 
-    fh_seqs_o = File.open("results/ncbi_seqs_#{source_file_name}.fas", 'w')
+    fh_seqs_o = File.open("results/ncbi_seqs_#{base_name}.fas", 'w')
     specimen_data.keys.each do |species_name|
       nomial = Nomial.generate(name: species_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
       tax_info = nomial.taxonomy

@@ -15,15 +15,11 @@ class SpecimensOfTaxon
         return seqs_and_ids_by_taxon_name
     end
 
-    def self.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name, specimen_data, index_by_column_name)
-        identifier    = specimen_data[index_by_column_name["processid"]]
-        sequence      = specimen_data[index_by_column_name['nucleotides']]
-        taxon_name    = find_lowest_ranking_taxon(specimen_data, index_by_column_name)
-    
-        if seqs_and_ids_by_taxon_name.has_key?(taxon_name)
-            seqs_and_ids_by_taxon_name[taxon_name].push([identifier, sequence])
+    def self.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name:, specimen_object:)
+        if seqs_and_ids_by_taxon_name.has_key?(specimen_object.taxon_name)
+            seqs_and_ids_by_taxon_name[specimen_object.taxon_name].push([specimen_object.identifier, specimen_object.sequence])
         else
-            seqs_and_ids_by_taxon_name[taxon_name] = [[identifier, sequence]]
+            seqs_and_ids_by_taxon_name[specimen_object.taxon_name] = [[specimen_object.identifier, specimen_object.sequence]]
         end
     
         return seqs_and_ids_by_taxon_name

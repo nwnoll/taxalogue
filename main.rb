@@ -26,7 +26,7 @@ end
 
 Bundler.require
 
-sections = ['decorators', 'services', 'models', 'importers', 'jobs', 'downloaders', 'configs', 'outputs']
+sections = ['decorators', 'services', 'models', 'importers', 'jobs', 'downloaders', 'configs', 'output_formats']
 sections.each do |section|
 	Dir[File.dirname(__FILE__) + "/lib/#{section}/*.rb"].each do |file|
 		# puts File.basename(file, File.extname(file))
@@ -38,8 +38,6 @@ db_config_file 	= File.open("db/database.yaml")
 db_config 		= YAML::load(db_config_file)
 
 ActiveRecord::Base.establish_connection(db_config)
-
-byebug
 
 params = {}
 CONFIG_FILE = 'default_config.yaml'
@@ -72,6 +70,18 @@ OptionParser.new do |opts|
 		taxon_name
 	end
 end.parse!(into: params)
+
+# BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+# exit
+
+# bold_importer = BoldImporter.new(file_name: params[:import_bold], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank])
+# bold_importer.run
+# exit
+
+ncbi_genbank_importer = NcbiGenbankImporter.new(file_name: params[:import_genbank], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank]) if params[:import_genbank]
+ncbi_genbank_importer.run
+
+exit
 
 ## additional opts, that the user cannot specify
 ## 		taxon_rank

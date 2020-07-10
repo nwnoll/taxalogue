@@ -43,7 +43,7 @@ class Nomial
 end
 
 class Monomial
-  require_relative 'output_formatting'
+  require_relative 'string_formatting'
   include TaxonSearch
   include StringFormatting
 
