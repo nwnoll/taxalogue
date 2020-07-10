@@ -78,6 +78,11 @@ end.parse!(into: params)
 # bold_importer.run
 # exit
 
+gbol_importer = GbolImporter.new(file_name: params[:import_gbol], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank])
+gbol_importer.run
+exit
+
+
 ncbi_genbank_importer = NcbiGenbankImporter.new(file_name: params[:import_genbank], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank]) if params[:import_genbank]
 ncbi_genbank_importer.run
 

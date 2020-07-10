@@ -3,7 +3,6 @@
 require 'csv'
 class GbolImporter
   include StringFormatting
-
   attr_reader :file_name, :query_taxon, :query_taxon_rank
 
   def initialize(file_name:, query_taxon:, query_taxon_rank:)
@@ -12,53 +11,32 @@ class GbolImporter
     @query_taxon_rank = query_taxon_rank
   end
 
-  def self.call(file_name:, query_taxon:, query_taxon_rank:)
-    new(file_name: file_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank).call
-  end
-
-  def call
-    entry_of = Hash.new
+  ## change to Zip processing
+  ## or unzip file to use csv
+  def run
+    seqs_and_ids_by_taxon_name = Hash.new
+    file                       = File.open(file_name, 'r')
+    
     csv_object.each do |row|
-      add_values(entry_of, row)
+      specimen = Specimen.new
+      specimen.identifier = row["CatalogueNumber"]
+      specimen.sequence   = row['BarcodeSequence']
+      specimen.taxon_name = row["Species"]
+      SpecimensOfTaxon.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name: seqs_and_ids_by_taxon_name, specimen_object: specimen)
     end
-    _generate_outputs(entry_of)
-  end
 
-  def add_values(hash, row)
-    identifier    = row["CatalogueNumber"]
-    lineage       = row["HigherTaxa"]
-    lineage       = lineage.delete(' ').split(',')
-    species_name  = row['Species']
-    sequence      = row['BarcodeSequence']
-    if hash.has_key?(species_name)
-      hash[species_name].push([identifier, lineage, sequence])
-    else
-      hash[species_name] = [[identifier, lineage, sequence]]
-    end
-    return hash
-  end
 
-  def _generate_outputs(specimen_data)
-    tsv = File.open('gbol_output.tsv', 'w')
-    tsv.puts _tsv_header
+    tsv   = File.open("results/#{query_taxon}_gbol_output.tsv", 'w')
+    fasta = File.open("results/#{query_taxon}_gbol_output.fas", 'w')
+    
+    seqs_and_ids_by_taxon_name.keys.each do |taxon_name|
+      nomial          = Nomial.generate(name: taxon_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
+      taxonomic_info  = nomial.taxonomy
+      next unless taxonomic_info
 
-    fh_o = File.open('gbol_compare_taxonomy.tsv', 'w')
-    fh_seqs_o = File.open('gbol_seqs.fas', 'w')
-    specimen_data.keys.each do |species_name|
-      nomial = Nomial.generate(name: species_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
-      tax_info = nomial.taxonomy
-      unless tax_info
-        fh_o.puts "not found: #{species_name}"
-        next
-      end
-
-      count = 0
-      specimen_data[species_name].each do |data|
-        count += 1
-        fh_o.puts "#{data[0]}|#{data[1].join('|')}|#{species_name}\t#{data[0]}|#{_to_taxon_info(tax_info)}" if count == 1
-        tsv.puts _tsv_row(identifier: data[0], lineage_data: tax_info, sequence: data[2])
-        fh_seqs_o.puts ">#{data[0]}|#{_to_taxon_info(tax_info)}"
-        fh_seqs_o.puts data[2]
+      seqs_and_ids_by_taxon_name[taxon_name].each do |data|
+        OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
+        OutputFormat::Fasta.write_to_file(fasta: fasta, data: data, taxonomic_info: taxonomic_info)
       end
     end
   end
