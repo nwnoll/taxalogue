@@ -2,7 +2,7 @@
 
 class NcbiGenbankImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon, :query_taxon_rank
+  attr_reader :file_name, :query_taxon, :query_taxon_rank, :markers
 
   UNUSED_FIRST_LINES_NUM = 10
 
@@ -10,10 +10,11 @@ class NcbiGenbankImporter
     ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'phylum_name']
   end
 
-  def initialize(file_name:, query_taxon:, query_taxon_rank:)
+  def initialize(file_name:, query_taxon:, query_taxon_rank:, markers:)
     @file_name        = file_name
     @query_taxon      = query_taxon
     @query_taxon_rank = query_taxon_rank
+    @markers = markers
   end
 
 
@@ -35,7 +36,8 @@ class NcbiGenbankImporter
               gene.qualifiers.each do |qualifier|
                 gene_name = qualifier.value
                 if qualifier.qualifier == 'gene'
-                  if gene_name =~ /coi/i || gene_name =~ /co1/i || gene_name =~ /cox1/i  || gene_name =~ /cytochrome oxidase 1/i
+                  regexes = Marker.regexes(db: self, markers: markers)
+                  if regexes === gene_name
                     specimen = Specimen.new
                     specimen.identifier = gb.accession
                     specimen.sequence   = gb.naseq.splicing(gene.position).to_s

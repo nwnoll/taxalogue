@@ -3,6 +3,18 @@
 class Marker
     attr_reader :query_marker_name, :marker_tag
 
+    def self.regexes(db:, markers:)
+        p markers
+        return markers.first.regex(db: db) if markers.size == 1
+
+        regexes = []
+        markers.each do |marker|
+            regexes.push(marker.regex(db: db))
+        end
+        
+        Regexp.union(regexes)
+    end
+
     def initialize(query_marker_name:)
         @query_marker_name  = query_marker_name
         marker_tag          = _marker_tag(query_marker_name: query_marker_name)
