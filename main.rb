@@ -41,6 +41,7 @@ if File.exists? CONFIG_FILE
 	config_options = YAML.load_file(CONFIG_FILE)
 	params.merge!(config_options)
 	params[:taxon_record] = GbifTaxon.find_by_canonical_name(params[:taxon])
+	params[:marker_objects] = Helper.create_marker_objects(query_marker_names: params[:markers])
 end
 
 
@@ -65,6 +66,9 @@ OptionParser.new do |opts|
 		end
 		taxon_name
 	end
+	opts.on('-m MARKERS', 	String, '--markers') do |markers|
+		Helper.create_marker_objects(query_marker_names: markers)
+	end
 end.parse!(into: params)
 
 # BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
@@ -78,6 +82,7 @@ end.parse!(into: params)
 # gbol_importer.run
 # exit
 
+exit
 
 ncbi_genbank_importer = NcbiGenbankImporter.new(file_name: params[:import_genbank], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank]) if params[:import_genbank]
 ncbi_genbank_importer.run
