@@ -71,6 +71,3 @@ class NcbiApi
             ' NOT pseudogene'
       end
 end
-
-
-# Bombus[organism]AND (coi[gene] OR co1[gene] OR cox1[gene] OR cytochrome oxidase 1[gene] OR cytochrome oxidase I[gene] OR cytochrome oxidase subunit I[gene] OR cytochrome oxidase subunit 1[gene] OR cytochrome oxidase subunit one[gene]) NOT pseudogene 

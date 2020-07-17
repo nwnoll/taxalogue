@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "benchmark"
-
 class NcbiGenbankImporter
   include StringFormatting
   attr_reader :file_name, :query_taxon, :query_taxon_rank, :markers
