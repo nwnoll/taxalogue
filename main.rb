@@ -42,7 +42,6 @@ if File.exists? CONFIG_FILE
 	params.merge!(config_options)
 	params[:taxon_record] = GbifTaxon.find_by_canonical_name(params[:taxon])
 	params[:marker_objects] = Helper.create_marker_objects(query_marker_names: params[:markers])
-	p params
 end
 
 
@@ -68,7 +67,7 @@ OptionParser.new do |opts|
 		taxon_name
 	end
 	opts.on('-m MARKERS', 	String, '--markers') do |markers|
-		Helper.create_marker_objects(query_marker_names: markers)
+		params[:marker_objects] = Helper.create_marker_objects(query_marker_names: markers)
 	end
 end.parse!(into: params)
 

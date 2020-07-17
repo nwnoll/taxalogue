@@ -4,7 +4,6 @@ class Marker
     attr_reader :query_marker_name, :marker_tag
 
     def self.regexes(db:, markers:)
-        p markers
         return markers.first.regex(db: db) if markers.size == 1
 
         regexes = []
@@ -15,22 +14,32 @@ class Marker
         Regexp.union(regexes)
     end
 
+    def self.searchterms_of
+        searchterms_of = Hash.new { |hash, key| hash[key] = {} }
+
+        searchterms_of[:co1][:all]    = ['^cox1$','^co1$', '^coi$', '^cytochrome1$', '^cytochromeone$']
+        searchterms_of[:co1][:ncbi]   = ['cox1', 'co1', 'coi', 'cytochrome oxidase 1', 'cytochrome oxidase I', 'cytochrome oxidase one', 'cytochrome oxidase subunit 1', 'cytochrome oxidase subunit I', 'cytochrome oxidase subunit one']
+        searchterms_of[:co1][:gbol]   = ['.*']
+        searchterms_of[:co1][:bold]   = ['COI-5P', 'COI-3P']
+
+        return searchterms_of
+    end
+
     def initialize(query_marker_name:)
         @query_marker_name  = query_marker_name
-        marker_tag          = _marker_tag(query_marker_name: query_marker_name)
+        @marker_tag         = _marker_tag(query_marker_name: query_marker_name)
     end
 
     def regex(db:)
-        marker_tag  = _marker_tag(query_marker_name: query_marker_name)
         db_tag      = _db_tag(db: db)
 
-        _regex_of[marker_tag][db_tag]
+        _to_regex(self.class.searchterms_of[marker_tag][db_tag])
     end
 
     private
     def _marker_tag(query_marker_name:)
-        regex_of = _regex_of
-        if regex_of[:co1][:all] === query_marker_name
+        searchterms_of = self.class.searchterms_of
+        if _to_regex(searchterms_of[:co1][:all]) === query_marker_name
             return :co1
         else
             abort "Marker: marker is not available please use #{_available_markers}.\nUse a comma separated list without any spaces like: coi,rBcl "
@@ -48,7 +57,7 @@ class Marker
     end
 
     def _ncbi_classes
-        [NcbiGenbankImporter, NcbiGenbankJob, NcbiGenbankConfig]
+        [NcbiGenbankImporter, NcbiGenbankJob, NcbiGenbankConfig, NcbiApi]
     end
 
     def _gbol_classes
@@ -59,15 +68,19 @@ class Marker
         [BoldImporter, BoldJob, BoldConfig]
     end
 
-    def _regex_of
-        regex_of = Hash.new { |hash, key| hash[key] = {} }
+    def searchterms_of
+        searchterms_of = Hash.new { |hash, key| hash[key] = {} }
 
-        regex_of[:co1][:all]    = Regexp.new('^cox1$|^co1$|^coi$|^cytochrome1$|^cytochromeone$', Regexp::IGNORECASE)
-        regex_of[:co1][:ncbi]   = Regexp.new('cox1|co1|coi|cytochrome oxidase 1|cytochrome oxidase one', Regexp::IGNORECASE)
-        regex_of[:co1][:gbol]   = Regexp.new('.*')
-        regex_of[:co1][:bold]   = Regexp.new('COI-5P|COI-3P', Regexp::IGNORECASE)
+        searchterms_of[:co1][:all]    = ['^cox1$','^co1$', '^coi$', '^cytochrome1$', '^cytochromeone$']
+        searchterms_of[:co1][:ncbi]   = ['cox1', 'co1', 'coi', 'cytochrome oxidase 1', 'cytochrome oxidase I', 'cytochrome oxidase one', 'cytochrome oxidase subunit 1', 'cytochrome oxidase subunit I', 'cytochrome oxidase subunit one']
+        searchterms_of[:co1][:gbol]   = ['.*']
+        searchterms_of[:co1][:bold]   = ['COI-5P', 'COI-3P']
 
-        return regex_of
+        return searchterms_of
+    end
+
+    def _to_regex(array_of_searchterms)
+        Regexp.new(array_of_searchterms.join('|'), Regexp::IGNORECASE)
     end
 
     def _available_markers

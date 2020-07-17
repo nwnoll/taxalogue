@@ -6,7 +6,7 @@ class GbifApi
   attr_reader :path, :query, :response_hash
   def initialize(path: 'species?name=', query:)
     @path  = path
-    @query = CGI::escape(_normalize(query.to_s))
+    @query = CGI::escape(Helper.normalize(query.to_s))
     @response_hash = JSON.parse response.body
   end
 
@@ -123,12 +123,4 @@ class GbifApi
       canonical_name: taxon[taxon_rank],
       taxon_rank: taxon_rank)
   end
-
-  def _normalize(string)
-    string.tr(
-    "ÀÁÂÃÄÅàáâãäåĀāĂăĄąÇçĆćĈĉĊċČčÐðĎďĐđÈÉÊËèéêëĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħÌÍÎÏìíîïĨĩĪīĬĭĮįİıĴĵĶķĸĹĺĻļĽľĿŀŁłÑñŃńŅņŇňŉŊŋÒÓÔÕÖØòóôõöøŌōŎŏŐőŔŕŖŗŘřŚśŜŝŞşŠšſŢţŤťŦŧÙÚÛÜùúûüŨũŪūŬŭŮůŰűŲųŴŵÝýÿŶŷŸŹźŻżŽž",
-    "AAAAAAaaaaaaAaAaAaCcCcCcCcCcDdDdDdEEEEeeeeEeEeEeEeEeGgGgGgGgHhHhIIIIiiiiIiIiIiIiIiJjKkkLlLlLlLlLlNnNnNnNnnNnOOOOOOooooooOoOoOoRrRrRrSsSsSsSssTtTtTtUUUUuuuuUuUuUuUuUuUuWwYyyYyYZzZzZz"
-    )
-  end
-
 end
