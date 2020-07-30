@@ -14,6 +14,7 @@ class GbolImporter
   ## change to Zip processing
   ## or unzip file to use csv
   def run
+
     seqs_and_ids_by_taxon_name = Hash.new
     file                       = File.open(file_name, 'r')
     
@@ -33,6 +34,7 @@ class GbolImporter
       nomial          = Nomial.generate(name: taxon_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
       taxonomic_info  = nomial.taxonomy
       next unless taxonomic_info
+      next unless taxonomic_info.public_send(GbifTaxon.rank_mappings["#{query_taxon_rank}"]) == query_taxon
 
       seqs_and_ids_by_taxon_name[taxon_name].each do |data|
         OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)

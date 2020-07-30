@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 class Nomial
-  attr_reader :name, :query_taxon, :query_taxon_rank
+  attr_reader :name, :query_taxon, :query_taxon_rank, :cleaned_name_parts
 
   def initialize(name:, query_taxon:, query_taxon_rank:)
     @name                     = name
     @query_taxon              = query_taxon
     @query_taxon_rank         = query_taxon_rank
+    @cleaned_name_parts       = _cleaned_name_parts
   end
 
   def self.generate(name:, query_taxon:, query_taxon_rank:)
@@ -14,8 +15,8 @@ class Nomial
   end
 
   def generate
-    return Monomial.new(name: _cleaned_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)    if _cleaned_name_parts.size == 1
-    return Polynomial.new(name: _cleaned_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)  if _cleaned_name_parts.size > 1
+    return Monomial.new(name: _cleaned_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)    if cleaned_name_parts.size == 1
+    return Polynomial.new(name: _cleaned_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)  if cleaned_name_parts.size > 1
     return self
   end
 
@@ -35,10 +36,20 @@ class Nomial
   def _cleaned_name_parts
     i                   = _open_nomenclature.map { |n| _name_parts.index(n) }.compact.min
     cleaned_name_parts  = _name_parts[0 ... i]
+    cleaned_name_parts.map! { |word| Helper.normalize(word) }
+    cleaned = cleaned_name_parts.delete_if { |word| word =~ /[0-9]/}
+    if cleaned.size > 1
+
+      # cleaned[1..-1]
+      # cleaned.drop(1).delete_if { |word| word =~ /[A-Z]/ }
+      cleaned.select! { |word| word == cleaned[0] || word !~ /[A-Z]/}
+    end
+    p cleaned
+    cleaned
   end
 
   def _cleaned_name
-    cleaned_name = _cleaned_name_parts.join(' ')
+    cleaned_name = cleaned_name_parts.join(' ')
   end
 end
 

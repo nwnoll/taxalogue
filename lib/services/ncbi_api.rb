@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'resolv-replace'
 class NcbiApi
       attr_reader :markers, :taxon_name
 
@@ -11,14 +12,16 @@ class NcbiApi
       end
 
       def efetch
-            file = File.open('results/efetch.test', 'w')
+            ## use Filestructure
+            file = File.open('results/efetch.test2', 'w')
             retmax            = 500
             retstart          = 0
-            esearch_result    = run_esearch
+            esearch_result    = _run_esearch
 
             until retstart > esearch_result.count
                   url         = "#{_base}efetch.fcgi?db=nucleotide&WebEnv=#{esearch_result.web}&query_key=#{esearch_result.key}&retstart=#{retstart}&retmax=#{retmax}&rettype=gb&retmode=text"
                   uri         = URI(url)
+                  # use HTTP downloader
                   response    = Net::HTTP.get_response(uri)
                   retstart   += retmax
 
@@ -26,7 +29,8 @@ class NcbiApi
             end
       end
 
-      def run_esearch
+      private
+      def _run_esearch
             query       = CGI::escape(Helper.normalize("#{_taxon_query}#{_marker_query}#{_exclusion_query}"))
             url         = "#{_base}esearch.fcgi?db=nucleotide&term=#{query}&usehistory=y"
             uri         = URI(url)
@@ -40,7 +44,6 @@ class NcbiApi
             return search_result
       end
 
-      private
       def _base
             'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
       end

@@ -19,20 +19,20 @@ class NcbiGenbankImporter
 
 
   def run
-    
     file_count = 0
     file_names = Dir[ 'data/NCBI/sequences/*' ].select{ |f| File.file? f }
     # file_names = Dir[ 'data/ncbigenbank/mam/*' ].select{ |f| File.file? f }
     
     file_names.each do |file|
-      file_count += 1
-      m = file.match(/gbinv\d+/) ## CHANGE!
-      base_name = m[0]
-      entry_of = Hash.new
-      seqs_and_ids_by_taxon_name = Hash.new
+      file_count                 += 1
+      m                           = file.match(/gb\w+\d+/)
+      base_name                   = m[0]
+
+      entry_of                    = Hash.new
+      seqs_and_ids_by_taxon_name  = Hash.new
       Zlib::GzipReader.open(file) do |gz_file|
         gb_entry = ''.dup
-        count = 0 ## for development, remove later
+        # count = 0 ## for development, remove later
         gz_file.each_line do |line|
           next if gz_file.lineno <= FILE_DESCRIPTION_PART
           gb_entry.concat(line); next if line !~ /#{is_gb_entry_end}/
@@ -43,7 +43,6 @@ class NcbiGenbankImporter
               next unless qualifier.qualifier == 'gene'
 
               regexes = Marker.regexes(db: self, markers: markers)
-              byebug
               next unless regexes === gene_name
 
               specimen = Specimen.new
@@ -51,10 +50,10 @@ class NcbiGenbankImporter
               specimen.sequence   = gb.naseq.splicing(gene.position).to_s
               specimen.taxon_name = gb.organism
               SpecimensOfTaxon.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name: seqs_and_ids_by_taxon_name, specimen_object: specimen)
-              count += 1 ## for development, remove later
+              # count += 1 ## for development, remove later
             end
           end
-          break if count == 10 ## for development, remove later
+          # break if count == 10 ## for development, remove later
           gb_entry = ''.dup
         end
       end
@@ -65,8 +64,9 @@ class NcbiGenbankImporter
       seqs_and_ids_by_taxon_name.keys.each do |taxon_name|
         nomial          = Nomial.generate(name: taxon_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
         taxonomic_info  = nomial.taxonomy
-        next unless taxonomic_info7
-        # next unless taxonomic_info.public_send(GbifTaxon.rank_mappings["#{query_taxon_rank}"]) == query_taxon
+        next unless taxonomic_info
+        next unless taxonomic_info.public_send(GbifTaxon.rank_mappings["#{query_taxon_rank}"]) == query_taxon
+
         seqs_and_ids_by_taxon_name[taxon_name].each do |data|
             OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
             OutputFormat::Fasta.write_to_file(fasta: fasta, data: data, taxonomic_info: taxonomic_info)

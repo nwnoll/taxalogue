@@ -16,19 +16,19 @@ module StringFormatting
   end
 
   def _to_taxon_info(obj)
-    return "#{obj.ordo}|#{obj.familia}|#{obj.canonical_name}" if obj.taxon_rank == 'species' || obj.taxon_rank == 'genus' || obj.taxon_rank == 'unranked' || obj.taxon_rank == 'subspecies'
-    return "#{obj.ordo}|#{obj.canonical_name}"                if obj.taxon_rank == 'family'
-    return "#{obj.canonical_name}"                            if obj.taxon_rank == 'order'
-    return "#{obj.canonical_name}"                            if obj.taxon_rank == 'class'
-    return "#{obj.canonical_name}"                            if obj.taxon_rank == 'phylum'
+    return "#{obj.regnum}|#{obj.phylum}|#{obj.classis}|#{obj.ordo}|#{obj.familia}|#{obj.canonical_name}" if obj.taxon_rank == 'species' || obj.taxon_rank == 'genus' || obj.taxon_rank == 'unranked' || obj.taxon_rank == 'subspecies'
+    return "#{obj.regnum}|#{obj.phylum}|#{obj.classis}|#{obj.ordo}|#{obj.canonical_name}"                if obj.taxon_rank == 'family'
+    return "#{obj.regnum}|#{obj.phylum}|#{obj.classis}|#{obj.canonical_name}"                            if obj.taxon_rank == 'order'
+    return "#{obj.regnum}|#{obj.phylum}|#{obj.canonical_name}"                                           if obj.taxon_rank == 'class'
+    return "#{obj.regnum}|#{obj.canonical_name}"                                                         if obj.taxon_rank == 'phylum'
   end
 
   def _tsv_header
-    "identifier\tphylum\torder\tfamily\tgenus\tcanonical_name\tsequence"
+    "identifier\tkingdom\tphylum\torder\tfamily\tgenus\tcanonical_name\tsequence"
   end
 
   def _tsv_row(lineage_data:, identifier:, sequence:)
-    "#{identifier}\t#{lineage_data.phylum}\t#{lineage_data.ordo}\t#{lineage_data.familia}\t#{lineage_data.genus}\t#{lineage_data.canonical_name}\t#{sequence}"
+    "#{identifier}\t#{lineage_data.regnum}\t#{lineage_data.phylum}\t#{lineage_data.ordo}\t#{lineage_data.familia}\t#{lineage_data.genus}\t#{lineage_data.canonical_name}\t#{sequence}"
   end
 
   def _fasta_header(data:, taxonomic_info:)
