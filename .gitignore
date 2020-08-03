@@ -2,4 +2,4 @@
 /.byebug_history
 **/db/database.db
 /data
-/results
+/results*

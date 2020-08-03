@@ -87,7 +87,20 @@ class Monomial
     ## what to do if there are only synonyms?
     records.each do |record|
       if record.taxonomic_status == 'accepted'
-        return record if _has_lineage?(record)
+        ## BAD!! have to find another solution
+        ## Solenopsis is the name for a Plant and Hymenoptera
+        ## with the if block I can search for the correct one
+        ## Problem is thath if I have huge file with other taxa
+        ## then the searched one, it wont find a db entry and then
+        ## has to make an API call to GBIF -> very slow
+
+        ## i have to change the whole procedure OR get a list of all
+        ## redundant taxa in GBIF -> not ideal since this might change
+        if taxon_name == 'Solenopsis'
+          return record if _has_lineage?(record) && _belongs_to_correct_query_taxon_rank?(record)
+        else
+          return record if _has_lineage?(record)
+        end
       end
     end
     return nil
@@ -95,6 +108,10 @@ class Monomial
 
   def _has_lineage?(record)
     !record.phylum.nil? && !record.classis.nil? if record
+  end
+
+  def _belongs_to_correct_query_taxon_rank?(record)
+    record.public_send(GbifTaxon.rank_mappings["#{query_taxon_rank}"]) == query_taxon
   end
 
   def _record_exists?(taxon_name)

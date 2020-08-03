@@ -2,7 +2,7 @@
 
 class NcbiGenbankImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon, :query_taxon_rank, :markers
+  attr_reader :file_name, :query_taxon, :query_taxon_rank, :markers, :fast_run
 
   FILE_DESCRIPTION_PART = 10
 
@@ -10,11 +10,12 @@ class NcbiGenbankImporter
     ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'phylum_name']
   end
 
-  def initialize(file_name:, query_taxon:, query_taxon_rank:, markers:)
+  def initialize(file_name:, query_taxon:, query_taxon_rank:, markers:, fast_run: true)
     @file_name        = file_name
     @query_taxon      = query_taxon
     @query_taxon_rank = query_taxon_rank
     @markers          = markers
+    @fast_run         = fast_run 
   end
 
 
@@ -27,7 +28,7 @@ class NcbiGenbankImporter
       file_count                 += 1
       m                           = file.match(/gb\w+\d+/)
       base_name                   = m[0]
-
+      puts base_name
       entry_of                    = Hash.new
       seqs_and_ids_by_taxon_name  = Hash.new
       Zlib::GzipReader.open(file) do |gz_file|
@@ -35,19 +36,26 @@ class NcbiGenbankImporter
         # count = 0 ## for development, remove later
         gz_file.each_line do |line|
           next if gz_file.lineno <= FILE_DESCRIPTION_PART
+
           gb_entry.concat(line); next if line !~ /#{is_gb_entry_end}/
           gb = Bio::GenBank.new(gb_entry)
+
           gb.each_gene do |gene|
             gene.qualifiers.each do |qualifier|
-              gene_name = qualifier.value
-              next unless qualifier.qualifier == 'gene'
+              _matches_query_taxon(gb) ? _puts_gb_tax(gb) : next if fast_run
 
+              gene_name           = qualifier.value
+              next unless qualifier.qualifier == 'gene'
+              
               regexes = Marker.regexes(db: self, markers: markers)
               next unless regexes === gene_name
 
-              specimen = Specimen.new
+              specimen            = Specimen.new
               specimen.identifier = gb.accession
-              specimen.sequence   = gb.naseq.splicing(gene.position).to_s
+              nucs = gb.naseq.splicing(gene.position).to_s
+              next if nucs.nil? || nucs.empty?
+
+              specimen.sequence   = nucs
               specimen.taxon_name = gb.organism
               SpecimensOfTaxon.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name: seqs_and_ids_by_taxon_name, specimen_object: specimen)
               # count += 1 ## for development, remove later
@@ -58,8 +66,8 @@ class NcbiGenbankImporter
         end
       end
 
-      tsv   = File.open("results/#{query_taxon}_ncbi_#{base_name}_output.tsv", 'w')
-      fasta = File.open("results/#{query_taxon}_ncbi_#{base_name}_output.fas", 'w')
+      tsv   = File.open("results2/#{query_taxon}_ncbi_#{base_name}_fast_#{fast_run}_output.tsv", 'w')
+      fasta = File.open("results2/#{query_taxon}_ncbi_#{base_name}_fast_#{fast_run}_output.fas", 'w')
     
       seqs_and_ids_by_taxon_name.keys.each do |taxon_name|
         nomial          = Nomial.generate(name: taxon_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
@@ -76,7 +84,17 @@ class NcbiGenbankImporter
   end
 
   def is_gb_entry_end
-    "^\/\/"
+    "\/\/"
+  end
+
+  private
+
+  def _puts_gb_tax(gb)
+    puts gb.taxonomy
+  end
+
+  def _matches_query_taxon(gb)
+    /#{query_taxon}/.match?(gb.taxonomy) || /#{query_taxon}/.match?(gb.organism)
   end
 
   ## UNUSED

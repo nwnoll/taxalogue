@@ -18,9 +18,9 @@ class Marker
         searchterms_of = Hash.new { |hash, key| hash[key] = {} }
 
         searchterms_of[:co1][:all]    = ['^cox1$','^co1$', '^coi$', '^cytochrome1$', '^cytochromeone$']
-        searchterms_of[:co1][:ncbi]   = ['cox1', 'co1', 'coi', 'cytochrome oxidase 1', 'cytochrome oxidase I', 'cytochrome oxidase one', 'cytochrome oxidase subunit 1', 'cytochrome oxidase subunit I', 'cytochrome oxidase subunit one']
+        searchterms_of[:co1][:ncbi]   = ['^cox1$', '^co1$', '^coi$', '^cytochrome oxidase 1$', '^cytochrome oxidase I$', '^cytochrome oxidase one$', '^cytochrome oxidase subunit 1$', '^cytochrome oxidase subunit I$', '^cytochrome oxidase subunit one$']
         searchterms_of[:co1][:gbol]   = ['.*']
-        searchterms_of[:co1][:bold]   = ['COI-5P', 'COI-3P']
+        searchterms_of[:co1][:bold]   = ['COI-5P']
 
         return searchterms_of
     end

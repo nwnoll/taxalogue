@@ -3,36 +3,46 @@
 require 'csv'
 class GbolImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon, :query_taxon_rank
+  attr_reader :file_name, :query_taxon, :query_taxon_rank, :fast_run
 
-  def initialize(file_name:, query_taxon:, query_taxon_rank:)
+  def initialize(file_name:, query_taxon:, query_taxon_rank:, fast_run: true)
     @file_name        = file_name
     @query_taxon      = query_taxon
     @query_taxon_rank = query_taxon_rank
+    @fast_run         = fast_run
   end
 
   ## change to Zip processing
   ## or unzip file to use csv
   def run
-
     seqs_and_ids_by_taxon_name = Hash.new
     file                       = File.open(file_name, 'r')
     
     csv_object.each do |row|
-      specimen = Specimen.new
+      _matches_query_taxon(row) ? nil : next if fast_run
+
+      specimen            = Specimen.new
       specimen.identifier = row["CatalogueNumber"]
-      specimen.sequence   = row['BarcodeSequence']
+      nucs                = row['BarcodeSequence']
+      next if nucs.nil? || nucs.empty?
+
+      specimen.sequence   = nucs
       specimen.taxon_name = row["Species"]
       SpecimensOfTaxon.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name: seqs_and_ids_by_taxon_name, specimen_object: specimen)
     end
 
 
-    tsv   = File.open("results/#{query_taxon}_gbol_output.tsv", 'w')
-    fasta = File.open("results/#{query_taxon}_gbol_output.fas", 'w')
+    tsv   = File.open("results2/#{query_taxon}_gbol_fast_#{fast_run}_output2.tsv", 'w')
+    fasta = File.open("results2/#{query_taxon}_gbol_fast_#{fast_run}_output2.fas", 'w')
     
     seqs_and_ids_by_taxon_name.keys.each do |taxon_name|
       nomial          = Nomial.generate(name: taxon_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
+      p "nomial: #{nomial}"
+
       taxonomic_info  = nomial.taxonomy
+      p "taxonomic_info: #{taxonomic_info}"
+
+
       next unless taxonomic_info
       next unless taxonomic_info.public_send(GbifTaxon.rank_mappings["#{query_taxon_rank}"]) == query_taxon
 
@@ -49,6 +59,12 @@ class GbolImporter
 
   def opened_file_in_read_mode
     file = File.open(file_name, 'r')
+  end
+
+  private
+
+  def _matches_query_taxon(row)
+    /#{query_taxon}/.match?(row["HigherTaxa"]) || /#{query_taxon}/.match?(row["Species"])
   end
 
   ## UNUSED
