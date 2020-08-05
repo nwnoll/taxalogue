@@ -35,7 +35,6 @@ class NcbiGenbankImporter
       Zlib::GzipReader.open(file) do |gz_file|
         gb_entry = ''.dup
         # count = 0 ## for development, remove later
-        multiple_instances_of_same_gene = []
         gz_file.each_line do |line|
           next if gz_file.lineno <= FILE_DESCRIPTION_PART
 
