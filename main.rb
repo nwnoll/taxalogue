@@ -71,17 +71,23 @@ OptionParser.new do |opts|
 	end
 end.parse!(into: params)
 
-gbol_importer = GbolImporter.new(file_name: params[:import_gbol], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank])
-gbol_importer.run
-exit
 
-ncbi_genbank_importer = NcbiGenbankImporter.new(file_name: params[:import_genbank], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank], markers: params[:marker_objects]) if params[:import_genbank]
+ncbi_genbank_importer = NcbiGenbankImporter.new(fast_run: false, file_name: params[:import_genbank], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank], markers: params[:marker_objects]) if params[:import_genbank]
 ncbi_genbank_importer.run
 exit
 
-bold_importer = BoldImporter.new(file_name: params[:import_bold], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank])
+bold_importer = BoldImporter.new(fast_run: false, file_name: params[:import_bold], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank])
 bold_importer.run
 exit
+
+gbol_importer = GbolImporter.new(fast_run: false, file_name: params[:import_gbol], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank])
+gbol_importer.run
+exit
+
+
+
+
+
 
 
 

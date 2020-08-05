@@ -21,7 +21,7 @@ class BoldImporter
     file.each do |row|
       _matches_query_taxon(row.scrub!) ? nil : next if fast_run
 
-      specimen_data = row.chomp.split("\t")
+      specimen_data = row.scrub!.chomp.split("\t")
 
 
       specimen = Specimen.new
@@ -34,8 +34,8 @@ class BoldImporter
       SpecimensOfTaxon.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name: seqs_and_ids_by_taxon_name, specimen_object: specimen)
     end
 
-    tsv   = File.open("results2/#{query_taxon}_bold_fast_#{fast_run}_output_arth.tsv", 'w')
-    fasta = File.open("results2/#{query_taxon}_bold_fast_#{fast_run}_output_arth.fas", 'w')
+    tsv   = File.open("results2/#{query_taxon}_bold_fast_#{fast_run}_output_timeout.tsv", 'w')
+    fasta = File.open("results2/#{query_taxon}_bold_fast_#{fast_run}_output_timeout.fas", 'w')
 
 
     seqs_and_ids_by_taxon_name.keys.each do |taxon_name|

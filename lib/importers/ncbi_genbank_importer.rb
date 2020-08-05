@@ -2,7 +2,7 @@
 
 class NcbiGenbankImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon, :query_taxon_rank, :markers, :fast_run
+  attr_reader :file_name, :query_taxon, :query_taxon_rank, :markers, :fast_run, :regexes
 
   FILE_DESCRIPTION_PART = 10
 
@@ -15,7 +15,8 @@ class NcbiGenbankImporter
     @query_taxon      = query_taxon
     @query_taxon_rank = query_taxon_rank
     @markers          = markers
-    @fast_run         = fast_run 
+    @fast_run         = fast_run
+    @regexes          = Marker.regexes(db: self, markers: markers)
   end
 
 
@@ -34,40 +35,33 @@ class NcbiGenbankImporter
       Zlib::GzipReader.open(file) do |gz_file|
         gb_entry = ''.dup
         # count = 0 ## for development, remove later
+        multiple_instances_of_same_gene = []
         gz_file.each_line do |line|
           next if gz_file.lineno <= FILE_DESCRIPTION_PART
 
           gb_entry.concat(line); next if line !~ /#{is_gb_entry_end}/
           gb = Bio::GenBank.new(gb_entry)
 
-          gb.each_gene do |gene|
-            gene.qualifiers.each do |qualifier|
-              _matches_query_taxon(gb) ? _puts_gb_tax(gb) : next if fast_run
+          features_of_gene = gb.features.select { |f| _is_gene?(f.feature) && _is_gene_of_marker?(f.qualifiers) && _is_no_pseudogene?(f.qualifiers) }
+          
+          gb_entry = ''.dup; next unless features_of_gene.size == 1
 
-              gene_name           = qualifier.value
-              next unless qualifier.qualifier == 'gene'
-              
-              regexes = Marker.regexes(db: self, markers: markers)
-              next unless regexes === gene_name
+          specimen            = Specimen.new
+          specimen.identifier = gb.accession
+          nucs                = gb.naseq.splicing(features_of_gene.first.position).to_s
+          gb_entry = ''.dup; next if nucs.nil? || nucs.empty?
 
-              specimen            = Specimen.new
-              specimen.identifier = gb.accession
-              nucs = gb.naseq.splicing(gene.position).to_s
-              next if nucs.nil? || nucs.empty?
+          
+          specimen.sequence   = nucs
+          specimen.taxon_name = gb.organism
+          SpecimensOfTaxon.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name: seqs_and_ids_by_taxon_name, specimen_object: specimen)
 
-              specimen.sequence   = nucs
-              specimen.taxon_name = gb.organism
-              SpecimensOfTaxon.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name: seqs_and_ids_by_taxon_name, specimen_object: specimen)
-              # count += 1 ## for development, remove later
-            end
-          end
-          # break if count == 10 ## for development, remove later
           gb_entry = ''.dup
         end
       end
 
-      tsv   = File.open("results2/#{query_taxon}_ncbi_#{base_name}_fast_#{fast_run}_output.tsv", 'w')
-      fasta = File.open("results2/#{query_taxon}_ncbi_#{base_name}_fast_#{fast_run}_output.fas", 'w')
+      tsv   = File.open("results2/#{query_taxon}_ncbi_#{base_name}_fast_#{fast_run}_output_DEBUG.tsv", 'w')
+      fasta = File.open("results2/#{query_taxon}_ncbi_#{base_name}_fast_#{fast_run}_output_DEBUG.fas", 'w')
     
       seqs_and_ids_by_taxon_name.keys.each do |taxon_name|
         nomial          = Nomial.generate(name: taxon_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
@@ -88,6 +82,19 @@ class NcbiGenbankImporter
   end
 
   private
+
+  def _is_gene?(s)
+    s == 'gene'
+  end
+
+  def _is_gene_of_marker?(qualifiers)
+    qualifiers.any? { |q| q.qualifier == 'gene' && regexes === q.value}
+  end
+
+
+  def _is_no_pseudogene?(qualifiers)
+    qualifiers.none? { |q| q.qualifier == 'pseudo' }
+  end
 
   def _puts_gb_tax(gb)
     puts gb.taxonomy

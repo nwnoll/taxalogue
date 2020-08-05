@@ -2,6 +2,8 @@
 require 'net/http'
 require 'json'
 require 'ostruct'
+require 'timeout'
+
 class GbifApi
   attr_reader :path, :query, :response_hash
   def initialize(path: 'species?name=', query:)
@@ -33,7 +35,7 @@ class GbifApi
   end
 
   def response
-    Net::HTTP.get_response(full_request_uri)
+    Timeout.timeout(60) { Net::HTTP.get_response(full_request_uri) }
   end
 
   def _first_accepted_exact_taxon

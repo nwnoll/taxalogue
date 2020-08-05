@@ -32,8 +32,8 @@ class GbolImporter
     end
 
 
-    tsv   = File.open("results2/#{query_taxon}_gbol_fast_#{fast_run}_output2.tsv", 'w')
-    fasta = File.open("results2/#{query_taxon}_gbol_fast_#{fast_run}_output2.fas", 'w')
+    tsv   = File.open("results2/#{query_taxon}_gbol_fast_#{fast_run}_output.tsv", 'w')
+    fasta = File.open("results2/#{query_taxon}_gbol_fast_#{fast_run}_output.fas", 'w')
     
     seqs_and_ids_by_taxon_name.keys.each do |taxon_name|
       nomial          = Nomial.generate(name: taxon_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
