@@ -2,7 +2,7 @@
 
 class NcbiGenbankImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon, :query_taxon_rank, :markers, :fast_run, :regexes
+  attr_reader :file_name, :query_taxon, :query_taxon_rank, :markers, :fast_run, :regexes_for_markers
 
   FILE_DESCRIPTION_PART = 10
 
@@ -16,7 +16,7 @@ class NcbiGenbankImporter
     @query_taxon_rank = query_taxon_rank
     @markers          = markers
     @fast_run         = fast_run
-    @regexes          = Marker.regexes(db: self, markers: markers)
+    @regexes_for_markers          = Marker.regexes(db: self, markers: markers)
   end
 
 
@@ -27,30 +27,30 @@ class NcbiGenbankImporter
     
     file_names.each do |file|
       file_count                 += 1
-      m                           = file.match(/gb\w+\d+/)
-      base_name                   = m[0]
-      puts base_name
+      file_name_match             = file.match(/gb\w+\d+/)
+      base_name                   = file_name_match[0]
       entry_of                    = Hash.new
       seqs_and_ids_by_taxon_name  = Hash.new
+      
       Zlib::GzipReader.open(file) do |gz_file|
         gb_entry = ''.dup
-        # count = 0 ## for development, remove later
         gz_file.each_line do |line|
           next if gz_file.lineno <= FILE_DESCRIPTION_PART
 
           gb_entry.concat(line); next if line !~ /#{is_gb_entry_end}/
           gb = Bio::GenBank.new(gb_entry)
 
+          _matches_query_taxon(gb) nil : next if fast_run
+
           features_of_gene = gb.features.select { |f| _is_gene?(f.feature) && _is_gene_of_marker?(f.qualifiers) && _is_no_pseudogene?(f.qualifiers) }
-          
           gb_entry = ''.dup; next unless features_of_gene.size == 1
 
           specimen            = Specimen.new
           specimen.identifier = gb.accession
+          
           nucs                = gb.naseq.splicing(features_of_gene.first.position).to_s
           gb_entry = ''.dup; next if nucs.nil? || nucs.empty?
 
-          
           specimen.sequence   = nucs
           specimen.taxon_name = gb.organism
           SpecimensOfTaxon.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name: seqs_and_ids_by_taxon_name, specimen_object: specimen)
@@ -87,16 +87,12 @@ class NcbiGenbankImporter
   end
 
   def _is_gene_of_marker?(qualifiers)
-    qualifiers.any? { |q| q.qualifier == 'gene' && regexes === q.value}
+    qualifiers.any? { |q| q.qualifier == 'gene' && regexes_for_markers === q.value}
   end
 
 
   def _is_no_pseudogene?(qualifiers)
     qualifiers.none? { |q| q.qualifier == 'pseudo' }
-  end
-
-  def _puts_gb_tax(gb)
-    puts gb.taxonomy
   end
 
   def _matches_query_taxon(gb)
