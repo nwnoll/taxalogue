@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 class BoldConfig
-  attr_reader :markers, :file_structure, :name
-  def initialize(name:, markers: nil)
+  attr_reader :markers, :file_structure, :name, :parent_dir
+  def initialize(name:, markers: nil, parent_dir: nil)
     @name            = name
     @markers         = _join_markers(markers)
+    @parent_dir      = parent_dir
     @file_structure  = file_structure
   end
 

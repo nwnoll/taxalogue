@@ -18,12 +18,16 @@ class FileStructure
   end
 
   def directory_path
-    "data/#{_source_name}/#{_name}/"
+    _parent_dir ? "data/#{_source_name}/#{parent_dir}/#{_name}/" : "data/#{_source_name}/#{_name}/"
   end
 
   private
   def _source_name
     config.class.to_s.gsub('Config', '').downcase
+  end
+
+  def _parent_dir
+    config.parent_dir
   end
 
   def _name

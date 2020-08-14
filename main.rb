@@ -72,6 +72,15 @@ OptionParser.new do |opts|
 end.parse!(into: params)
 
 
+## BUG if taxon has too many sequences, I get this error protocol.rb:217:in `rbuf_fill': Net::ReadTimeout with #<TCPSocket:(closed)> (Net::ReadTimeout)
+## solutions: 	increase ReadTimeout 
+			# split up taxon into smaller ones if ReadTimeout
+			# split up larger taxa everytime
+BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+exit
+
+
+
 ncbi_genbank_importer = NcbiGenbankImporter.new(fast_run: false, file_name: params[:import_genbank], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank], markers: params[:marker_objects]) if params[:import_genbank]
 ncbi_genbank_importer.run
 exit

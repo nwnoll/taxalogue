@@ -40,7 +40,7 @@ class NcbiGenbankImporter
           gb_entry.concat(line); next if line !~ /#{is_gb_entry_end}/
           gb = Bio::GenBank.new(gb_entry)
 
-          _matches_query_taxon(gb) nil : next if fast_run
+          _matches_query_taxon(gb) ? nil : next if fast_run
 
           features_of_gene = gb.features.select { |f| _is_gene?(f.feature) && _is_gene_of_marker?(f.qualifiers) && _is_no_pseudogene?(f.qualifiers) }
           gb_entry = ''.dup; next unless features_of_gene.size == 1
