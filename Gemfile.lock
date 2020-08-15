@@ -1,3 +1,12 @@
+GIT
+  remote: https://github.com/nwnoll/RubyTree.git
+  revision: 745fe05a511fda3d8785c10f5a032684f228191f
+  branch: fix-syntax-warning
+  specs:
+    rubytree (1.0.0)
+      json (~> 2.1)
+      structured_warnings (~> 0.3)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -24,9 +33,11 @@ GEM
       RubyInline (>= 3.8.6)
     i18n (1.8.2)
       concurrent-ruby (~> 1.0)
+    json (2.3.1)
     minitest (5.14.0)
     rubyzip (2.3.0)
     sqlite3 (1.4.2)
+    structured_warnings (0.4.0)
     thread_safe (0.3.6)
     tzinfo (1.2.7)
       thread_safe (~> 0.1)
@@ -41,6 +52,7 @@ DEPENDENCIES
   bio
   byebug
   fuzzy-string-match (~> 0.9.7)
+  rubytree!
   rubyzip (~> 2.3)
   sqlite3
 

@@ -43,16 +43,13 @@ class GbifTaxon < ActiveRecord::Base
   end
 
   def self.taxa_names_for_rank(taxon:, rank:)
-    p 'in'
     next_higher_rank            = GbifTaxon.next_higher_rank(rank: rank)
-    latinized_next_higher_rank  = GbifTaxon.rank_mappings["#{next_higher_rank}"]
-    p next_higher_rank
-    p latinized_next_higher_rank
-    p taxon.public_send(latinized_next_higher_rank)
-    p rank
-    exit
-    taxa              = GbifTaxon.where(taxon_rank: rank, latinized_next_higher_rank => taxon.public_send(latinized_next_higher_rank))
-    p taxa
+    latinized_next_higher_rank  = Helper.latinize_rank(next_higher_rank)
+    taxa                        = GbifTaxon.where(taxon_rank: rank, latinized_next_higher_rank => taxon.public_send(latinized_next_higher_rank))
+    taxa_names                  = []
+    taxa.each { |tax| taxa_names.push(tax.canonical_name) }
+
+    return taxa_names
   end
 
   def self.next_higher_rank(rank:)

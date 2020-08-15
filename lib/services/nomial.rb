@@ -111,7 +111,7 @@ class Monomial
   end
 
   def _belongs_to_correct_query_taxon_rank?(record)
-    record.public_send(GbifTaxon.rank_mappings["#{query_taxon_rank}"]) == query_taxon
+    record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon
   end
 
   def _record_exists?(taxon_name)

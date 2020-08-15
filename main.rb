@@ -6,6 +6,7 @@ require "sqlite3"
 require 'bio'
 require 'fuzzystringmatch'
 require 'zip'
+require 'tree'
 
 require "yaml"
 require 'optparse'
@@ -78,6 +79,27 @@ end.parse!(into: params)
 			# split up larger taxa everytime
 BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
 exit
+
+
+
+# ..... Note that every node has a name and an optional content payload.
+root_node = Tree::TreeNode.new("ROOT", "Root Content")
+root_node.print_tree
+
+root_node << Tree::TreeNode.new("CHILD1", "Child1 Content") << Tree::TreeNode.new("GRANDCHILD1", "GrandChild1 Content")
+root_node << Tree::TreeNode.new("CHILD2", "Child2 Content")
+
+root_node.print_tree
+
+
+root_node.children.each do |child|
+	p child
+	puts
+end
+
+
+exit
+
 
 
 
