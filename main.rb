@@ -73,11 +73,15 @@ OptionParser.new do |opts|
 end.parse!(into: params)
 
 
+# byebug
+
+
 ## BUG if taxon has too many sequences, I get this error protocol.rb:217:in `rbuf_fill': Net::ReadTimeout with #<TCPSocket:(closed)> (Net::ReadTimeout)
 ## solutions: 	increase ReadTimeout 
 			# split up taxon into smaller ones if ReadTimeout
 			# split up larger taxa everytime
-BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+
+BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run5
 exit
 
 

@@ -18,7 +18,7 @@ class FileStructure
   end
 
   def directory_path
-    _parent_dir ? "data/#{_source_name}/#{parent_dir}/#{_name}/" : "data/#{_source_name}/#{_name}/"
+    _parent_dir ? "data/#{_source_name}/#{_parent_dir}/#{_name}/" : "data/#{_source_name}/#{_name}/"
   end
 
   private
