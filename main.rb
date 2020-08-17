@@ -81,7 +81,7 @@ end.parse!(into: params)
 			# split up taxon into smaller ones if ReadTimeout
 			# split up larger taxa everytime
 
-BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run5
+BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
 exit
 
 
