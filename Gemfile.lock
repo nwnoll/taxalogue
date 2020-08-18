@@ -36,10 +36,13 @@ GEM
     json (2.3.1)
     minitest (5.14.0)
     parallel (1.19.2)
+    pastel (0.8.0)
+      tty-color (~> 0.5)
     rubyzip (2.3.0)
     sqlite3 (1.4.2)
     structured_warnings (0.4.0)
     thread_safe (0.3.6)
+    tty-color (0.5.2)
     tzinfo (1.2.7)
       thread_safe (~> 0.1)
     zeitwerk (2.3.0)
@@ -54,6 +57,7 @@ DEPENDENCIES
   byebug
   fuzzy-string-match (~> 0.9.7)
   parallel (~> 1.19, >= 1.19.2)
+  pastel (~> 0.8.0)
   rubytree!
   rubyzip (~> 2.3)
   sqlite3
