@@ -7,6 +7,7 @@ require 'bio'
 require 'fuzzystringmatch'
 require 'zip'
 require 'tree'
+require 'parallel'
 
 require "yaml"
 require 'optparse'
@@ -72,6 +73,67 @@ OptionParser.new do |opts|
 	end
 end.parse!(into: params)
 
+# #function can compute more efficiently and I know it :)
+# def is_prime?(num)
+# 	return true if num == 1
+# 	return false if num < 1
+# 	for x in 2...num
+# 	  return false if num % x == 0
+# 	end
+# 	true
+# end
+    
+# def get_sum_of_prime_numbers( array )
+# array
+# 	.select{|num| is_prime? num }
+# 	.reduce(:+)
+# end
+
+# def exec_time(proc)
+# begin_time = Time.now
+# proc.call
+# Time.now - begin_time
+# end
+
+# calculate = proc do |array| 
+# res = get_sum_of_prime_numbers(array)
+# puts "result is: #{res}"
+# end
+
+
+# #procs
+# first_proc = proc do 
+# 	arrays = [ Array(1...60000), Array(1...50000), Array(1...10000) ]
+
+# 	arrays.map do |array|
+# 		calculate.call array
+# 	end
+# end
+
+# second_proc = proc do 
+# 	arrays = [ Array(1...60000), Array(1...50000), Array(1...10000) ]
+
+# 	Parallel.map(arrays, in_processes: 3) { |array|
+# 		calculate.call array
+# 	}
+# end
+
+
+# #calculations
+# puts "first: "
+# time = exec_time( first_proc )
+# puts "time is #{time}\n\r"
+
+# puts "second: "
+# time = exec_time( second_proc )
+# puts "time is #{time}\n\r"
+
+# puts "end of script"
+
+
+
+
+
 
 # byebug
 
@@ -81,7 +143,7 @@ end.parse!(into: params)
 			# split up taxon into smaller ones if ReadTimeout
 			# split up larger taxa everytime
 
-BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run4
 exit
 
 
