@@ -20,7 +20,7 @@ class BoldJob
     num_of_ranks                        = GbifTaxon.possible_ranks.size
     reached_family_level                = false
     num_of_ranks.times do |i|
-      _download_progress_report(root_node)
+      _download_progress_report(root_node: root_node, rank_level: i)
       Parallel.map(root_node.entries, in_threads: 5) do |node|
         next unless node.content.last == @pending
         puts
@@ -43,7 +43,7 @@ class BoldJob
 
         begin
           node.content[1] = @loading
-          _download_progress_report(root_node)
+          _download_progress_report(root_node: root_node, rank_level: i)
           downloader.run
           if File.empty?(file_structure.file_path)
             # puts "No records found for #{node.name}."
@@ -55,7 +55,7 @@ class BoldJob
           # puts "Download did take too long, most probably #{node.name} has too many records. Trying lower ranks soon."
           node.content[1] = @failure
         end
-        _download_progress_report(root_node)
+        _download_progress_report(root_node: root_node, rank_level: i)
       end
       
       break if reached_family_level
@@ -78,14 +78,65 @@ class BoldJob
     end
   end
 
-  def _download_progress_report(root_node)
+  def _download_progress_report(root_node:, rank_level:)
+    root_copy = root_node.detached_subtree_copy 
     system("clear") || system("cls")
+    puts
+    # root_node.print_tree(level = root_node.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" }) if rank_level < 3
+    nodes_currently_loading = root_copy.find_all { |node| node.content.last == @loading && node.is_leaf? }
+    return if nodes_currently_loading.nil?
+    if nodes_currently_loading.size == 1
+      root_copy.print_tree(level = root_copy.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
+      return
+    end
+    already_printed_parents = []
+    nodes_currently_loading.each do |loading_node|
+      not_loading_nodes = loading_node.parent.find_all { |node| node.content.last != @loading && node.is_leaf?}
+      not_loading_nodes.each do |not_loading_node|
+        loading_node.parent.remove!(not_loading_node)
+      end
+      puts "currently loading:"
+      loading_node.parent.print_tree(level = loading_node.parent.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" }) unless already_printed_parents.include?(loading_node.parent.name)
+      already_printed_parents.push(loading_node.parent.name)
+      # puts "#{loading_node.name}".ljust(30) + " #{loading_node.content.last}"
+    end
+    # puts
+    # root_copy.print_tree(level = root_copy.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
+
+    
+    # if rank_level > 1
+    #   puts
+    #   puts "currently loading:"
+    #   nodes_currently_loading.each do |loading_node|
+    #     puts "#{loading_node.name}".ljust(30) + " #{loading_node.content.last}"
+    #   end
+    # elsif rank_level > 2
+    #   puts
+    #   puts "currently loading:"
+    #   already_printed_parents = []
+    #   nodes_currently_loading.each do |loading_node|
+    #     # if  already_printed_parents.include?(loading_node.parent.name)
+    #       not_loading_nodes = loading_node.parent.find_all { |node| node.content.last != @loading && node.is_leaf?}
+    #       not_loading_nodes.each do |not_loading_node|
+    #         loading_node.parent.remove(not_loading_node)
+    #       end
+    #       loading_node.parent.print_tree(level = loading_node.parent.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" }) 
+    #     #   already_printed_parents.push(loading_node.parent.name)
+    #     # else
+    #     #   loading_node.parent.print_tree(level = loading_node.parent.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" }) 
+    #     #   already_printed_parents.push(loading_node.parent.name)
+    #     # end
+
+    #     # puts "#{loading_node.parent.name}".ljust(30) + " #{loading_node.parent.content.last}" unless already_printed_parents.include?(loading_node.parent.name)
+    #     # already_printed_parents.push(loading_node.parent.name)
+    #     # puts "#{loading_node.name}".ljust(30) + " #{loading_node.content.last}"
+    #   end
+    # end
     puts
     puts @pending.ljust(20) + "waits until a downloader is avalaible"
     puts @loading.ljust(20) + "downloads records"
     puts @failure.ljust(20) + "download was not successful, often due to too many records, tries lower ranks soon"
     puts @success.ljust(20) + "download was successful"
     puts
-    root_node.print_tree(level = root_node.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
   end
 end
