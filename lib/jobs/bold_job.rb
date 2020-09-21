@@ -12,6 +12,7 @@ class BoldJob
     @failure = Pastel.new.white.on_red('failure')
     @success = Pastel.new.white.on_green('success')
     @loading = Pastel.new.white.on_blue('loading')
+    @loading_color_char_num = (@loading.size) -'loading'.size
   end
 
   def run
@@ -79,59 +80,46 @@ class BoldJob
   end
 
   def _download_progress_report(root_node:, rank_level:)
-    root_copy = root_node.detached_subtree_copy 
+    root_copy = root_node.detached_subtree_copy
+
     system("clear") || system("cls")
     puts
-    # root_node.print_tree(level = root_node.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" }) if rank_level < 3
+
     nodes_currently_loading = root_copy.find_all { |node| node.content.last == @loading && node.is_leaf? }
     return if nodes_currently_loading.nil?
-    if nodes_currently_loading.size == 1
+    
+    if rank_level <= 1
       root_copy.print_tree(level = root_copy.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
+      _print_legend
       return
     end
+
     already_printed_parents = []
+    loading_parent_nodes    = []
+    nodes_currently_loading.each { |node| loading_parent_nodes.push(node.parentage); loading_parent_nodes.flatten! }
+    
+    root_copy.print_tree(level = root_copy.node_depth, max_depth = 1, block = lambda { |node, prefix| puts loading_parent_nodes.include?(node) ? "#{prefix} #{Pastel.new.white.on_blue(node.name)}".ljust(30 + @loading_color_char_num) + " #{node.content.last}" : "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
+    
+    puts
+    puts "currently loading:"
     nodes_currently_loading.each do |loading_node|
-      not_loading_nodes = loading_node.parent.find_all { |node| node.content.last != @loading && node.is_leaf?}
+      not_loading_nodes = loading_node.parent.find_all { |node| node.content.last != @loading && node.is_leaf? }
       not_loading_nodes.each do |not_loading_node|
         loading_node.parent.remove!(not_loading_node)
       end
-      puts "currently loading:"
-      loading_node.parent.print_tree(level = loading_node.parent.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" }) unless already_printed_parents.include?(loading_node.parent.name)
+
+      if already_printed_parents.include?(loading_node.parent.name)
+        next
+      else
+        loading_node.parent.print_tree(level = loading_node.parent.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
+      end
+
       already_printed_parents.push(loading_node.parent.name)
-      # puts "#{loading_node.name}".ljust(30) + " #{loading_node.content.last}"
     end
-    # puts
-    # root_copy.print_tree(level = root_copy.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
+    _print_legend
+  end
 
-    
-    # if rank_level > 1
-    #   puts
-    #   puts "currently loading:"
-    #   nodes_currently_loading.each do |loading_node|
-    #     puts "#{loading_node.name}".ljust(30) + " #{loading_node.content.last}"
-    #   end
-    # elsif rank_level > 2
-    #   puts
-    #   puts "currently loading:"
-    #   already_printed_parents = []
-    #   nodes_currently_loading.each do |loading_node|
-    #     # if  already_printed_parents.include?(loading_node.parent.name)
-    #       not_loading_nodes = loading_node.parent.find_all { |node| node.content.last != @loading && node.is_leaf?}
-    #       not_loading_nodes.each do |not_loading_node|
-    #         loading_node.parent.remove(not_loading_node)
-    #       end
-    #       loading_node.parent.print_tree(level = loading_node.parent.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" }) 
-    #     #   already_printed_parents.push(loading_node.parent.name)
-    #     # else
-    #     #   loading_node.parent.print_tree(level = loading_node.parent.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" }) 
-    #     #   already_printed_parents.push(loading_node.parent.name)
-    #     # end
-
-    #     # puts "#{loading_node.parent.name}".ljust(30) + " #{loading_node.parent.content.last}" unless already_printed_parents.include?(loading_node.parent.name)
-    #     # already_printed_parents.push(loading_node.parent.name)
-    #     # puts "#{loading_node.name}".ljust(30) + " #{loading_node.content.last}"
-    #   end
-    # end
+  def _print_legend
     puts
     puts @pending.ljust(20) + "waits until a downloader is avalaible"
     puts @loading.ljust(20) + "downloads records"
