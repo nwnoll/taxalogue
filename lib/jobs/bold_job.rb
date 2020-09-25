@@ -20,11 +20,14 @@ class BoldJob
     
     num_of_ranks                        = GbifTaxon.possible_ranks.size
     reached_family_level                = false
+    file_structures                     = []
+    
     num_of_ranks.times do |i|
-      _download_progress_report(root_node: root_node, rank_level: i)
+      
+      _print_download_progress_report(root_node: root_node, rank_level: i)
+      
       Parallel.map(root_node.entries, in_threads: 5) do |node|
         next unless node.content.last == @pending
-        puts
 
         if node.parentage
           parent_names  = []
@@ -38,13 +41,14 @@ class BoldJob
         file_structure = config.file_structure
         # file_structure.extend(Helper.constantize("Printing::#{file_structure.class}"))
         file_structure.create_directory
+        file_structures.push(file_structure)
 
         downloader = config.downloader.new(config: config)
         # downloader.extend(Helper.constantize("Printing::#{downloader.class}"))
 
         begin
           node.content[1] = @loading
-          _download_progress_report(root_node: root_node, rank_level: i)
+          _print_download_progress_report(root_node: root_node, rank_level: i)
           downloader.run
           if File.empty?(file_structure.file_path)
             # puts "No records found for #{node.name}."
@@ -56,7 +60,7 @@ class BoldJob
           # puts "Download did take too long, most probably #{node.name} has too many records. Trying lower ranks soon."
           node.content[1] = @failure
         end
-        _download_progress_report(root_node: root_node, rank_level: i)
+        _print_download_progress_report(root_node: root_node, rank_level: i)
       end
       
       break if reached_family_level
@@ -79,7 +83,7 @@ class BoldJob
     end
   end
 
-  def _download_progress_report(root_node:, rank_level:)
+  def _print_download_progress_report(root_node:, rank_level:)
     root_copy = root_node.detached_subtree_copy
 
     system("clear") || system("cls")
