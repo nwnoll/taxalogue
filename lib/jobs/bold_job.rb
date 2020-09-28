@@ -29,14 +29,8 @@ class BoldJob
       Parallel.map(root_node.entries, in_threads: 5) do |node|
         next unless node.content.last == @pending
 
-        if node.parentage
-          parent_names  = []
-          node.parentage.each { |parent| parent_names.push(parent.name) } 
-          parent_dir    = parent_names.reverse.join('/')
-          config        = BoldConfig.new(name: node.name, markers: markers, parent_dir: parent_dir)
-        else
-          config        = BoldConfig.new(name: node.name, markers: markers)
-        end
+
+        config = _create_config(node: node)
 
         file_structure = config.file_structure
         # file_structure.extend(Helper.constantize("Printing::#{file_structure.class}"))
@@ -130,5 +124,16 @@ class BoldJob
     puts @failure.ljust(20) + "download was not successful, often due to too many records, tries lower ranks soon"
     puts @success.ljust(20) + "download was successful"
     puts
+  end
+
+  def _create_config(node:)
+    if node.parentage
+      parent_names  = []
+      node.parentage.each { |parent| parent_names.push(parent.name) } 
+      parent_dir    = parent_names.reverse.join('/')
+      config        = BoldConfig.new(name: node.name, markers: markers, parent_dir: parent_dir)
+    else
+      config        = BoldConfig.new(name: node.name, markers: markers)
+    end
   end
 end

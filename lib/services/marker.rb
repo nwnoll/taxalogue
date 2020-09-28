@@ -3,6 +3,12 @@
 class Marker
     attr_reader :query_marker_name, :marker_tag
 
+    def initialize(query_marker_name:)
+        @query_marker_name  = query_marker_name
+        @marker_tag         = _marker_tag(query_marker_name: query_marker_name)
+    end
+
+
     def self.regexes(db:, markers:)
         return markers.first.regex(db: db) if markers.size == 1
 
@@ -25,11 +31,6 @@ class Marker
         return searchterms_of
     end
 
-    def initialize(query_marker_name:)
-        @query_marker_name  = query_marker_name
-        @marker_tag         = _marker_tag(query_marker_name: query_marker_name)
-    end
-
     def regex(db:)
         db_tag      = _db_tag(db: db)
 
@@ -47,11 +48,11 @@ class Marker
     end
 
     def _db_tag(db:)
-        if _ncbi_classes.member? db.class
+        if _ncbi_classes.member? db
             return :ncbi
-        elsif _gbol_classes.member? db.class
+        elsif _gbol_classes.member? db
             return :gbol
-        elsif _bold_classes.member? db.class
+        elsif _bold_classes.member? db
             return :bold
         end
     end
