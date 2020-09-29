@@ -4,7 +4,7 @@ class BoldConfig
   attr_reader :markers, :file_structure, :name, :parent_dir
   def initialize(name:, markers: nil, parent_dir: nil)
     @name            = name
-    @markers         = _join_markers(markers)
+    @markers         = markers
     @parent_dir      = parent_dir
     @file_structure  = file_structure
   end
@@ -31,8 +31,8 @@ class BoldConfig
     FileStructure.new(config: self)
   end
 
-  def _join_markers(markers)
-    markers = 'COI-5P' if markers.nil?
-    markers.class == Array ? markers.join('|') : markers
-  end
+  # def _join_markers(markers)
+  #   markers = 'COI-5P' if markers.nil?
+  #   markers.class == Array ? markers.join('|') : markers
+  # end
 end

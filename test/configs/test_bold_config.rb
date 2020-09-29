@@ -21,8 +21,14 @@ class TestBoldConfig < Test::Unit::TestCase
       end
 
       def test_markers
+            assert_kind_of Marker
+            assert_kind_of Marker
             assert_equal 'COI-5P', @bold_config.markers
             assert_equal 'COI-5P', @bold_config_pd.markers
+
+            marker1     = Marker.new(query_marker_name: 'coi')
+            bc1         = BoldConfig.new(name: @name, markers: marker1)
+            assert_equal 'COI-5P', bc1.markers
       end
 
       def test_parent_dir

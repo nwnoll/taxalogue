@@ -28,6 +28,7 @@ class Helper
     end
 
     def self.create_marker_objects(query_marker_names:)
+      return [] if query_marker_names.nil?
       marker_names = query_marker_names.split(',')
       marker_objects = []
       marker_names.each do |marker_name|

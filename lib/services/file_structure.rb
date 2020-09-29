@@ -27,7 +27,7 @@ class FileStructure
   end
 
   def _parent_dir
-    config.parent_dir
+    config.respond_to?(:parent_dir) ? config.parent_dir : nil
   end
 
   def _name
