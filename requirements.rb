@@ -20,9 +20,11 @@ require 'net/ftp'
 require 'net/http'
 require 'csv'
 require 'fileutils'
+require 'pathname'
 
 require_relative "db/database_schema"
 require_relative 'lib/helpers/helper'
+require_relative 'lib/output_formats/output_format'
 
 Bundler.require
 
