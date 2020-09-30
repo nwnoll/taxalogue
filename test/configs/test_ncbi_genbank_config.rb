@@ -20,11 +20,6 @@ class TestNcbiGenbankConfig < Test::Unit::TestCase
             # assert_equal @name, @ncbi_genbank_config_pd.name
       end
 
-      def test_markers
-            assert_equal 'COI-5P', @ncbi_genbank_config.markers
-            # assert_equal 'COI-5P', @ncbi_genbank_config_pd.markers
-      end
-
       def test_downloader
             assert_equal FtpDownloader, @ncbi_genbank_config.downloader
             # assert_equal FtpDownloader, @ncbi_genbank_config_pd.downloader

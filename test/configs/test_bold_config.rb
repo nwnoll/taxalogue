@@ -13,6 +13,7 @@ class TestBoldConfig < Test::Unit::TestCase
             @parent_dir_name        = 'Orthoptera'
             @bold_config_pd         = BoldConfig.new(name: @name, parent_dir: @parent_dir_name)
             @file_structure_pd      = @bold_config_pd.file_structure
+
       end
 
       def test_name
@@ -21,14 +22,13 @@ class TestBoldConfig < Test::Unit::TestCase
       end
 
       def test_markers
-            assert_kind_of Marker
-            assert_kind_of Marker
-            assert_equal 'COI-5P', @bold_config.markers
-            assert_equal 'COI-5P', @bold_config_pd.markers
-
             marker1     = Marker.new(query_marker_name: 'coi')
             bc1         = BoldConfig.new(name: @name, markers: marker1)
-            assert_equal 'COI-5P', bc1.markers
+            
+            assert_match bc1.markers.first.regex(db: BoldConfig), 'COI-5P'
+            assert_kind_of Array, @bold_config.markers
+            assert_kind_of Array, @bold_config_pd.markers
+            assert_kind_of Array, bc1.markers
       end
 
       def test_parent_dir
@@ -56,8 +56,4 @@ class TestBoldConfig < Test::Unit::TestCase
             assert_equal "data/#{@source_name}/#{@name}/", @file_structure.directory_path
             assert_equal "data/#{@source_name}/#{@parent_dir_name}/#{@name}/", @file_structure_pd.directory_path
       end
-
-      # def test__join_markers
-      #       @bold_config.send(:_join_markers, args)
-      # end
 end

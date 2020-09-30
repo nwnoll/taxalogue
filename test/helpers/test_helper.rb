@@ -5,9 +5,6 @@ require_relative '../../lib/services/marker'
 
 class TestHelper < Test::Unit::TestCase
 
-      def setup
-      end
-
       def test_constantize
             assert_same BoldConfig,                   Helper.constantize('BoldConfig')
             assert_same GbifTaxonConfig,              Helper.constantize('GbifTaxonConfig')
