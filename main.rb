@@ -38,6 +38,9 @@ OptionParser.new do |opts|
 	end
 end.parse!(into: params)
 
+NcbiGenbankJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+exit
+
 
 BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
 exit

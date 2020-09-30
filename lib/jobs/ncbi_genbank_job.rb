@@ -9,6 +9,12 @@ class NcbiGenbankJob
   end
 
   def run
+    ## maybe switch NcbiApi if taxon is of rank family?
+    ## highert taxa might give an incomplete download
+    ## it might be annoying if there will be searches
+    ## for quite small taxa and the prog tries to download
+    ## several gigabyte of data
+
     _configs.each do |config|
       config.file_structure.create_directory
       config.downloader.new(config: config).run
@@ -44,6 +50,10 @@ class NcbiGenbankJob
   end
 
   def division_id
-    NcbiDivision.get_id(taxon_name: taxon.canonical_name)
+    id = NcbiDivision.get_id(taxon_name: taxon.canonical_name)
+    return id if id
+    
+    ## should make multiple searches to find taxon in NCBI Genbank database
+    abort "Could not find #{taxon.canonical_name} in NCBI Genbank please use a different taxon" if id.nil?
   end
 end
