@@ -26,6 +26,7 @@ class Nomial
 
   private
   def _name_parts
+    return nil unless name.kind_of?(String)
     name.split
   end
 
@@ -34,6 +35,7 @@ class Nomial
   end
 
   def _cleaned_name_parts
+    return [] if _name_parts.nil?
     i                   = _open_nomenclature.map { |n| _name_parts.index(n) }.compact.min
     cleaned_name_parts  = _name_parts[0 ... i]
     cleaned_name_parts.map! { |word| Helper.normalize(word) }
@@ -44,7 +46,6 @@ class Nomial
       # cleaned.drop(1).delete_if { |word| word =~ /[A-Z]/ }
       cleaned.select! { |word| word == cleaned[0] || word !~ /[A-Z]/}
     end
-    p cleaned
     cleaned
   end
 
