@@ -21,6 +21,9 @@ require 'net/http'
 require 'csv'
 require 'fileutils'
 require 'pathname'
+require 'ostruct'
+require 'timeout'
+require 'digest/md5'
 
 require_relative "db/database_schema"
 require_relative 'lib/helpers/helper'

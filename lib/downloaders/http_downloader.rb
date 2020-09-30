@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'open-uri'
 class HttpDownloader
   private
   attr_reader :config

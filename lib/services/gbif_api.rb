@@ -1,8 +1,4 @@
 # frozen_string_literal: true
-require 'net/http'
-require 'json'
-require 'ostruct'
-require 'timeout'
 
 class GbifApi
   attr_reader :path, :query, :response_hash
