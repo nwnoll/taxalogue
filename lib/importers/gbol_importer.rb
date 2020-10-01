@@ -37,11 +37,7 @@ class GbolImporter
     
     seqs_and_ids_by_taxon_name.keys.each do |taxon_name|
       nomial          = Nomial.generate(name: taxon_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
-      p "nomial: #{nomial}"
-
       taxonomic_info  = nomial.taxonomy
-      p "taxonomic_info: #{taxonomic_info}"
-
 
       next unless taxonomic_info
       next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon

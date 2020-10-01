@@ -22,7 +22,7 @@ class NcbiDivision
         ncbi_name_record = NcbiName.find_by_name(taxon_name)
 		unless ncbi_name_record.nil? 
 			ncbi_node_object = NcbiNode.find_by_tax_id(ncbi_name_record.tax_id)
-			unless ncbi_node_object.nil?
+            unless ncbi_node_object.nil?
 				[ncbi_node_object.division_id]
 			end
 		end

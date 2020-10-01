@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 class Nomial
-  attr_reader :name, :query_taxon, :query_taxon_rank, :cleaned_name_parts
+  attr_reader :name, :query_taxon, :query_taxon_rank, :cleaned_name_parts, :cleaned_name
 
   def initialize(name:, query_taxon:, query_taxon_rank:)
     @name                     = name
     @query_taxon              = query_taxon
     @query_taxon_rank         = query_taxon_rank
     @cleaned_name_parts       = _cleaned_name_parts
+    @cleaned_name             = _cleaned_name
   end
 
   def self.generate(name:, query_taxon:, query_taxon_rank:)
@@ -15,8 +16,8 @@ class Nomial
   end
 
   def generate
-    return Monomial.new(name: _cleaned_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)    if cleaned_name_parts.size == 1
-    return Polynomial.new(name: _cleaned_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)  if cleaned_name_parts.size > 1
+    return Monomial.new(name: cleaned_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)    if cleaned_name_parts.size == 1
+    return Polynomial.new(name: cleaned_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)  if cleaned_name_parts.size > 1
     return self
   end
 
@@ -39,7 +40,7 @@ class Nomial
     i                   = _open_nomenclature.map { |n| _name_parts.index(n) }.compact.min
     cleaned_name_parts  = _name_parts[0 ... i]
     cleaned_name_parts.map! { |word| Helper.normalize(word) }
-    cleaned = cleaned_name_parts.delete_if { |word| word =~ /[0-9]/}
+    cleaned = cleaned_name_parts.delete_if { |word| word =~ /[0-9]|_|\W/}
     if cleaned.size > 1
 
       # cleaned[1..-1]
@@ -72,11 +73,24 @@ class Monomial
 
     record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), query_taxon, query_taxon_rank)
     return record    unless record.nil?
-
+    
+    
     exact_gbif_api_match =   _exact_gbif_api_result(name)
+    unless exact_gbif_api_match.nil?
+      puts "exact_gbif_api_match"
+      p name
+      pp exact_gbif_api_match
+      puts '---------'
+    end
     return exact_gbif_api_match   unless exact_gbif_api_match.nil?
 
     fuzzy_gbif_api_match = _fuzzy_gbif_api_result(name)
+    unless fuzzy_gbif_api_match.nil?
+      puts "fuzzy_gbif_api_match"
+      p name
+      pp fuzzy_gbif_api_match
+      puts '---------'
+    end
     return fuzzy_gbif_api_match   unless fuzzy_gbif_api_match.nil?
   end
 
@@ -135,12 +149,30 @@ class Polynomial < Monomial
     return record    unless record.nil?
 
     exact_gbif_api_match =   _exact_gbif_api_result(name)
+    unless exact_gbif_api_match.nil?
+      puts "exact_gbif_api_match"
+      p name
+      pp exact_gbif_api_match
+      puts '---------'
+    end
     return exact_gbif_api_match   unless exact_gbif_api_match.nil?
 
     fuzzy_gbif_api_match = _fuzzy_gbif_api_result(name)
+    unless fuzzy_gbif_api_match.nil?
+      puts "fuzzy_gbif_api_match"
+      p name
+      pp fuzzy_gbif_api_match
+      puts '---------'
+    end
     return fuzzy_gbif_api_match   unless fuzzy_gbif_api_match.nil?
 
     record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), query_taxon, query_taxon_rank)
+    unless record.nil?
+      puts "_ncbi_next_highest_taxa_name"
+      p name
+      pp record
+      puts '---------'
+    end
     return record    unless record.nil?
 
     cutted_name = _remove_last_name_part(name)

@@ -55,4 +55,18 @@ class TestNomial < Test::Unit::TestCase
             assert_kind_of Polynomial, Nomial.generate(name: poylnomial5, query_taxon: @query_taxon, query_taxon_rank: @query_taxon_rank)
             assert_kind_of Polynomial, Nomial.generate(name: poylnomial6, query_taxon: @query_taxon, query_taxon_rank: @query_taxon_rank)
       end
+
+      def test_taxonomy
+            assert_nil Nomial.generate(name: '123', query_taxon: @query_taxon, query_taxon_rank: @query_taxon_rank).taxonomy
+      end
+
+      def test_name_cleaning
+            assert_equal 'Bombus terrestris', Nomial.generate(name: 'Bombus terrestris aff. terrestris', query_taxon: @query_taxon, query_taxon_rank: @query_taxon_rank).name
+            assert_equal 'Bombus', Nomial.generate(name: 'Bombus terrestris2 aff. terrestris', query_taxon: @query_taxon, query_taxon_rank: @query_taxon_rank).name
+            assert_equal 'Bombus', Nomial.generate(name: 'Bombus terrestris@ aff. terrestris', query_taxon: @query_taxon, query_taxon_rank: @query_taxon_rank).name
+            assert_equal 'Bombus terrestris', Nomial.generate(name: 'Bombus terrestris aff. cf. terrestris', query_taxon: @query_taxon, query_taxon_rank: @query_taxon_rank).name
+            assert_equal 'Bombus terrestris terrestris', Nomial.generate(name: 'Bombus terrestris terrestris', query_taxon: @query_taxon, query_taxon_rank: @query_taxon_rank).name
+            assert_equal 'Bombus', Nomial.generate(name: 'Bombus sp.', query_taxon: @query_taxon, query_taxon_rank: @query_taxon_rank).name
+            assert_equal 'Bombus| sp.', Nomial.generate(name: 'Bombus| sp.', query_taxon: @query_taxon, query_taxon_rank: @query_taxon_rank).name
+      end
 end

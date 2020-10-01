@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'csv'
-
 module StringFormatting
   def _header_gbif_taxon_object(taxon_name)
     _to_taxon_info(_gbif_taxon_object(taxon_name))
