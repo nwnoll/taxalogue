@@ -2,7 +2,7 @@
 
 class NcbiGenbankImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon, :query_taxon_rank, :markers, :fast_run, :regexes_for_markers
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :markers, :fast_run, :regexes_for_markers
 
   FILE_DESCRIPTION_PART = 10
 
@@ -10,19 +10,21 @@ class NcbiGenbankImporter
     ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'phylum_name']
   end
 
-  def initialize(file_name:, query_taxon:, query_taxon_rank:, markers:, fast_run: true)
-    @file_name        = file_name
-    @query_taxon      = query_taxon
-    @query_taxon_rank = query_taxon_rank
-    @markers          = markers
-    @fast_run         = fast_run
-    @regexes_for_markers          = Marker.regexes(db: self, markers: markers)
+  def initialize(file_name:, query_taxon_object:, markers:, fast_run: true)
+    @file_name            = file_name
+    @query_taxon_object   = query_taxon_object
+    @query_taxon_name     = query_taxon_object.canonical_name
+    @query_taxon_rank     = query_taxon_object.taxon_rank
+    @markers              = markers
+    @fast_run             = fast_run
+    @regexes_for_markers  = Marker.regexes(db: self, markers: markers)
   end
 
 
   def run
     file_count = 0
     file_names = Dir[ 'data/NCBI/sequences/*' ].select{ |f| File.file? f }
+    file_names = Dir[ 'data/NCBI/sequences/gbinv38*' ].select{ |f| File.file? f }
     # file_names = Dir[ 'data/ncbigenbank/mam/*' ].select{ |f| File.file? f }
     
     file_names.each do |file|
@@ -59,14 +61,14 @@ class NcbiGenbankImporter
         end
       end
 
-      tsv   = File.open("results2/#{query_taxon}_ncbi_#{base_name}_fast_#{fast_run}_output_DEBUG.tsv", 'w')
-      fasta = File.open("results2/#{query_taxon}_ncbi_#{base_name}_fast_#{fast_run}_output_DEBUG.fas", 'w')
+      tsv   = File.open("results2/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output_DEBUG.tsv", 'w')
+      fasta = File.open("results2/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output_DEBUG.fas", 'w')
     
       seqs_and_ids_by_taxon_name.keys.each do |taxon_name|
-        nomial          = Nomial.generate(name: taxon_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
+        nomial          = Nomial.generate(name: taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
         taxonomic_info  = nomial.taxonomy
         next unless taxonomic_info
-        next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon
+        next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
         seqs_and_ids_by_taxon_name[taxon_name].each do |data|
             OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
@@ -96,7 +98,7 @@ class NcbiGenbankImporter
   end
 
   def _matches_query_taxon(gb)
-    /#{query_taxon}/.match?(gb.taxonomy) || /#{query_taxon}/.match?(gb.organism)
+    /#{query_taxon_name}/.match?(gb.taxonomy) || /#{query_taxon_name}/.match?(gb.organism)
   end
 
   ## UNUSED

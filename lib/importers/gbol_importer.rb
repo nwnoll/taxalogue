@@ -3,13 +3,14 @@
 require 'csv'
 class GbolImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon, :query_taxon_rank, :fast_run
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name
 
-  def initialize(file_name:, query_taxon:, query_taxon_rank:, fast_run: true)
-    @file_name        = file_name
-    @query_taxon      = query_taxon
-    @query_taxon_rank = query_taxon_rank
-    @fast_run         = fast_run
+  def initialize(file_name:, query_taxon_object:, fast_run: true)
+    @file_name                = file_name
+    @query_taxon_object       = query_taxon_object
+    @query_taxon_name         = query_taxon_object.canonical_name
+    @query_taxon_rank         = query_taxon_object.taxon_rank
+    @fast_run                 = fast_run
   end
 
   ## change to Zip processing
@@ -32,15 +33,15 @@ class GbolImporter
     end
 
 
-    tsv   = File.open("results2/#{query_taxon}_gbol_fast_#{fast_run}_output.tsv", 'w')
-    fasta = File.open("results2/#{query_taxon}_gbol_fast_#{fast_run}_output.fas", 'w')
+    tsv   = File.open("results2/#{query_taxon_name}_gbol_fast_#{fast_run}_output.tsv", 'w')
+    fasta = File.open("results2/#{query_taxon_name}_gbol_fast_#{fast_run}_output.fas", 'w')
     
     seqs_and_ids_by_taxon_name.keys.each do |taxon_name|
-      nomial          = Nomial.generate(name: taxon_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
+      nomial          = Nomial.generate(name: taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
       taxonomic_info  = nomial.taxonomy
 
       next unless taxonomic_info
-      next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon
+      next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
       seqs_and_ids_by_taxon_name[taxon_name].each do |data|
         OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
@@ -60,7 +61,7 @@ class GbolImporter
   private
 
   def _matches_query_taxon(row)
-    /#{query_taxon}/.match?(row["HigherTaxa"]) || /#{query_taxon}/.match?(row["Species"])
+    /#{query_taxon_name}/.match?(row["HigherTaxa"]) || /#{query_taxon_name}/.match?(row["Species"])
   end
 
   ## UNUSED

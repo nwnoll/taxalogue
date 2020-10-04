@@ -7,7 +7,7 @@ CONFIG_FILE = 'default_config.yaml'
 if File.exists? CONFIG_FILE
 	config_options = YAML.load_file(CONFIG_FILE)
 	params.merge!(config_options)
-	params[:taxon_record] = GbifTaxon.find_by_canonical_name(params[:taxon])
+	params[:taxon_object] = GbifTaxon.find_by_canonical_name(params[:taxon])
 	params[:marker_objects] = Helper.create_marker_objects(query_marker_names: params[:markers])
 end
 
@@ -24,10 +24,10 @@ OptionParser.new do |opts|
 	opts.on('-d', 					'--download_genbank')
 	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
 
-		taxon_record = GbifTaxon.find_by_canonical_name(taxon_name)
-		params[:taxon_record] = taxon_record
+		taxon_object = GbifTaxon.find_by_canonical_name(taxon_name)
+		params[:taxon_object] = taxon_object
 		if taxon_record
-			params[:taxon_rank] = taxon_record.taxon_rank
+			params[:taxon_rank] = taxon_object.taxon_rank
 		else
 			abort 'Cannot find Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species'
 		end
@@ -38,13 +38,21 @@ OptionParser.new do |opts|
 	end
 end.parse!(into: params)
 
-gbol_importer = GbolImporter.new(fast_run: false, file_name: params[:import_gbol], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank])
+ncbi_genbank_importer = NcbiGenbankImporter.new(fast_run: false, file_name: params[:import_genbank], query_taxon_object: params[:taxon_object], markers: params[:marker_objects]) if params[:import_genbank]
+ncbi_genbank_importer.run
+exit
+
+gbol_importer = GbolImporter.new(fast_run: false, file_name: params[:import_gbol], query_taxon_object: params[:taxon_object])
 gbol_importer.run
 exit
 
-bold_importer = BoldImporter.new(fast_run: false, file_name: params[:import_bold], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank])
+bold_importer = BoldImporter.new(fast_run: false, file_name: params[:import_bold], query_taxon_object: params[:taxon_object])
 bold_importer.run
 exit
+
+
+
+
 
 NcbiGenbankJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
 exit
@@ -56,9 +64,7 @@ exit
 
 
 
-ncbi_genbank_importer = NcbiGenbankImporter.new(fast_run: false, file_name: params[:import_genbank], query_taxon: params[:taxon], query_taxon_rank: params[:taxon_rank], markers: params[:marker_objects]) if params[:import_genbank]
-ncbi_genbank_importer.run
-exit
+
 
 
 

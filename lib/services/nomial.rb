@@ -1,23 +1,23 @@
 # frozen_string_literal: true
 
 class Nomial
-  attr_reader :name, :query_taxon, :query_taxon_rank, :cleaned_name_parts, :cleaned_name
+  attr_reader :name, :query_taxon_object, :query_taxon_rank, :cleaned_name_parts, :cleaned_name
 
-  def initialize(name:, query_taxon:, query_taxon_rank:)
+  def initialize(name:, query_taxon_object:, query_taxon_rank:)
     @name                     = name
-    @query_taxon              = query_taxon
+    @query_taxon_object       = query_taxon_object
     @query_taxon_rank         = query_taxon_rank
     @cleaned_name_parts       = _cleaned_name_parts
     @cleaned_name             = _cleaned_name
   end
 
-  def self.generate(name:, query_taxon:, query_taxon_rank:)
-    new(name: name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank).generate
+  def self.generate(name:, query_taxon_object:, query_taxon_rank:)
+    new(name: name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank).generate
   end
 
   def generate
-    return Monomial.new(name: cleaned_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)    if cleaned_name_parts.size == 1
-    return Polynomial.new(name: cleaned_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)  if cleaned_name_parts.size > 1
+    return Monomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)    if cleaned_name_parts.size == 1
+    return Polynomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)  if cleaned_name_parts.size > 1
     return self
   end
 
@@ -60,18 +60,19 @@ class Monomial
   include TaxonSearch
   include StringFormatting
 
-  attr_reader :name, :query_taxon, :query_taxon_rank
-  def initialize(name:, query_taxon:, query_taxon_rank:)
+  attr_reader :name, :query_taxon_object, :query_taxon_rank, :query_taxon_name
+  def initialize(name:, query_taxon_object:, query_taxon_rank:)
     @name               = name
-    @query_taxon  = query_taxon
-    @query_taxon_rank  = query_taxon_rank
+    @query_taxon_object = query_taxon_object
+    @query_taxon_name   = query_taxon_object.canonical_name
+    @query_taxon_rank   = query_taxon_rank
   end
 
   def taxonomy
-    record = _gbif_taxon_object(name, query_taxon, query_taxon_rank)
+    record = _gbif_taxon_object(name, query_taxon_name, query_taxon_rank)
     return record    unless record.nil?
 
-    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), query_taxon, query_taxon_rank)
+    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), query_taxon_name, query_taxon_rank)
     return record    unless record.nil?
     
     
@@ -145,7 +146,7 @@ end
 
 class Polynomial < Monomial
   def taxonomy
-    record = _gbif_taxon_object(name, query_taxon, query_taxon_rank)
+    record = _gbif_taxon_object(name, query_taxon_name, query_taxon_rank)
     return record    unless record.nil?
 
     exact_gbif_api_match =   _exact_gbif_api_result(name)
@@ -166,7 +167,7 @@ class Polynomial < Monomial
     end
     return fuzzy_gbif_api_match   unless fuzzy_gbif_api_match.nil?
 
-    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), query_taxon, query_taxon_rank)
+    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), query_taxon_name, query_taxon_rank)
     unless record.nil?
       puts "_ncbi_next_highest_taxa_name"
       p name
@@ -177,7 +178,7 @@ class Polynomial < Monomial
 
     cutted_name = _remove_last_name_part(name)
     return nil if cutted_name.blank?
-    nomial = Nomial.generate(name: cutted_name, query_taxon: query_taxon, query_taxon_rank: query_taxon_rank)
+    nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
     nomial.taxonomy
   end
 
