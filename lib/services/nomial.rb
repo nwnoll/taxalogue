@@ -69,10 +69,10 @@ class Monomial
   end
 
   def taxonomy
-    record = _gbif_taxon_object(name, query_taxon_name, query_taxon_rank)
+    record = _gbif_taxon_object(name, query_taxon_object, query_taxon_rank)
     return record    unless record.nil?
 
-    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), query_taxon_name, query_taxon_rank)
+    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), query_taxon_object, query_taxon_rank)
     return record    unless record.nil?
     
     
@@ -96,38 +96,32 @@ class Monomial
   end
 
   private
-  def _gbif_taxon_object(taxon_name, higher_taxon, query_taxon_rank)
-    return nil if taxon_name.nil? || higher_taxon.nil? || query_taxon_rank.nil?
+  def _gbif_taxon_object(taxon_name, higher_taxon_object, query_taxon_rank)
+    return nil if taxon_name.nil? || higher_taxon_object.nil? || query_taxon_rank.nil?
+    
     records = GbifTaxon.where(canonical_name: taxon_name)
+    # implement homonyms.txt later on
 
-    ## what to do if there are only synonyms?
     records.each do |record|
-      if record.taxonomic_status == 'accepted'
-        ## BAD!! have to find another solution
-        ## Solenopsis is the name for a Plant and Hymenoptera
-        ## with the if block I can search for the correct one
-        ## Problem is thath if I have huge file with other taxa
-        ## then the searched one, it wont find a db entry and then
-        ## has to make an API call to GBIF -> very slow
-
-        ## i have to change the whole procedure OR get a list of all
-        ## redundant taxa in GBIF -> not ideal since this might change
-        if taxon_name == 'Solenopsis'
-          return record if _has_lineage?(record) && _belongs_to_correct_query_taxon_rank?(record)
-        else
-          return record if _has_lineage?(record)
+      next unless _belongs_to_correct_query_taxon_rank?(record)
+      return record if record.taxonomic_status == 'accepted'
+      if record.taxonomic_status =~ /synonym/i
+        has_accepted_name_usage = !record.accepted_name_usage_id.nil?
+        if has_accepted_name_usage
+          accepted_record = GbifTaxon.find_by(taxon_id: record.accepted_name_usage_id.to_i)
+          p 'has accepted name usage'
+          pp record
+          pp accepted_record
+          p '*********'
+          return accepted_record
         end
       end
     end
     return nil
   end
 
-  def _has_lineage?(record)
-    !record.phylum.nil? && !record.classis.nil? if record
-  end
-
   def _belongs_to_correct_query_taxon_rank?(record)
-    record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon
+    record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
   end
 
   def _record_exists?(taxon_name)
@@ -146,7 +140,7 @@ end
 
 class Polynomial < Monomial
   def taxonomy
-    record = _gbif_taxon_object(name, query_taxon_name, query_taxon_rank)
+    record = _gbif_taxon_object(name, query_taxon_object, query_taxon_rank)
     return record    unless record.nil?
 
     exact_gbif_api_match =   _exact_gbif_api_result(name)
@@ -167,7 +161,7 @@ class Polynomial < Monomial
     end
     return fuzzy_gbif_api_match   unless fuzzy_gbif_api_match.nil?
 
-    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), query_taxon_name, query_taxon_rank)
+    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), query_taxon_object, query_taxon_rank)
     unless record.nil?
       puts "_ncbi_next_highest_taxa_name"
       p name

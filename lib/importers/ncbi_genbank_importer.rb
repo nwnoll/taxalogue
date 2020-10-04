@@ -23,7 +23,7 @@ class NcbiGenbankImporter
 
   def run
     file_count = 0
-    file_names = Dir[ 'data/NCBI/sequences/*' ].select{ |f| File.file? f }
+    # file_names = Dir[ 'data/NCBI/sequences/*' ].select{ |f| File.file? f }
     file_names = Dir[ 'data/NCBI/sequences/gbinv38*' ].select{ |f| File.file? f }
     # file_names = Dir[ 'data/ncbigenbank/mam/*' ].select{ |f| File.file? f }
     

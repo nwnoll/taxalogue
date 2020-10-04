@@ -42,13 +42,17 @@ ncbi_genbank_importer = NcbiGenbankImporter.new(fast_run: false, file_name: para
 ncbi_genbank_importer.run
 exit
 
+bold_importer = BoldImporter.new(fast_run: false, file_name: params[:import_bold], query_taxon_object: params[:taxon_object])
+bold_importer.run
+exit
+
+
+
 gbol_importer = GbolImporter.new(fast_run: false, file_name: params[:import_gbol], query_taxon_object: params[:taxon_object])
 gbol_importer.run
 exit
 
-bold_importer = BoldImporter.new(fast_run: false, file_name: params[:import_bold], query_taxon_object: params[:taxon_object])
-bold_importer.run
-exit
+
 
 
 
