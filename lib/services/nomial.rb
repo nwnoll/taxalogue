@@ -21,7 +21,7 @@ class Nomial
     return self
   end
 
-  def taxonomy
+  def taxonomy(first_specimen_info:)
     nil
   end
 
@@ -68,50 +68,43 @@ class Monomial
     @query_taxon_rank   = query_taxon_rank
   end
 
-  def taxonomy
-    record = _gbif_taxon_object(name, query_taxon_object, query_taxon_rank)
+  def taxonomy(first_specimen_info:)
+    # if GbifHomonomy.exists?(canonical_name: name)
+
+    record = _gbif_taxon_object(name, first_specimen_info)
     return record    unless record.nil?
 
-    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), query_taxon_object, query_taxon_rank)
+    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), first_specimen_info)
     return record    unless record.nil?
     
     
     exact_gbif_api_match =   _exact_gbif_api_result(name)
-    unless exact_gbif_api_match.nil?
-      puts "exact_gbif_api_match"
-      p name
-      pp exact_gbif_api_match
-      puts '---------'
-    end
     return exact_gbif_api_match   unless exact_gbif_api_match.nil?
 
     fuzzy_gbif_api_match = _fuzzy_gbif_api_result(name)
-    unless fuzzy_gbif_api_match.nil?
-      puts "fuzzy_gbif_api_match"
-      p name
-      pp fuzzy_gbif_api_match
-      puts '---------'
-    end
     return fuzzy_gbif_api_match   unless fuzzy_gbif_api_match.nil?
   end
 
   private
-  def _gbif_taxon_object(taxon_name, higher_taxon_object, query_taxon_rank)
-    return nil if taxon_name.nil? || higher_taxon_object.nil? || query_taxon_rank.nil?
+  def _gbif_taxon_object(taxon_name, first_specimen_info)
+    return nil if taxon_name.nil? || query_taxon_object.nil? || query_taxon_rank.nil?
     
     records = GbifTaxon.where(canonical_name: taxon_name)
-    # implement homonyms.txt later on
-    # byebug if name == 'Hanseniella'
 
+    ## the problem is that i dont know now where to put the db request if it is a homonym
+    ## it needs to be inside the nomial class beacuse a cutted anme might be anouther homonym
+    ## maybe should give it from the outside?
+    ## 
+    # implement homonyms.txt later on
+    # if _is_homonym?(taxon_name)
+    #   first_specimen_info
+    # end
     records.each do |record|
       next unless _belongs_to_correct_query_taxon_rank?(record)
       return record if _is_accepted?(record) || _is_doubtful?(record)
       return GbifTaxon.find_by(taxon_id: record.accepted_name_usage_id.to_i) if _is_synonym?(record) && _has_accepted_name_usage_id(record)
     end
-    # puts "found nothing"
-    # p  name
-    # records.each { |r| pp r }
-    # puts '+' * 100
+
     return nil
   end
 
@@ -127,32 +120,41 @@ class Monomial
     record.taxonomic_status =~ /synonym|misapplied/i
   end
 
+  def _is_homonym?(taxon_name)
+    GbifHomonomy.exists?(canonical_name: taxon_name)
+  end
+
   def _has_accepted_name_usage_id(record)
     !record.accepted_name_usage_id.nil?
   end
 
   def _belongs_to_correct_query_taxon_rank?(record)
-    rank = record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
-
-
-    ## migth implement a search function if there is lacking info for higher taxa
-
-    # rank = record.public_send(Helper.latinize_rank(query_taxon_rank))
-    # if rank.nil?
-    #   ncbi_records = NcbiRankedLineage.where(name: record.canonical_name)
-    #   ncbi_records.each do |ncbi_record|
-    #     next unless ncbi_record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
-    #     p 'in _belongs_to_correct_query_taxon_rank rank.nil?'
-    #     p name
-    #     p record
-    #     p ncbi_record
-    #     p '**************'
-    #   end
-    # else
-    #   return rank == query_taxon_name
-    # end
-   
+    record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
   end
+
+  # def _get_lineage(first_specimen_info)
+  #   if
+  #   source_feature      = gb.features.select { |f| _is_source_feature?(f.feature) }.first
+  #   taxon_db_xref       = source_feature.qualifiers.select { |q| _is_db_taxon_xref_qualifier?(q) }.first
+  #   ncbi_taxon_id       = taxon_db_xref.value.gsub('taxon:', '').to_i
+  #   ncbi_taxon_rank     = NcbiNode.find_by(tax_id: ncbi_taxon_id).rank
+  #   ncbi_ranked_lineage = NcbiRankedLineage.find_by(tax_id: ncbi_taxon_id)
+
+  #   lineage = Lineage.new(
+  #     name:     ncbi_ranked_lineage.name,
+  #     species:  ncbi_ranked_lineage.species,
+  #     genus:    ncbi_ranked_lineage.genus,
+  #     familia:  ncbi_ranked_lineage.familia,
+  #     ordo:     ncbi_ranked_lineage.ordo,
+  #     classis:  ncbi_ranked_lineage.classis,
+  #     phylum:   ncbi_ranked_lineage.phylum,
+  #     regnum:   ncbi_ranked_lineage.regnum,
+  #     combined: gb.classification,
+  #     rank:     ncbi_taxon_rank
+  #   )
+
+  #   return lineage
+  # end
 
   def _record_exists?(taxon_name)
     taxon_name && GbifTaxon.exists?(canonical_name: taxon_name)
@@ -169,41 +171,23 @@ class Monomial
 end
 
 class Polynomial < Monomial
-  def taxonomy
-    record = _gbif_taxon_object(name, query_taxon_object, query_taxon_rank)
+  def taxonomy(first_specimen_info:)
+    record = _gbif_taxon_object(name, first_specimen_info)
     return record    unless record.nil?
 
     exact_gbif_api_match =   _exact_gbif_api_result(name)
-    unless exact_gbif_api_match.nil?
-      puts "exact_gbif_api_match"
-      p name
-      pp exact_gbif_api_match
-      puts '---------'
-    end
     return exact_gbif_api_match   unless exact_gbif_api_match.nil?
 
     fuzzy_gbif_api_match = _fuzzy_gbif_api_result(name)
-    unless fuzzy_gbif_api_match.nil?
-      puts "fuzzy_gbif_api_match"
-      p name
-      pp fuzzy_gbif_api_match
-      puts '---------'
-    end
     return fuzzy_gbif_api_match   unless fuzzy_gbif_api_match.nil?
 
-    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), query_taxon_object, query_taxon_rank)
-    unless record.nil?
-      puts "_ncbi_next_highest_taxa_name"
-      p name
-      pp record
-      puts '---------'
-    end
+    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), first_specimen_info)
     return record    unless record.nil?
 
     cutted_name = _remove_last_name_part(name)
     return nil if cutted_name.blank?
     nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
-    nomial.taxonomy
+    nomial.taxonomy(first_specimen_info: first_specimen_info)
   end
 
   private

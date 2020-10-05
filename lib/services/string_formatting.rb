@@ -30,10 +30,10 @@ module StringFormatting
   end
 
   def _fasta_header(data:, taxonomic_info:)
-    ">#{data[0]}|#{_to_taxon_info(taxonomic_info)}"
+    ">#{data[:identifier]}|#{_to_taxon_info(taxonomic_info)}"
   end
 
   def _fasta_seq(data:)
-    data[1]
+    data[:sequence]
   end
 end

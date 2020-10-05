@@ -39,19 +39,31 @@ OptionParser.new do |opts|
 end.parse!(into: params)
 
 # byebug
+# exit
 
+# DatabaseSchema.create_db
+# GbifHomonymImporter.new(file_name: 'homonyms.txt').run
+# exit
 
-bold_importer = BoldImporter.new(fast_run: false, file_name: params[:import_bold], query_taxon_object: params[:taxon_object])
-bold_importer.run
+# byebug
+if params[:import_gbol]
+	gbol_importer = GbolImporter.new(fast_run: true, file_name: params[:import_gbol], query_taxon_object: params[:taxon_object])
+	gbol_importer.run
+	exit
+elsif params[:import_genbank]
+	ncbi_genbank_importer = NcbiGenbankImporter.new(fast_run: false, file_name: params[:import_genbank], query_taxon_object: params[:taxon_object], markers: params[:marker_objects]) if params[:import_genbank]
+	ncbi_genbank_importer.run
+	exit
+elsif params[:import_bold]
+	bold_importer = BoldImporter.new(fast_run: false, file_name: params[:import_bold], query_taxon_object: params[:taxon_object])
+	bold_importer.run
+	exit
+end
 exit
 
-gbol_importer = GbolImporter.new(fast_run: true, file_name: params[:import_gbol], query_taxon_object: params[:taxon_object])
-gbol_importer.run
-exit
 
-ncbi_genbank_importer = NcbiGenbankImporter.new(fast_run: false, file_name: params[:import_genbank], query_taxon_object: params[:taxon_object], markers: params[:marker_objects]) if params[:import_genbank]
-ncbi_genbank_importer.run
-exit
+
+
 
 
 NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run

@@ -13,7 +13,7 @@ class BoldImporter
   end
 
   def run
-    seqs_and_ids_by_taxon_name = Hash.new
+    specimens_of_taxon = Hash.new
     file                       = File.open(file_name, 'r')
 
     index_by_column_name       = Helper.generate_index_by_column_name(file: file, separator: "\t")
@@ -31,20 +31,20 @@ class BoldImporter
 
       specimen.sequence     = nucs
       specimen.taxon_name   = SpecimensOfTaxon.find_lowest_ranking_taxon(specimen_data, index_by_column_name)
-      SpecimensOfTaxon.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name: seqs_and_ids_by_taxon_name, specimen_object: specimen)
+      SpecimensOfTaxon.fill_hash_with_seqs_and_ids(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
 
     tsv   = File.open("results2/#{query_taxon_name}_bold_fast_#{fast_run}_output_test.tsv", 'w')
     fasta = File.open("results2/#{query_taxon_name}_bold_fast_#{fast_run}_output_test.fas", 'w')
 
 
-    seqs_and_ids_by_taxon_name.keys.each do |taxon_name|
+    specimens_of_taxon.keys.each do |taxon_name|
       nomial          = Nomial.generate(name: taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
       taxonomic_info  = nomial.taxonomy
       next unless taxonomic_info
       next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
-      seqs_and_ids_by_taxon_name[taxon_name].each do |data|
+      specimens_of_taxon[taxon_name].each do |data|
         OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
         OutputFormat::Fasta.write_to_file(fasta: fasta, data: data, taxonomic_info: taxonomic_info)
       end

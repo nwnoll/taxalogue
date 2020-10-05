@@ -16,7 +16,7 @@ class GbolImporter
   ## change to Zip processing
   ## or unzip file to use csv
   def run
-    seqs_and_ids_by_taxon_name = Hash.new
+    specimens_of_taxon = Hash.new
     file                       = File.open(file_name, 'r')
     
     csv_object.each do |row|
@@ -29,21 +29,21 @@ class GbolImporter
 
       specimen.sequence   = nucs
       specimen.taxon_name = row["Species"]
-      SpecimensOfTaxon.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name: seqs_and_ids_by_taxon_name, specimen_object: specimen)
+      SpecimensOfTaxon.fill_hash_with_seqs_and_ids(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
 
 
     tsv   = File.open("results2/#{query_taxon_name}_gbol_fast_#{fast_run}_output.tsv", 'w')
     fasta = File.open("results2/#{query_taxon_name}_gbol_fast_#{fast_run}_output.fas", 'w')
     
-    seqs_and_ids_by_taxon_name.keys.each do |taxon_name|
+    specimens_of_taxon.keys.each do |taxon_name|
       nomial          = Nomial.generate(name: taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
       taxonomic_info  = nomial.taxonomy
 
       next unless taxonomic_info
       next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
-      seqs_and_ids_by_taxon_name[taxon_name].each do |data|
+      specimens_of_taxon[taxon_name].each do |data|
         OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
         OutputFormat::Fasta.write_to_file(fasta: fasta, data: data, taxonomic_info: taxonomic_info)
       end

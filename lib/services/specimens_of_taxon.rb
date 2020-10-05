@@ -1,28 +1,26 @@
 # frozen_string_literal: true
 
 class SpecimensOfTaxon
-    def self.generate(file_name:, query_taxon:, query_taxon_rank:)
-        seqs_and_ids_by_taxon_name = Hash.new
-        file                       = File.open(file_name, 'r')
-
-        index_by_column_name       = Helper.generate_index_by_column_name(file: file, separator: "\t")
-
-        file.each do |row|
-            specimen_data = row.scrub!.chomp.split("\t")
-            fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name, specimen_data, index_by_column_name)
-        end
+    def self.fill_hash_with_seqs_and_ids(specimens_of_taxon:, specimen_object:)
+        taxon_name          = specimen_object.taxon_name
+        identifier          = specimen_object.identifier
+        sequence            = specimen_object.sequence
+        first_specimen_info = specimen_object.first_specimen_info
+        nomial              = specimen_object.nomial
         
-        return seqs_and_ids_by_taxon_name
-    end
+        specimen = Hash.new
+        specimen[:identifier] = identifier
+        specimen[:sequence]   = sequence
 
-    def self.fill_hash_with_seqs_and_ids(seqs_and_ids_by_taxon_name:, specimen_object:)
-        if seqs_and_ids_by_taxon_name.has_key?(specimen_object.taxon_name)
-            seqs_and_ids_by_taxon_name[specimen_object.taxon_name].push([specimen_object.identifier, specimen_object.sequence])
+        if specimens_of_taxon.has_key?(taxon_name)
+            specimens_of_taxon[taxon_name][:data].push(specimen)
         else
-            seqs_and_ids_by_taxon_name[specimen_object.taxon_name] = [[specimen_object.identifier, specimen_object.sequence]]
+            specimens_of_taxon[taxon_name][:nomial]                 = nomial
+            specimens_of_taxon[taxon_name][:first_specimen_info]    = first_specimen_info
+            specimens_of_taxon[taxon_name][:data]                   = [specimen]
         end
     
-        return seqs_and_ids_by_taxon_name
+        return specimens_of_taxon
     end
 
     def self.find_lowest_ranking_taxon(specimen_data, index_by_column_name)
@@ -33,6 +31,6 @@ class SpecimensOfTaxon
     end
 
     def self._possible_taxa
-        ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'phylum_name']
+        ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'class_name', 'phylum_name']
     end
 end
