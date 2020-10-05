@@ -26,7 +26,7 @@ OptionParser.new do |opts|
 
 		taxon_object = GbifTaxon.find_by_canonical_name(taxon_name)
 		params[:taxon_object] = taxon_object
-		if taxon_record
+		if taxon_object
 			params[:taxon_rank] = taxon_object.taxon_rank
 		else
 			abort 'Cannot find Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species'
@@ -38,32 +38,41 @@ OptionParser.new do |opts|
 	end
 end.parse!(into: params)
 
-ncbi_genbank_importer = NcbiGenbankImporter.new(fast_run: false, file_name: params[:import_genbank], query_taxon_object: params[:taxon_object], markers: params[:marker_objects]) if params[:import_genbank]
-ncbi_genbank_importer.run
-exit
+# byebug
+
 
 bold_importer = BoldImporter.new(fast_run: false, file_name: params[:import_bold], query_taxon_object: params[:taxon_object])
 bold_importer.run
 exit
 
-
-
-gbol_importer = GbolImporter.new(fast_run: false, file_name: params[:import_gbol], query_taxon_object: params[:taxon_object])
+gbol_importer = GbolImporter.new(fast_run: true, file_name: params[:import_gbol], query_taxon_object: params[:taxon_object])
 gbol_importer.run
 exit
 
-
-
-
-
-
-
-NcbiGenbankJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+ncbi_genbank_importer = NcbiGenbankImporter.new(fast_run: false, file_name: params[:import_genbank], query_taxon_object: params[:taxon_object], markers: params[:marker_objects]) if params[:import_genbank]
+ncbi_genbank_importer.run
 exit
 
 
-BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
 exit
+
+
+
+
+
+
+
+BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
+exit
+
+
+
+
+
+
+
+
 
 
 

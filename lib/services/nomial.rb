@@ -101,27 +101,57 @@ class Monomial
     
     records = GbifTaxon.where(canonical_name: taxon_name)
     # implement homonyms.txt later on
+    # byebug if name == 'Hanseniella'
 
     records.each do |record|
       next unless _belongs_to_correct_query_taxon_rank?(record)
-      return record if record.taxonomic_status == 'accepted'
-      if record.taxonomic_status =~ /synonym/i
-        has_accepted_name_usage = !record.accepted_name_usage_id.nil?
-        if has_accepted_name_usage
-          accepted_record = GbifTaxon.find_by(taxon_id: record.accepted_name_usage_id.to_i)
-          p 'has accepted name usage'
-          pp record
-          pp accepted_record
-          p '*********'
-          return accepted_record
-        end
-      end
+      return record if _is_accepted?(record) || _is_doubtful?(record)
+      return GbifTaxon.find_by(taxon_id: record.accepted_name_usage_id.to_i) if _is_synonym?(record) && _has_accepted_name_usage_id(record)
     end
+    # puts "found nothing"
+    # p  name
+    # records.each { |r| pp r }
+    # puts '+' * 100
     return nil
   end
 
+  def _is_accepted?(record)
+    record.taxonomic_status == 'accepted'
+  end 
+  
+  def _is_doubtful?(record)
+    record.taxonomic_status == 'doubtful'
+  end
+
+  def _is_synonym?(record)
+    record.taxonomic_status =~ /synonym|misapplied/i
+  end
+
+  def _has_accepted_name_usage_id(record)
+    !record.accepted_name_usage_id.nil?
+  end
+
   def _belongs_to_correct_query_taxon_rank?(record)
-    record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+    rank = record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+
+
+    ## migth implement a search function if there is lacking info for higher taxa
+
+    # rank = record.public_send(Helper.latinize_rank(query_taxon_rank))
+    # if rank.nil?
+    #   ncbi_records = NcbiRankedLineage.where(name: record.canonical_name)
+    #   ncbi_records.each do |ncbi_record|
+    #     next unless ncbi_record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+    #     p 'in _belongs_to_correct_query_taxon_rank rank.nil?'
+    #     p name
+    #     p record
+    #     p ncbi_record
+    #     p '**************'
+    #   end
+    # else
+    #   return rank == query_taxon_name
+    # end
+   
   end
 
   def _record_exists?(taxon_name)
