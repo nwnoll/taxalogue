@@ -31,7 +31,7 @@ class BoldImporter
 
       specimen.sequence     = nucs
       specimen.taxon_name   = SpecimensOfTaxon.find_lowest_ranking_taxon(specimen_data, index_by_column_name)
-      SpecimensOfTaxon.fill_hash_with_seqs_and_ids(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
+      SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
 
     tsv   = File.open("results2/#{query_taxon_name}_bold_fast_#{fast_run}_output_test.tsv", 'w')

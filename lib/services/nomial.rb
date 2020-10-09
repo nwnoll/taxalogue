@@ -21,7 +21,7 @@ class Nomial
     return self
   end
 
-  def taxonomy(first_specimen_info:)
+  def taxonomy(first_specimen_info:, importer:)
     nil
   end
 
@@ -68,15 +68,15 @@ class Monomial
     @query_taxon_rank   = query_taxon_rank
   end
 
-  def taxonomy(first_specimen_info:)
+  def taxonomy(first_specimen_info:, importer:)
     # if GbifHomonomy.exists?(canonical_name: name)
 
+    ## >
     record = _gbif_taxon_object(name, first_specimen_info)
     return record    unless record.nil?
-
+    ## >
     record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), first_specimen_info)
     return record    unless record.nil?
-    
     
     exact_gbif_api_match =   _exact_gbif_api_result(name)
     return exact_gbif_api_match   unless exact_gbif_api_match.nil?
@@ -92,7 +92,7 @@ class Monomial
     records = GbifTaxon.where(canonical_name: taxon_name)
 
     ## the problem is that i dont know now where to put the db request if it is a homonym
-    ## it needs to be inside the nomial class beacuse a cutted anme might be anouther homonym
+    ## it needs to be inside the nomial class beacuse a cutted name might be anouther homonym
     ## maybe should give it from the outside?
     ## 
     # implement homonyms.txt later on
@@ -132,30 +132,6 @@ class Monomial
     record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
   end
 
-  # def _get_lineage(first_specimen_info)
-  #   if
-  #   source_feature      = gb.features.select { |f| _is_source_feature?(f.feature) }.first
-  #   taxon_db_xref       = source_feature.qualifiers.select { |q| _is_db_taxon_xref_qualifier?(q) }.first
-  #   ncbi_taxon_id       = taxon_db_xref.value.gsub('taxon:', '').to_i
-  #   ncbi_taxon_rank     = NcbiNode.find_by(tax_id: ncbi_taxon_id).rank
-  #   ncbi_ranked_lineage = NcbiRankedLineage.find_by(tax_id: ncbi_taxon_id)
-
-  #   lineage = Lineage.new(
-  #     name:     ncbi_ranked_lineage.name,
-  #     species:  ncbi_ranked_lineage.species,
-  #     genus:    ncbi_ranked_lineage.genus,
-  #     familia:  ncbi_ranked_lineage.familia,
-  #     ordo:     ncbi_ranked_lineage.ordo,
-  #     classis:  ncbi_ranked_lineage.classis,
-  #     phylum:   ncbi_ranked_lineage.phylum,
-  #     regnum:   ncbi_ranked_lineage.regnum,
-  #     combined: gb.classification,
-  #     rank:     ncbi_taxon_rank
-  #   )
-
-  #   return lineage
-  # end
-
   def _record_exists?(taxon_name)
     taxon_name && GbifTaxon.exists?(canonical_name: taxon_name)
   end
@@ -168,10 +144,26 @@ class Monomial
     GbifApi.new(path: 'species/match?strict=true&name=', query: taxon_name).fuzzy_match
   end
 
+  def _find_correct_taxon(lineage:, importer:)
+    if importer.is_a?(GbolImporter)
+      lineage.combined.reverse.each do |taxon|
+        p taxon
+      end
+    end
+  end
+
 end
 
 class Polynomial < Monomial
-  def taxonomy(first_specimen_info:)
+  def taxonomy(first_specimen_info:, importer:)
+    
+    if GbifHomonym.exists?(canonical_name: name)
+      lineage = importer.get_lineage(first_specimen_info)
+      p GbifHomonym.find_by(canonical_name: name)
+      p lineage
+      p '-' * 50
+    end
+    
     record = _gbif_taxon_object(name, first_specimen_info)
     return record    unless record.nil?
 
@@ -180,14 +172,14 @@ class Polynomial < Monomial
 
     fuzzy_gbif_api_match = _fuzzy_gbif_api_result(name)
     return fuzzy_gbif_api_match   unless fuzzy_gbif_api_match.nil?
-
+    ## >
     record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), first_specimen_info)
     return record    unless record.nil?
 
     cutted_name = _remove_last_name_part(name)
     return nil if cutted_name.blank?
     nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
-    nomial.taxonomy(first_specimen_info: first_specimen_info)
+    nomial.taxonomy(first_specimen_info: first_specimen_info, importer: importer)
   end
 
   private

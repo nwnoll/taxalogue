@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class SpecimensOfTaxon
-    def self.fill_hash_with_seqs_and_ids(specimens_of_taxon:, specimen_object:)
+    def self.fill_hash(specimens_of_taxon:, specimen_object:)
         taxon_name          = specimen_object.taxon_name
         identifier          = specimen_object.identifier
         sequence            = specimen_object.sequence

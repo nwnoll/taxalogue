@@ -31,7 +31,6 @@ class NcbiGenbankImporter
       file_count                 += 1
       file_name_match             = file.match(/gb\w+\d+/)
       base_name                   = file_name_match[0]
-      entry_of                    = Hash.new
       specimens_of_taxon          = Hash.new { |hash, key| hash[key] = {} }
       
       Zlib::GzipReader.open(file) do |gz_file|
@@ -51,7 +50,7 @@ class NcbiGenbankImporter
 
           specimen = _get_specimen(gb: gb, nucs: nucs)
 
-          SpecimensOfTaxon.fill_hash_with_seqs_and_ids(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
+          SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
           
           puts gz_file.lineno
           gb_entry = ''.dup
@@ -63,9 +62,10 @@ class NcbiGenbankImporter
       fasta = File.open("results2/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output_DEBUG.fas", 'w')
     
       specimens_of_taxon.keys.each do |taxon_name|
-        nomial  = specimens_of_taxon[taxon_name][:nomial]
-        first_specimen_info    = specimens_of_taxon[taxon_name][:first_specimen_info]
-        taxonomic_info  = nomial.taxonomy(first_specimen_info: first_specimen_info)
+        nomial              = specimens_of_taxon[taxon_name][:nomial]
+        first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
+        taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
+
         next unless taxonomic_info
         next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
@@ -124,7 +124,7 @@ class NcbiGenbankImporter
     return specimen
   end
 
-  def _get_lineage(gb)
+  def self.get_lineage(gb)
     source_feature      = gb.features.select { |f| _is_source_feature?(f.feature) }.first
     taxon_db_xref       = source_feature.qualifiers.select { |q| _is_db_taxon_xref_qualifier?(q) }.first
     ncbi_taxon_id       = taxon_db_xref.value.gsub('taxon:', '').to_i
@@ -139,12 +139,9 @@ class NcbiGenbankImporter
       ordo:     ncbi_ranked_lineage.ordo,
       classis:  ncbi_ranked_lineage.classis,
       phylum:   ncbi_ranked_lineage.phylum,
-      regnum:   ncbi_ranked_lineage.regnum,
       combined: gb.classification,
-      rank:     ncbi_taxon_rank
+      rank:     ncbi_taxon_rank,
     )
-
-    return lineage
   end
 
   def _matches_query_taxon(gb)
