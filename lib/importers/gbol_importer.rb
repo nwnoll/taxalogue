@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'csv'
 class GbolImporter
   include StringFormatting
   attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name
@@ -20,6 +19,7 @@ class GbolImporter
     file                = File.open(file_name, 'r')
     
     csv_object.each do |row|
+      p row
       _matches_query_taxon(row) ? nil : next if fast_run
 
       specimen = _get_specimen(row: row)
@@ -27,7 +27,6 @@ class GbolImporter
       next if specimen.sequence.nil? || specimen.sequence.empty?
 
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
-      p specimen
     end
 
 
@@ -68,7 +67,7 @@ class GbolImporter
   def self.get_lineage(row)
     lineage = Lineage.new(
       name:     row["Species"],
-      combined: row['HigherTaxa'].split(',')
+      combined: row['HigherTaxa'].split(', ')
     )
   end
 
