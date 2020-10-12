@@ -73,8 +73,11 @@ class BoldImporter
   end
 
   def self.get_lineage(row)
+    lineage_ary = SpecimensOfTaxon.create_lineage_ary(row, @@index_by_column_name)
+    p lineage_ary
     lineage = Lineage.new(
       name: SpecimensOfTaxon.find_lowest_ranking_taxon(row, @@index_by_column_name),
+      combined: lineage_ary
     )
   end
 

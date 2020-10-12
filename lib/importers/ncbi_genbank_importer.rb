@@ -87,7 +87,7 @@ class NcbiGenbankImporter
     s == 'gene'
   end
 
-  def _is_source_feature?(s)
+  def self._is_source_feature?(s)
     s == 'source'
   end
 
@@ -99,7 +99,7 @@ class NcbiGenbankImporter
     qualifiers.none? { |q| q.qualifier == 'pseudo' }
   end
 
-  def _is_db_taxon_xref_qualifier?(qualifier)
+  def self._is_db_taxon_xref_qualifier?(qualifier)
     qualifier.qualifier == 'db_xref' && /^taxon:/ === qualifier.value
   end
 

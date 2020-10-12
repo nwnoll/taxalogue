@@ -30,6 +30,15 @@ class SpecimensOfTaxon
         end
     end
 
+    def self.create_lineage_ary(specimen_data, index_by_column_name)
+        lineage_ary = []
+        _possible_taxa.reverse.each do |taxon|
+            lineage_ary.push(specimen_data[index_by_column_name[taxon]]) unless specimen_data[index_by_column_name[taxon]].blank?
+        end
+
+        return lineage_ary
+    end
+
     def self._possible_taxa
         ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'class_name', 'phylum_name']
     end

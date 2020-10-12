@@ -41,12 +41,7 @@ class Nomial
     cleaned_name_parts  = _name_parts[0 ... i]
     cleaned_name_parts.map! { |word| Helper.normalize(word) }
     cleaned = cleaned_name_parts.delete_if { |word| word =~ /[0-9]|_|\W/}
-    if cleaned.size > 1
-
-      # cleaned[1..-1]
-      # cleaned.drop(1).delete_if { |word| word =~ /[A-Z]/ }
-      cleaned.select! { |word| word == cleaned[0] || word !~ /[A-Z]/}
-    end
+    cleaned.select! { |word| word == cleaned[0] || word !~ /[A-Z]/} if cleaned.size > 1
     cleaned
   end
 
@@ -69,14 +64,10 @@ class Monomial
   end
 
   def taxonomy(first_specimen_info:, importer:)
-    # if GbifHomonomy.exists?(canonical_name: name)
-    _check_for_homonyms(first_specimen_info: first_specimen_info, importer: importer)
-
-    ## >
-    record = _gbif_taxon_object(name, first_specimen_info)
+    record = _gbif_taxon_object(taxon_name: name, importer: importer, first_specimen_info: first_specimen_info)
     return record    unless record.nil?
-    ## >
-    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), first_specimen_info)
+
+    record = _gbif_taxon_object(taxon_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
     return record    unless record.nil?
     
     exact_gbif_api_match =   _exact_gbif_api_result(name)
@@ -87,24 +78,24 @@ class Monomial
   end
 
   private
-  def _gbif_taxon_object(taxon_name, first_specimen_info)
+  def _gbif_taxon_object(taxon_name:, importer:, first_specimen_info:)
     return nil if taxon_name.nil? || query_taxon_object.nil? || query_taxon_rank.nil?
     
-    records = GbifTaxon.where(canonical_name: taxon_name)
-
-    ## the problem is that i dont know now where to put the db request if it is a homonym
-    ## it needs to be inside the nomial class beacuse a cutted name might be anouther homonym
-    ## maybe should give it from the outside?
-    ## 
-    # implement homonyms.txt later on
-    # if _is_homonym?(taxon_name)
-    #   first_specimen_info
-    # end
-    records.each do |record|
-      next unless _belongs_to_correct_query_taxon_rank?(record)
-      return record if _is_accepted?(record) || _is_doubtful?(record)
-      return GbifTaxon.find_by(taxon_id: record.accepted_name_usage_id.to_i) if _is_synonym?(record) && _has_accepted_name_usage_id(record)
+    if _is_homonym?(taxon_name)
+      lineage = importer.get_lineage(first_specimen_info)
+      records = _records_with_matching_lineage(current_name: taxon_name, lineage: lineage)
+    else
+      records = GbifTaxon.where(canonical_name: taxon_name)
     end
+
+    accepted_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_accepted?(record) }
+    return accepted_records.first if accepted_records.size > 0
+
+    doubtful_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_doubtful?(record) }
+    return accepted_records.first if accepted_records.size > 0
+
+    synonymous_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_synonym?(record) && _has_accepted_name_usage_id(record) }
+    return GbifTaxon.find_by(taxon_id: synonymous_records.first.accepted_name_usage_id.to_i) if synonymous_records.size > 0
 
     return nil
   end
@@ -145,75 +136,92 @@ class Monomial
     GbifApi.new(path: 'species/match?strict=true&name=', query: taxon_name).fuzzy_match
   end
 
-  def _check_for_homonyms(first_specimen_info:, importer:)
-    if GbifHomonym.exists?(canonical_name: name)
-      lineage = importer.get_lineage(first_specimen_info)
-      _find_correct_taxon(current_name: name, lineage: lineage, importer: importer)
-    end
-  end
-
-  def _find_correct_taxon(current_name:, lineage:, importer:)
-    if importer == GbolImporter
-      puts '*' * 100
-      p current_name
-      lineage.combined.reverse.each do |taxon|
-        p "-- #{taxon}"
-      end
-      gbif_homonym = GbifHomonym.find_by(canonical_name: current_name)
-      pp gbif_homonym
-      gbif_taxon_objects = GbifTaxon.where(canonical_name: current_name)
-      # gbif_taxon_objects.each { |o| pp o }
-      puts '_unambiguous_classification?'
-      p _unambiguous_classification?(current_name: current_name, lineage: lineage)
-      puts '*' * 100
-      sleep 2
-    elsif importer == BoldImporter
-      p 'shiish'
-    end
-  end
-
-  def _unambiguous_classification?(current_name:, lineage:)
-    gbif_homonym          = GbifHomonym.find_by(canonical_name: current_name)
-    gbif_homonym_rank     = gbif_homonym.rank
-    possible_ranks        = GbifTaxon.possible_ranks
-    # gbif_taxon_rank_index = possible_ranks.index(gbif_homonym_rank)
-    # next_higher_rank  = possible_ranks[(gbif_taxon_rank_index + 1)]
+  def _records_with_matching_lineage(current_name:, lineage:)
+    gbif_homonym              = GbifHomonym.find_by(canonical_name: current_name)
+    gbif_homonym_rank         = gbif_homonym.rank
+    species_ranks             = ["subspecies", "variety", "form", "subvariety", "species"]
+    genus_ranks               = ["genus"]
+    family_ranks              = ["infrafamily", "family", "superfamily"]
+    order_ranks               = ["infraorder", "order", "superorder"]
+    class_ranks               = ["infraclass", "class", "superclass"]
 
     gbif_taxon_objects    = GbifTaxon.where(canonical_name: current_name)
+    potential_correct_records = []
     gbif_taxon_objects.each do |taxon_object|
-      # next_higher_rank  = possible_ranks[(gbif_taxon_rank_index + 1)]
-      # latinized_rank    = Helper.latinize_rank(next_higher_rank)
       lineage.combined.reverse.each do |taxon|
-        p "#{taxon_object.public_send('familia')} == #{taxon}" if taxon_object.public_send('familia')  == taxon
-        return true if taxon_object.public_send('familia')  == taxon
-        p "#{taxon_object.public_send('ordo')} == #{taxon}" if taxon_object.public_send('ordo')     == taxon
-        return true if taxon_object.public_send('ordo')     == taxon
+        if species_ranks.include? taxon_object.taxon_rank
+          if taxon_object.public_send('genus')    == taxon
+            # p '-- species genus'
+            # pp taxon_object
+            potential_correct_records.push(taxon_object)
+            break
+          elsif taxon_object.public_send('familia')  == taxon
+            # p '-- species familia'
+            # pp taxon_object
+            potential_correct_records.push(taxon_object)
+            break
+          elsif taxon_object.public_send('ordo')     == taxon
+            # p '-- species ordo'
+            # pp taxon_object
+            potential_correct_records.push(taxon_object)
+            break
+          end
+        elsif genus_ranks.include? taxon_object.taxon_rank
+          if taxon_object.public_send('familia')  == taxon
+            # p '-- genus familia'
+            # pp taxon_object
+            potential_correct_records.push(taxon_object)
+            break 
+          elsif taxon_object.public_send('ordo')     == taxon
+            # p '-- genus ordo'
+            # pp taxon_object
+            potential_correct_records.push(taxon_object)
+            break 
+          end
+        elsif family_ranks.include? taxon_object.taxon_rank
+          if taxon_object.public_send('ordo')     == taxon
+            # p '-- family ordo'
+            # pp taxon_object
+            potential_correct_records.push(taxon_object)
+            break
+          end
+        elsif order_ranks.include? taxon_object.taxon_rank
+          if taxon_object.public_send('classis')  == taxon
+            # p '-- ordo classis'
+            # pp taxon_object
+            potential_correct_records.push(taxon_object)
+            break
+          end
+        elsif class_ranks.include? taxon_object.taxon_rank
+          if taxon_object.public_send('phylum')   == taxon
+            # p '-- classis phylum'
+            # pp taxon_object
+            potential_correct_records.push(taxon_object)
+            break
+          end
+        end
       end
     end
-    
-    return false
-  end
 
+    # puts '*' * 100
+    # pp potential_correct_records
+    # puts '*' * 100
+    return potential_correct_records
+  end
 end
 
 class Polynomial < Monomial
   def taxonomy(first_specimen_info:, importer:)
-    _check_for_homonyms(first_specimen_info: first_specimen_info, importer: importer)
-    # if GbifHomonym.exists?(canonical_name: name)
-    #   lineage = importer.get_lineage(first_specimen_info)
-    #   _find_correct_taxon(current_name: name, lineage: lineage, importer: importer)
-    # end
-    
-    record = _gbif_taxon_object(name, first_specimen_info)
-    return record    unless record.nil?
+    record = _gbif_taxon_object(taxon_name: name, importer: importer, first_specimen_info: first_specimen_info)
+    return record unless record.nil?
 
     exact_gbif_api_match =   _exact_gbif_api_result(name)
     return exact_gbif_api_match   unless exact_gbif_api_match.nil?
 
     fuzzy_gbif_api_match = _fuzzy_gbif_api_result(name)
     return fuzzy_gbif_api_match   unless fuzzy_gbif_api_match.nil?
-    ## >
-    record = _gbif_taxon_object(_ncbi_next_highest_taxa_name(name), first_specimen_info)
+
+    record = _gbif_taxon_object(taxon_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
     return record    unless record.nil?
 
     cutted_name = _remove_last_name_part(name)
