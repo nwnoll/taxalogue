@@ -30,8 +30,8 @@ class GbolImporter
     end
 
 
-    tsv   = File.open("results2/#{query_taxon_name}_gbol_fast_#{fast_run}_output.tsv", 'w')
-    fasta = File.open("results2/#{query_taxon_name}_gbol_fast_#{fast_run}_output.fas", 'w')
+    tsv   = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_output.tsv", 'w')
+    fasta = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_output.fas", 'w')
     
     specimens_of_taxon.keys.each do |taxon_name|
       nomial              = specimens_of_taxon[taxon_name][:nomial]

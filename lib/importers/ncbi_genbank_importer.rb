@@ -22,12 +22,17 @@ class NcbiGenbankImporter
 
 
   def run
+    p 'asdads'
     file_count = 0
-    # file_names = Dir[ 'data/NCBI/sequences/*' ].select{ |f| File.file? f }
-    file_names = Dir[ 'data/NCBI/sequences/gbinv38*' ].select { |f| File.file? f }
+    # file_names = Dir[ 'data/NCBI/sequences/gbinv*' ].select{ |f| File.file? f }
+    file_names = Dir[ 'data/ncbigenbank/inv/gbinv*' ].select{ |f| File.file? f }
+    already_processed = ['data/ncbigenbank/inv/gbinv12.seq.gz','data/ncbigenbank/inv/gbinv16.seq.gz','data/ncbigenbank/inv/gbinv15.seq.gz','data/ncbigenbank/inv/gbinv1.seq.gz','data/ncbigenbank/inv/gbinv20.seq.gz','data/ncbigenbank/inv/gbinv35.seq.gz','data/ncbigenbank/inv/gbinv36.seq.gz','data/ncbigenbank/inv/gbinv38.seq.gz','data/ncbigenbank/inv/gbinv45.seq.gz','data/ncbigenbank/inv/gbinv54.seq.gz','data/ncbigenbank/inv/gbinv56.seq.gz','data/ncbigenbank/inv/gbinv57.seq.gz','data/ncbigenbank/inv/gbinv58.seq.gz','data/ncbigenbank/inv/gbinv60.seq.gz','data/ncbigenbank/inv/gbinv65.seq.gz','data/ncbigenbank/inv/gbinv66.seq.gz','data/ncbigenbank/inv/gbinv67.seq.gz','data/ncbigenbank/inv/gbinv6.seq.gz','data/ncbigenbank/inv/gbinv70.seq.gz','data/ncbigenbank/inv/gbinv71.seq.gz','data/ncbigenbank/inv/gbinv73.seq.gz','data/ncbigenbank/inv/gbinv74.seq.gz','data/ncbigenbank/inv/gbinv75.seq.gz','data/ncbigenbank/inv/gbinv77.seq.gz','data/ncbigenbank/inv/gbinv7.seq.gz','data/ncbigenbank/inv/gbinv81.seq.gz','data/ncbigenbank/inv/gbinv83.seq.gz','data/ncbigenbank/inv/gbinv87.seq.gz']
+    # file_names = Dir[ 'data/NCBI/sequences/gbinv38*' ].select { |f| File.file? f }
     # file_names = Dir[ 'data/ncbigenbank/mam/*' ].select{ |f| File.file? f }
     
     file_names.each do |file|
+      p file
+      next if already_processed.include?(file)
       file_count                 += 1
       file_name_match             = file.match(/gb\w+\d+/)
       base_name                   = file_name_match[0]
@@ -58,10 +63,11 @@ class NcbiGenbankImporter
         end
       end
 
-      tsv   = File.open("results2/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output_DEBUG.tsv", 'w')
-      fasta = File.open("results2/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output_DEBUG.fas", 'w')
+      tsv   = File.open("results3/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output.tsv", 'w')
+      fasta = File.open("results3/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output.fas", 'w')
     
       specimens_of_taxon.keys.each do |taxon_name|
+        p taxon_name
         nomial              = specimens_of_taxon[taxon_name][:nomial]
         first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
         taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
@@ -125,22 +131,31 @@ class NcbiGenbankImporter
   end
 
   def self.get_lineage(gb)
-    source_feature      = gb.features.select { |f| _is_source_feature?(f.feature) }.first
-    taxon_db_xref       = source_feature.qualifiers.select { |q| _is_db_taxon_xref_qualifier?(q) }.first
-    ncbi_taxon_id       = taxon_db_xref.value.gsub('taxon:', '').to_i
-    ncbi_taxon_rank     = NcbiNode.find_by(tax_id: ncbi_taxon_id).rank
-    ncbi_ranked_lineage = NcbiRankedLineage.find_by(tax_id: ncbi_taxon_id)
+    ## Problem is if the sequences are more recent than the taxonomy, it wont find all tax_ids
+    ## than it will blow, could catch it but for now i can just give the classification and its good enough
 
+    # byebug if gb.organism == 'Trioza sp. BIOUG11193-E04'
+    # source_feature      = gb.features.select { |f| _is_source_feature?(f.feature) }.first
+    # taxon_db_xref       = source_feature.qualifiers.select { |q| _is_db_taxon_xref_qualifier?(q) }.first
+    # ncbi_taxon_id       = taxon_db_xref.value.gsub('taxon:', '').to_i
+    # ncbi_taxon_rank     = NcbiNode.find_by(tax_id: ncbi_taxon_id).rank
+    # ncbi_ranked_lineage = NcbiRankedLineage.find_by(tax_id: ncbi_taxon_id)
+
+    # lineage = Lineage.new(
+    #   name:     ncbi_ranked_lineage.name,
+    #   species:  ncbi_ranked_lineage.species,
+    #   genus:    ncbi_ranked_lineage.genus,
+    #   familia:  ncbi_ranked_lineage.familia,
+    #   ordo:     ncbi_ranked_lineage.ordo,
+    #   classis:  ncbi_ranked_lineage.classis,
+    #   phylum:   ncbi_ranked_lineage.phylum,
+    #   combined: gb.classification,
+    #   rank:     ncbi_taxon_rank,
+    # )
+    #
     lineage = Lineage.new(
-      name:     ncbi_ranked_lineage.name,
-      species:  ncbi_ranked_lineage.species,
-      genus:    ncbi_ranked_lineage.genus,
-      familia:  ncbi_ranked_lineage.familia,
-      ordo:     ncbi_ranked_lineage.ordo,
-      classis:  ncbi_ranked_lineage.classis,
-      phylum:   ncbi_ranked_lineage.phylum,
-      combined: gb.classification,
-      rank:     ncbi_taxon_rank,
+      name: gb.organism,
+      combined: gb.classification
     )
   end
 

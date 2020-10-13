@@ -35,8 +35,8 @@ class BoldImporter
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
 
-    tsv   = File.open("results2/#{query_taxon_name}_bold_fast_#{fast_run}_output_test.tsv", 'w')
-    fasta = File.open("results2/#{query_taxon_name}_bold_fast_#{fast_run}_output_test.fas", 'w')
+    tsv   = File.open("results3/#{query_taxon_name}_bold_fast_#{fast_run}_output_test.tsv", 'w')
+    fasta = File.open("results3/#{query_taxon_name}_bold_fast_#{fast_run}_output_test.fas", 'w')
 
 
     specimens_of_taxon.keys.each do |taxon_name|
