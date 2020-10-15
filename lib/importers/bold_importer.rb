@@ -72,10 +72,10 @@ class BoldImporter
     return specimen
   end
 
-  def self.get_lineage(row)
+  def self.get_source_lineage(row)
     lineage_ary = SpecimensOfTaxon.create_lineage_ary(row, @@index_by_column_name)
-    p lineage_ary
-    lineage = Lineage.new(
+    
+    OpenStruct.new(
       name: SpecimensOfTaxon.find_lowest_ranking_taxon(row, @@index_by_column_name),
       combined: lineage_ary
     )

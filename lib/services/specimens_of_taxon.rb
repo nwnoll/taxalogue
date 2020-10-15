@@ -2,15 +2,15 @@
 
 class SpecimensOfTaxon
     def self.fill_hash(specimens_of_taxon:, specimen_object:)
-        taxon_name          = specimen_object.taxon_name
-        identifier          = specimen_object.identifier
-        sequence            = specimen_object.sequence
-        first_specimen_info = specimen_object.first_specimen_info
-        nomial              = specimen_object.nomial
+        taxon_name              = specimen_object.taxon_name
+        identifier              = specimen_object.identifier
+        sequence                = specimen_object.sequence
+        first_specimen_info     = specimen_object.first_specimen_info
+        nomial                  = specimen_object.nomial
         
-        specimen = Hash.new
-        specimen[:identifier] = identifier
-        specimen[:sequence]   = sequence
+        specimen                = Hash.new
+        specimen[:identifier]   = identifier
+        specimen[:sequence]     = sequence
 
         if specimens_of_taxon.has_key?(taxon_name)
             specimens_of_taxon[taxon_name][:data].push(specimen)

@@ -130,30 +130,8 @@ class NcbiGenbankImporter
     return specimen
   end
 
-  def self.get_lineage(gb)
-    ## Problem is if the sequences are more recent than the taxonomy, it wont find all tax_ids
-    ## than it will blow, could catch it but for now i can just give the classification and its good enough
-
-    # byebug if gb.organism == 'Trioza sp. BIOUG11193-E04'
-    # source_feature      = gb.features.select { |f| _is_source_feature?(f.feature) }.first
-    # taxon_db_xref       = source_feature.qualifiers.select { |q| _is_db_taxon_xref_qualifier?(q) }.first
-    # ncbi_taxon_id       = taxon_db_xref.value.gsub('taxon:', '').to_i
-    # ncbi_taxon_rank     = NcbiNode.find_by(tax_id: ncbi_taxon_id).rank
-    # ncbi_ranked_lineage = NcbiRankedLineage.find_by(tax_id: ncbi_taxon_id)
-
-    # lineage = Lineage.new(
-    #   name:     ncbi_ranked_lineage.name,
-    #   species:  ncbi_ranked_lineage.species,
-    #   genus:    ncbi_ranked_lineage.genus,
-    #   familia:  ncbi_ranked_lineage.familia,
-    #   ordo:     ncbi_ranked_lineage.ordo,
-    #   classis:  ncbi_ranked_lineage.classis,
-    #   phylum:   ncbi_ranked_lineage.phylum,
-    #   combined: gb.classification,
-    #   rank:     ncbi_taxon_rank,
-    # )
-    #
-    lineage = Lineage.new(
+  def self.get_source_lineage(gb)
+    OpenStruct.new(
       name: gb.organism,
       combined: gb.classification
     )

@@ -4,8 +4,8 @@ class GbolImporter
   include StringFormatting
   attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name
 
-  def self.get_lineage(row)
-    Lineage.new(
+  def self.get_source_lineage(row)
+    OpenStruct.new(
       name:     row["Species"],
       combined: row['HigherTaxa'].split(', ')
     )
