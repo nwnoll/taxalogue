@@ -40,6 +40,7 @@ class SpecimensOfTaxon
     end
 
     def self._possible_taxa
+        ## BOLD
         ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'class_name', 'phylum_name']
     end
 end

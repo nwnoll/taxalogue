@@ -1,18 +1,6 @@
 # frozen_string_literal: true
 
 module StringFormatting
-  def _header_gbif_taxon_object(taxon_name)
-    _to_taxon_info(_gbif_taxon_object(taxon_name))
-  end
-
-  def _header_exact_gbif_api_result(taxon_name)
-    _exact_gbif_api_accepted_taxon(taxon_name)
-  end
-
-  def _header_higher_ncbi_taxon_gbif_object(taxon_name)
-    _to_taxon_info(_gbif_taxon_object(_ncbi_next_highest_taxa_name(taxon_name)))
-  end
-
   def _to_taxon_info(obj)
     return "#{obj.regnum}|#{obj.phylum}|#{obj.classis}|#{obj.ordo}|#{obj.familia}|#{obj.canonical_name}" if obj.taxon_rank == 'species' || obj.taxon_rank == 'genus' || obj.taxon_rank == 'unranked' || obj.taxon_rank == 'subspecies'
     return "#{obj.regnum}|#{obj.phylum}|#{obj.classis}|#{obj.ordo}|#{obj.canonical_name}"                if obj.taxon_rank == 'family'

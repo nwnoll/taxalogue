@@ -28,7 +28,8 @@ class Nomial
   private
   def _name_parts
     return nil unless name.kind_of?(String)
-    name.split
+    
+    return name.split
   end
 
   def _open_nomenclature
@@ -64,29 +65,26 @@ class Monomial
   end
 
   def taxonomy(first_specimen_info:, importer:)
-    record = _gbif_taxon_object(taxon_name: name, importer: importer, first_specimen_info: first_specimen_info)
-    return record    unless record.nil?
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
+    record  = _gbif_taxon_object(records: records)
+    return record unless record.nil?
 
-    record = _gbif_taxon_object(taxon_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
-    return record    unless record.nil?
+    records = _get_records(current_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
+    record  = _gbif_taxon_object(records: records)
+    return record unless record.nil?
     
-    exact_gbif_api_match =   _exact_gbif_api_result(name)
-    return exact_gbif_api_match   unless exact_gbif_api_match.nil?
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_exact: true)
+    record  = _gbif_taxon_object(records: records)
+    return record unless record.nil?
 
-    fuzzy_gbif_api_match = _fuzzy_gbif_api_result(name)
-    return fuzzy_gbif_api_match   unless fuzzy_gbif_api_match.nil?
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_fuzzy: true)
+    record  = _gbif_taxon_object(records: records)
+    return record unless record.nil?
   end
 
   private
-  def _gbif_taxon_object(taxon_name:, importer:, first_specimen_info:)
-    return nil if taxon_name.nil? || query_taxon_object.nil? || query_taxon_rank.nil?
-    
-    if _is_homonym?(taxon_name)
-      lineage = importer.get_lineage(first_specimen_info)
-      records = _records_with_matching_lineage(current_name: taxon_name, lineage: lineage)
-    else
-      records = GbifTaxon.where(canonical_name: taxon_name)
-    end
+  def _gbif_taxon_object(records:)
+    return nil if records.nil? || records.empty?
 
     accepted_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_accepted?(record) }
     return accepted_records.first if accepted_records.size > 0
@@ -100,12 +98,25 @@ class Monomial
     return nil
   end
 
+  def _get_records(current_name:, importer:, first_specimen_info:, gbif_api_exact: false, gbif_api_fuzzy: false)
+    return nil if current_name.nil? || query_taxon_object.nil? || query_taxon_rank.nil?
+    
+    all_records = GbifTaxon.where(canonical_name: current_name)               if !gbif_api_exact  && !gbif_api_fuzzy
+    all_records = GbifApi.new(query: current_name).records                    if gbif_api_exact   && !gbif_api_fuzzy
+    all_records = GbifApi.new(path: _fuzzy_path, query: current_name).records if gbif_api_fuzzy   && !gbif_api_exact
+    return nil if all_records.nil?
+
+    records = _is_homonym?(current_name) ? _records_with_matching_lineage(current_name: current_name, lineage: importer.get_lineage(first_specimen_info), all_records: all_records) : all_records
+
+    return records
+  end
+
   def _is_accepted?(record)
-    record.taxonomic_status == 'accepted'
+    record.taxonomic_status =~ /accepted/
   end 
   
   def _is_doubtful?(record)
-    record.taxonomic_status == 'doubtful'
+    record.taxonomic_status =~ /doubtful/i
   end
 
   def _is_synonym?(record)
@@ -124,19 +135,11 @@ class Monomial
     record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
   end
 
-  def _record_exists?(taxon_name)
-    taxon_name && GbifTaxon.exists?(canonical_name: taxon_name)
+  def _fuzzy_path
+    'species/match?strict=true&name='
   end
 
-  def _exact_gbif_api_result(taxon_name)
-    GbifApi.new(query: taxon_name).exact_match
-  end
-
-  def _fuzzy_gbif_api_result(taxon_name)
-    GbifApi.new(path: 'species/match?strict=true&name=', query: taxon_name).fuzzy_match
-  end
-
-  def _records_with_matching_lineage(current_name:, lineage:)
+  def _records_with_matching_lineage(current_name:, lineage:, all_records:)
     gbif_homonym              = GbifHomonym.find_by(canonical_name: current_name)
     gbif_homonym_rank         = gbif_homonym.rank
     species_ranks             = ["subspecies", "variety", "form", "subvariety", "species"]
@@ -145,84 +148,47 @@ class Monomial
     order_ranks               = ["infraorder", "order", "superorder"]
     class_ranks               = ["infraclass", "class", "superclass"]
 
-    gbif_taxon_objects    = GbifTaxon.where(canonical_name: current_name)
     potential_correct_records = []
-    gbif_taxon_objects.each do |taxon_object|
+    all_records.each do |taxon_object|
       lineage.combined.reverse.each do |taxon|
         if species_ranks.include? taxon_object.taxon_rank
-          if taxon_object.public_send('genus')    == taxon
-            # p '-- species genus'
-            # pp taxon_object
-            potential_correct_records.push(taxon_object)
-            break
-          elsif taxon_object.public_send('familia')  == taxon
-            # p '-- species familia'
-            # pp taxon_object
-            potential_correct_records.push(taxon_object)
-            break
-          elsif taxon_object.public_send('ordo')     == taxon
-            # p '-- species ordo'
-            # pp taxon_object
-            potential_correct_records.push(taxon_object)
-            break
-          end
+          potential_correct_records.push(taxon_object) and break if taxon_object.public_send('genus')   == taxon
+          potential_correct_records.push(taxon_object) and break if taxon_object.public_send('familia') == taxon
+          potential_correct_records.push(taxon_object) and break if taxon_object.public_send('ordo')    == taxon
         elsif genus_ranks.include? taxon_object.taxon_rank
-          if taxon_object.public_send('familia')  == taxon
-            # p '-- genus familia'
-            # pp taxon_object
-            potential_correct_records.push(taxon_object)
-            break 
-          elsif taxon_object.public_send('ordo')     == taxon
-            # p '-- genus ordo'
-            # pp taxon_object
-            potential_correct_records.push(taxon_object)
-            break 
-          end
+          potential_correct_records.push(taxon_object) and break if taxon_object.public_send('familia') == taxon
+          potential_correct_records.push(taxon_object) and break if taxon_object.public_send('ordo')    == taxon
         elsif family_ranks.include? taxon_object.taxon_rank
-          if taxon_object.public_send('ordo')     == taxon
-            # p '-- family ordo'
-            # pp taxon_object
-            potential_correct_records.push(taxon_object)
-            break
-          end
+          potential_correct_records.push(taxon_object) and break if taxon_object.public_send('ordo')    == taxon
         elsif order_ranks.include? taxon_object.taxon_rank
-          if taxon_object.public_send('classis')  == taxon
-            # p '-- ordo classis'
-            # pp taxon_object
-            potential_correct_records.push(taxon_object)
-            break
-          end
+          potential_correct_records.push(taxon_object) and break if taxon_object.public_send('classis') == taxon
         elsif class_ranks.include? taxon_object.taxon_rank
-          if taxon_object.public_send('phylum')   == taxon
-            # p '-- classis phylum'
-            # pp taxon_object
-            potential_correct_records.push(taxon_object)
-            break
-          end
+          potential_correct_records.push(taxon_object) and break if taxon_object.public_send('phylum')  == taxon
         end
       end
     end
 
-    # puts '*' * 100
-    # pp potential_correct_records
-    # puts '*' * 100
     return potential_correct_records
   end
 end
 
 class Polynomial < Monomial
   def taxonomy(first_specimen_info:, importer:)
-    record = _gbif_taxon_object(taxon_name: name, importer: importer, first_specimen_info: first_specimen_info)
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
+    record  = _gbif_taxon_object(records: records)
+    return record unless record.nil?
+    
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_exact: true)
+    record  = _gbif_taxon_object(records: records)
     return record unless record.nil?
 
-    exact_gbif_api_match =   _exact_gbif_api_result(name)
-    return exact_gbif_api_match   unless exact_gbif_api_match.nil?
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_fuzzy: true)
+    record  = _gbif_taxon_object(records: records)
+    return record unless record.nil?
 
-    fuzzy_gbif_api_match = _fuzzy_gbif_api_result(name)
-    return fuzzy_gbif_api_match   unless fuzzy_gbif_api_match.nil?
-
-    record = _gbif_taxon_object(taxon_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
-    return record    unless record.nil?
+    records = _get_records(current_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
+    record  = _gbif_taxon_object(records: records)
+    return record unless record.nil?
 
     cutted_name = _remove_last_name_part(name)
     return nil if cutted_name.blank?
