@@ -37,8 +37,8 @@ OptionParser.new do |opts|
 	end
 end.parse!(into: params)
 
-# byebug
-# exit
+byebug
+exit
 
 # DatabaseSchema.create_db
 # GbifHomonymImporter.new(file_name: 'homonyms.txt').run

@@ -91,6 +91,8 @@ class GbifApi
     combined          = _get_combined(taxon)
     
     OpenStruct.new(
+      taxon_id:               taxon['nubKey'],
+      api_taxon_id:           taxon['key'],
       regnum:                 taxon['kingdom'],
       phylum:                 taxon['phylum'],
       classis:                taxon['class'],
