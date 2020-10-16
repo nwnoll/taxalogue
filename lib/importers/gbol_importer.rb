@@ -35,8 +35,9 @@ class GbolImporter
     end
 
 
-    tsv   = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_output.tsv", 'w')
-    fasta = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_output.fas", 'w')
+    tsv             = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_output.tsv", 'w')
+    fasta           = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_output.fas", 'w')
+    synonyms_file   = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_synonyms.tsv", 'w')
     
     specimens_of_taxon.keys.each do |taxon_name|
       nomial              = specimens_of_taxon[taxon_name][:nomial]
@@ -45,6 +46,14 @@ class GbolImporter
 
       next unless taxonomic_info
       next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+
+      ## Synonym List
+      syn = Synonym.new(
+        accepted_taxon: taxonomic_info,
+        sources: [GbifTaxon]
+      )
+
+      OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
 
       specimens_of_taxon[taxon_name][:data].each do |data|
         OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)

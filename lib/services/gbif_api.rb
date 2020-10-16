@@ -100,6 +100,7 @@ class GbifApi
       familia:                taxon['family'],
       genus:                  taxon['genus'],
       canonical_name:         canonical_name,
+      scientific_name:        taxon['scientificName'],
       taxonomic_status:       taxonomic_status,
       taxon_rank:             taxon_rank,
       combined:               combined,
