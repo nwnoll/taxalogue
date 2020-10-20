@@ -22,7 +22,6 @@ class NcbiGenbankImporter
 
 
   def run
-    p 'asdads'
     file_count = 0
     # file_names = Dir[ 'data/NCBI/sequences/gbinv*' ].select{ |f| File.file? f }
     file_names = Dir[ 'data/ncbigenbank/inv/gbinv*' ].select{ |f| File.file? f }
@@ -31,7 +30,6 @@ class NcbiGenbankImporter
     # file_names = Dir[ 'data/ncbigenbank/mam/*' ].select{ |f| File.file? f }
     
     file_names.each do |file|
-      p file
       next if already_processed.include?(file)
       file_count                 += 1
       file_name_match             = file.match(/gb\w+\d+/)
@@ -63,17 +61,25 @@ class NcbiGenbankImporter
         end
       end
 
-      tsv   = File.open("results3/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output.tsv", 'w')
-      fasta = File.open("results3/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output.fas", 'w')
-    
+      tsv             = File.open("results3/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output_TEST.tsv", 'w')
+      fasta           = File.open("results3/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output_TEST.fas", 'w')
+      synonyms_file   = File.open("results3/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_synonyms_TEST.tsv", 'w')
+      comparison_file = File.open("results3/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_comparison_TEST.tsv", 'w')
+  
       specimens_of_taxon.keys.each do |taxon_name|
-        p taxon_name
         nomial              = specimens_of_taxon[taxon_name][:nomial]
         first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
         taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
 
         next unless taxonomic_info
         next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+
+        # Synonym List
+        syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [GbifTaxon])
+        OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms)
+
+        # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
+
 
         specimens_of_taxon[taxon_name][:data].each do |data|
           OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
@@ -119,11 +125,13 @@ class NcbiGenbankImporter
   end
 
   def _get_specimen(gb:, nucs:)
-    nomial                        = Nomial.generate(name: gb.organism, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
+    source_taxon_name             = gb.organism
+    nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
 
     specimen                      = Specimen.new
     specimen.identifier           = gb.accession
     specimen.sequence             = nucs
+    specimen.source_taxon_name           = source_taxon_name
     specimen.taxon_name           = nomial.name
     specimen.nomial               = nomial
     specimen.first_specimen_info  = gb

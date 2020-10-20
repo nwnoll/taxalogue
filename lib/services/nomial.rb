@@ -90,7 +90,7 @@ class Monomial
     return accepted_records.first if accepted_records.size > 0
 
     doubtful_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_doubtful?(record) }
-    return accepted_records.first if accepted_records.size > 0
+    return doubtful_records.first if doubtful_records.size > 0
 
     synonymous_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_synonym?(record) && _has_accepted_name_usage_id(record) }
     return GbifTaxon.find_by(taxon_id: synonymous_records.first.accepted_name_usage_id.to_i) if synonymous_records.size > 0

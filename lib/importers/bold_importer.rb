@@ -35,9 +35,9 @@ class BoldImporter
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
 
-    tsv   = File.open("results3/#{query_taxon_name}_bold_fast_#{fast_run}_output_test.tsv", 'w')
-    fasta = File.open("results3/#{query_taxon_name}_bold_fast_#{fast_run}_output_test.fas", 'w')
-
+    tsv             = File.open("results3/#{query_taxon_name}_bold_fast_#{fast_run}_output_test_TEST.tsv", 'w')
+    fasta           = File.open("results3/#{query_taxon_name}_bold_fast_#{fast_run}_output_test_TEST.fas", 'w')
+    comparison_file = File.open("results3/#{query_taxon_name}_bold_fast_#{fast_run}_comparison_TEST.tsv", 'w')
 
     specimens_of_taxon.keys.each do |taxon_name|
       nomial              = specimens_of_taxon[taxon_name][:nomial]
@@ -46,6 +46,14 @@ class BoldImporter
 
       next unless taxonomic_info
       next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+
+      # Synonym List
+      syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [GbifTaxon])
+
+      OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms)
+
+      # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
+      
 
       specimens_of_taxon[taxon_name][:data].each do |data|
         OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
@@ -57,15 +65,16 @@ class BoldImporter
   private
 
   def _get_specimen(row:)
-    identifier  = row[@@index_by_column_name["processid"]]
-    taxon_name  = SpecimensOfTaxon.find_lowest_ranking_taxon(row, @@index_by_column_name)
-    sequence    = row[@@index_by_column_name['nucleotides']]
+    identifier                    = row[@@index_by_column_name["processid"]]
+    source_taxon_name             = SpecimensOfTaxon.find_lowest_ranking_taxon(row, @@index_by_column_name)
+    sequence                      = row[@@index_by_column_name['nucleotides']]
 
-    nomial                        = Nomial.generate(name: taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
+    nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
 
     specimen                      = Specimen.new
     specimen.identifier           = identifier
     specimen.sequence             = sequence
+    specimen.source_taxon_name    = source_taxon_name
     specimen.taxon_name           = nomial.name
     specimen.nomial               = nomial
     specimen.first_specimen_info  = row
