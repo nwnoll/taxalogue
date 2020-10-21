@@ -12,7 +12,12 @@ class GbolConfig
     end
   
     def address
+        ## does not work anymore :(
         'https://bolgermany.de/release/GBOL_Dataset_Release-20200426.zip'
+
+        ## other possible slution is to build a crawler and cut out sequence data :
+        # https://collections.zfmk.de/specimendetail/656103
+        # 
     end
 
     def file_type
@@ -21,6 +26,10 @@ class GbolConfig
   
     def file_structure
         FileStructure.new(config: self)
+    end
+
+    def file_manager
+        FileManager.new(name: name, versioning: false, base_dir: 'fm_data/', config: self)
     end
   
     def _join_markers(markers)

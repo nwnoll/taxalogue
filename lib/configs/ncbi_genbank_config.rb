@@ -16,6 +16,10 @@ class NcbiGenbankConfig
     'ftp.ncbi.nlm.nih.gov'
   end
 
+  def file_manager
+    FileManager.new(name: name, versioning: false, base_dir: 'fm_data/', config: self)
+  end
+
   def file_structure
     FileStructure.new(config: self)
   end

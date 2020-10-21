@@ -21,7 +21,8 @@ class HttpDownloader
       request = Net::HTTP::Get.new uri
 
       http.request request do |response|
-        open config.file_structure.file_path, 'w' do |io|
+        # open config.file_structure.file_path, 'w' do |io|
+        open config.file_manager.file_path, 'w' do |io|
           response.read_body do |chunk|
             io.write chunk
           end

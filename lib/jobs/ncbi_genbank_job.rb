@@ -16,7 +16,8 @@ class NcbiGenbankJob
     ## several gigabyte of data
 
     _configs.each do |config|
-      config.file_structure.create_directory
+      # config.file_structure.create_directory
+      config.file_manager.create_dir
       config.downloader.new(config: config).run
     end
   end

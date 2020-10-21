@@ -32,10 +32,13 @@ class BoldJob
 
         config = _create_config(node: node)
 
-        file_structure = config.file_structure
-        # file_structure.extend(Helper.constantize("Printing::#{file_structure.class}"))
-        file_structure.create_directory
-        file_structures.push(file_structure)
+        # file_structure = config.file_structure
+        # # file_structure.extend(Helper.constantize("Printing::#{file_structure.class}"))
+        # file_structure.create_directory
+        # file_structures.push(file_structure)
+
+        file_manager = config.file_manager
+        file_manager.create_dir
 
         downloader = config.downloader.new(config: config)
         # downloader.extend(Helper.constantize("Printing::#{downloader.class}"))

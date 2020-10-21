@@ -40,6 +40,17 @@ end.parse!(into: params)
 # byebug
 # exit
 
+NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
+exit
+
+GbolJob.new.run
+exit
+
+
+BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
+exit
+
+
 # DatabaseSchema.create_db
 # GbifHomonymImporter.new(file_name: 'homonyms.txt').run
 # exit
@@ -65,8 +76,6 @@ exit
 
 
 
-NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
-exit
 
 
 
@@ -74,8 +83,8 @@ exit
 
 
 
-BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
-exit
+
+
 
 
 
@@ -148,8 +157,6 @@ exit
 
 # exit
 
-# GbolJob.new.run
-# exit
 
 # exit
 

@@ -24,6 +24,7 @@ require 'pathname'
 require 'ostruct'
 require 'timeout'
 require 'digest/md5'
+require 'time'
 
 require_relative "db/database_schema"
 require_relative 'lib/helpers/helper'

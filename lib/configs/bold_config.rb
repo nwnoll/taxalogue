@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
 class BoldConfig
-  attr_reader :markers, :file_structure, :name, :parent_dir
+  attr_reader :markers, :name, :parent_dir
   def initialize(name:, markers: nil, parent_dir: nil)
     @name            = name
     @markers         = markers.kind_of?(Array) ? markers : [markers]
     @parent_dir      = parent_dir
-    @file_structure  = file_structure
   end
 
   def downloader
@@ -29,6 +28,10 @@ class BoldConfig
 
   def file_structure
     FileStructure.new(config: self)
+  end
+
+  def file_manager
+    FileManager.new(name: name, versioning: false, base_dir: ('fm_data/' + parent_dir.to_s), config: self)
   end
 
   # def _join_markers(markers)

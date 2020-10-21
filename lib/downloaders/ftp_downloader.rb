@@ -15,7 +15,7 @@ class FtpDownloader
         files = ftp.chdir(config.target_directory) if config.target_directory
         files = ftp.nlst("#{config.target_file_base}*")
         files.each do |file|
-          local_path = File.join(config.file_structure.directory_path, file)
+          local_path = File.join(config.file_manager.dir_path, file)
           puts "local_path: #{local_path}"
           puts "... downloading #{file}"
           _get_with_progress(ftp, file, local_path)

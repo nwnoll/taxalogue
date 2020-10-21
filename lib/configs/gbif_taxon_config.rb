@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
 class GbifTaxonConfig
-    attr_reader :file_structure, :name
+    attr_reader :name
     def initialize()
-        @file_structure  = file_structure
         @name            = 'backbone'
     end
   
@@ -24,9 +23,9 @@ class GbifTaxonConfig
     def file_type
         'zip'
     end
-  
-    def file_structure
-        FileStructure.new(config: self)
-    end
+
+    def file_manager
+        FileManager.new(name: name, versioning: false, base_dir: 'fm_data/', config: self)
+      end
   end
   
