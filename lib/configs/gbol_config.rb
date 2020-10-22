@@ -29,12 +29,17 @@ class GbolConfig
     end
 
     def file_manager
-        FileManager.new(name: name, versioning: false, base_dir: 'fm_data/', config: self)
+        FileManager.new(name: name, versioning: false, base_dir: "fm_data/#{_source_name}/", config: self)
     end
   
     def _join_markers(markers)
         markers = 'COI-5P' if markers.nil?
         markers.class == Array ? markers.join('|') : markers
+    end
+
+    private
+    def _source_name
+      self.class.to_s.gsub('Config', '').upcase
     end
   end
   

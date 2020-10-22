@@ -31,8 +31,14 @@ class BoldConfig
   end
 
   def file_manager
-    FileManager.new(name: name, versioning: false, base_dir: ('fm_data/' + parent_dir.to_s), config: self)
+    FileManager.new(name: name, versioning: false, base_dir: ("fm_data/#{_source_name}/" + parent_dir.to_s), config: self)
   end
+
+  private
+  def _source_name
+    self.class.to_s.gsub('Config', '').upcase
+  end
+
 
   # def _join_markers(markers)
   #   markers = 'COI-5P' if markers.nil?

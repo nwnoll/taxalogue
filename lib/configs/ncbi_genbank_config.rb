@@ -17,7 +17,7 @@ class NcbiGenbankConfig
   end
 
   def file_manager
-    FileManager.new(name: name, versioning: false, base_dir: 'fm_data/', config: self)
+    FileManager.new(name: name, versioning: false, base_dir: "fm_data/#{_source_name}/", config: self)
   end
 
   def file_structure
@@ -34,5 +34,10 @@ class NcbiGenbankConfig
 
   def file_type
     'seq.gz'
+  end
+
+  private
+  def _source_name
+    self.class.to_s.gsub('Config', '').upcase
   end
 end

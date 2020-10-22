@@ -60,6 +60,7 @@ class BoldJob
       end
       
       break if reached_family_level
+      break if i = 1
 
       failed_nodes                      = root_node.find_all { |node| node.content.last == @failure && node.is_leaf? }
       failed_nodes.each do |failed_node| 
