@@ -20,7 +20,7 @@ class BoldJob
     
     num_of_ranks                        = GbifTaxon.possible_ranks.size
     reached_family_level                = false
-    file_structures                     = []
+    fmanagers                           = []
     
     num_of_ranks.times do |i|
       
@@ -29,33 +29,32 @@ class BoldJob
       Parallel.map(root_node.entries, in_threads: 5) do |node|
         next unless node.content.last == @pending
 
-
         config = _create_config(node: node)
-
-        # file_structure = config.file_structure
-        # # file_structure.extend(Helper.constantize("Printing::#{file_structure.class}"))
-        # file_structure.create_directory
-        # file_structures.push(file_structure)
 
         file_manager = config.file_manager
         file_manager.create_dir
+        fmanagers.push(file_manager)
 
         downloader = config.downloader.new(config: config)
         # downloader.extend(Helper.constantize("Printing::#{downloader.class}"))
 
         begin
           node.content[1] = @loading
+          file_manager.status = 'loading'
           _print_download_progress_report(root_node: root_node, rank_level: i)
           downloader.run
-          if File.empty?(file_structure.file_path)
+          if File.empty?(file_manager.file_path)
             # puts "No records found for #{node.name}."
             node.content[1] = @failure
+            file_manager.status = 'failure'
           else
             node.content[1] = @success
+            file_manager.status = 'success'
           end
         rescue Net::ReadTimeout
           # puts "Download did take too long, most probably #{node.name} has too many records. Trying lower ranks soon."
           node.content[1] = @failure
+          file_manager.status = 'failure'
         end
         _print_download_progress_report(root_node: root_node, rank_level: i)
       end
@@ -71,6 +70,7 @@ class BoldJob
         reached_family_level            = true if index_of_lower_rank == 2
         taxon_rank_to_try               = GbifTaxon.possible_ranks[index_of_lower_rank]
         taxa_records_and_names_to_try   = GbifTaxon.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
+        next if taxa_records_and_names_to_try.nil?
         taxa_records_and_names_to_try.each do |record_and_name|
           record                        = record_and_name.first
           name                          = record_and_name.last
@@ -78,6 +78,8 @@ class BoldJob
         end
       end
     end
+
+    _write_result_files(root_node: root_node, fmanagers: fmanagers)
   end
 
   def _print_download_progress_report(root_node:, rank_level:)
@@ -138,5 +140,15 @@ class BoldJob
     else
       config        = BoldConfig.new(name: node.name, markers: markers)
     end
+  end
+
+  def _write_result_files(root_node:, fmanagers:)
+    root_dir              = fmanagers.select { |m| m.name == root_node.name }.first
+    merged_download_file  = File.open(root_dir.dir_path + "#{root_dir.name}_merged.tsv", 'w') 
+    download_info_file    = File.open(root_dir.dir_path + "#{root_dir.name}_download_info.tsv", 'w') 
+    download_successes    = fmanagers.select { |m| m.status == 'success' }
+
+    OutputFormat::MergedBoldDownload.write_to_file(file: merged_download_file, data: download_successes)
+    OutputFormat::DownloadInfo.write_to_file(file: download_info_file, fmanagers: fmanagers)
   end
 end

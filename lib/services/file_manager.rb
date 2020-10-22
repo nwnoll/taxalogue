@@ -2,6 +2,7 @@
 
 class FileManager
       attr_reader :directory, :versioning, :name, :base_dir, :dir_path, :datetime_format, :force, :config
+      attr_accessor :status
 
       def initialize(name:, versioning: true, base_dir: '.', force: true, config:)
             @base_dir         = Pathname.new(base_dir)
@@ -53,7 +54,7 @@ class FileManager
       end
 
       def create_dir
-            if dir_path.exist?
+            if dir_path.exist? && !force
                   puts "#{directory} already exists, do you want to overwrite it? [Y/n]"
                   user_input  = gets.chomp
                   replace_dir = (user_input =~ /y|yes/i) ? true : false

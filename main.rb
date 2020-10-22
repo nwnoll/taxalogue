@@ -40,11 +40,11 @@ end.parse!(into: params)
 # byebug
 # exit
 
-NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
-exit
+# NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
+# exit
 
-GbolJob.new.run
-exit
+# GbolJob.new.run
+# exit
 
 
 BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
