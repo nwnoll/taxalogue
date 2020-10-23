@@ -2,6 +2,9 @@
 
 class BoldJob
   attr_reader   :taxon, :markers, :taxonomy, :taxon_name 
+
+  HEADER_LENGTH = 1
+
   def initialize(taxon:, markers: nil, taxonomy:)
     @taxon      = taxon
     @taxon_name = taxon.canonical_name
@@ -33,7 +36,6 @@ class BoldJob
 
         file_manager = config.file_manager
         file_manager.create_dir
-        fmanagers.push(file_manager)
 
         downloader = config.downloader.new(config: config)
         # downloader.extend(Helper.constantize("Printing::#{downloader.class}"))
@@ -56,11 +58,13 @@ class BoldJob
           node.content[1] = @failure
           file_manager.status = 'failure'
         end
+
+        fmanagers.push(file_manager)
         _print_download_progress_report(root_node: root_node, rank_level: i)
       end
       
       break if reached_family_level
-      break if i = 1
+      # break if i == 1
 
       failed_nodes                      = root_node.find_all { |node| node.content.last == @failure && node.is_leaf? }
       failed_nodes.each do |failed_node| 
@@ -149,7 +153,7 @@ class BoldJob
     download_info_file    = File.open(root_dir.dir_path + "#{root_dir.name}_download_info.tsv", 'w') 
     download_successes    = fmanagers.select { |m| m.status == 'success' }
 
-    OutputFormat::MergedBoldDownload.write_to_file(file: merged_download_file, data: download_successes)
+    OutputFormat::MergedBoldDownload.write_to_file(file: merged_download_file, data: download_successes, header_length: HEADER_LENGTH, include_header: true)
     OutputFormat::DownloadInfo.write_to_file(file: download_info_file, fmanagers: fmanagers)
   end
 end

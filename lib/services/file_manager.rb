@@ -1,24 +1,25 @@
 # frozen_string_literal: true
 
 class FileManager
-      attr_reader :directory, :versioning, :name, :base_dir, :dir_path, :datetime_format, :force, :config
+      attr_reader :directory, :versioning, :name, :base_dir, :dir_path, :datetime_format, :force, :config, :multiple_files_per_dir
       attr_accessor :status
 
-      def initialize(name:, versioning: true, base_dir: '.', force: true, config:)
-            @base_dir         = Pathname.new(base_dir)
-            @name             = name
-            @datetime_format  = "%Y%m%dT%H%M"
-            @force            = force
+      def initialize(name:, versioning: true, base_dir: '.', force: true, config:, multiple_files_per_dir: false)
+            @base_dir               = Pathname.new(base_dir)
+            @name                   = name
+            @datetime_format        = "%Y%m%dT%H%M"
+            @force                  = force
 
-            current_datetime  = DateTime.now
-            current_datetime  = current_datetime.strftime(@datetime_format)
+            current_datetime        = DateTime.now
+            current_datetime        = current_datetime.strftime(@datetime_format)
 
-            @versioning       = versioning
-            versioning        ? @directory = Pathname.new("#{name}-#{current_datetime}") : @directory = Pathname.new(name)
+            @versioning             = versioning
+            versioning              ? @directory = Pathname.new("#{name}-#{current_datetime}") : @directory = Pathname.new(name)
 
-            @dir_path         = @base_dir + @directory
+            @dir_path               = @base_dir + @directory
 
-            @config           = config
+            @config                 = config
+            @multiple_files_per_dir = multiple_files_per_dir
       end
 
       def directories_of(dir:)
@@ -31,6 +32,11 @@ class FileManager
 
       def files_of(dir:)
             dir.glob('*').select { |entry| entry.file? }
+      end
+
+      def files_with_name_of(dir:)
+            dir.glob('*').select { |entry| entry.file? && entry.basename.to_s =~ /#{name}/ }
+            # TODO: BAD!! need another solution, could also match merged ord download_info file
       end
 
       def files_r_of(dir:)
@@ -118,11 +124,13 @@ class FileManager
       end
 
       def file_path
+            return nil if multiple_files_per_dir
             dir_path + _file_name
       end
 
       private
       def _file_name
+            return nil if multiple_files_per_dir
             config.name + '.' + config.file_type
       end
 end

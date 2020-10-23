@@ -17,7 +17,7 @@ class NcbiGenbankConfig
   end
 
   def file_manager
-    FileManager.new(name: name, versioning: false, base_dir: "fm_data/#{_source_name}/", config: self)
+    FileManager.new(name: name, versioning: false, base_dir: "fm_data/#{_source_name}/", config: self, multiple_files_per_dir: true)
   end
 
   def file_structure
