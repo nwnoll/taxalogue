@@ -39,11 +39,11 @@ end.parse!(into: params)
 
 # byebug
 # exit
-NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
-exit
+# NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
+# exit
 
-BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
-exit
+# BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
+# exit
 
 
 
@@ -67,7 +67,8 @@ elsif params[:import_genbank]
 	ncbi_genbank_importer.run
 	exit
 elsif params[:import_bold]
-	bold_importer = BoldImporter.new(fast_run: false, file_name: params[:import_bold], query_taxon_object: params[:taxon_object])
+	file_manager =  FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+	bold_importer = BoldImporter.new(fast_run: false, file_name: params[:import_bold], query_taxon_object: params[:taxon_object], file_manager: file_manager)
 	bold_importer.run
 	exit
 end

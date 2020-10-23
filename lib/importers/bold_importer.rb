@@ -2,21 +2,25 @@
 
 class BoldImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager
 
   @@index_by_column_name = nil
-  def initialize(file_name:, query_taxon_object:, fast_run: true)
+  def initialize(file_name:, query_taxon_object:, fast_run: true, file_manager:)
     @file_name                = file_name
     @query_taxon_object       = query_taxon_object
     @query_taxon_name         = query_taxon_object.canonical_name
     @query_taxon_rank         = query_taxon_object.taxon_rank
     @fast_run                 = fast_run
+    @file_manager             = file_manager
   end
 
   def run
+    file_manager.create_dir
     specimens_of_taxon    = Hash.new { |hash, key| hash[key] = {} }
-    file                  = File.open(file_name, 'r')
-
+    
+    file                  = File.file?(file_name) ? File.open(file_name, 'r') : nil
+    abort "#{file_name} is not a valid file" if file.nil?
+    
     @@index_by_column_name = Helper.generate_index_by_column_name(file: file, separator: "\t")
 
     file.each do |row|
@@ -25,19 +29,15 @@ class BoldImporter
       scrubbed_row = row.scrub!.chomp.split("\t")
 
       specimen = _get_specimen(row: scrubbed_row)
-      # specimen = Specimen.new
-      # specimen.identifier   = specimen_data[index_by_column_name["processid"]]
-      # nucs                  = specimen_data[index_by_column_name['nucleotides']]
       next if specimen.sequence.nil? || specimen.sequence.empty?
 
-      # specimen.sequence     = nucs
-      # specimen.taxon_name   = SpecimensOfTaxon.find_lowest_ranking_taxon(specimen_data, index_by_column_name)
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
 
-    tsv             = File.open("results3/#{query_taxon_name}_bold_fast_#{fast_run}_output_test_TEST.tsv", 'w')
-    fasta           = File.open("results3/#{query_taxon_name}_bold_fast_#{fast_run}_output_test_TEST.fas", 'w')
-    comparison_file = File.open("results3/#{query_taxon_name}_bold_fast_#{fast_run}_comparison_TEST.tsv", 'w')
+    tsv             = file_manager.create_file("#{query_taxon_name}_bold_fast_#{fast_run}_output_test_TEST1.tsv")
+    fasta           = file_manager.create_file("#{query_taxon_name}_bold_fast_#{fast_run}_output_test_TEST1.fas")
+    comparison_file = file_manager.create_file("#{query_taxon_name}_bold_fast_#{fast_run}_comparison_TEST.tsv")
+    p file_manager.created_files
 
     specimens_of_taxon.keys.each do |taxon_name|
       nomial              = specimens_of_taxon[taxon_name][:nomial]

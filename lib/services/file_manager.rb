@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 class FileManager
-      attr_reader :directory, :versioning, :name, :base_dir, :dir_path, :datetime_format, :force, :config, :multiple_files_per_dir
+      attr_reader :directory, :versioning, :name, :base_dir, :dir_path, :datetime_format, :force, :config, :multiple_files_per_dir, :created_files
       attr_accessor :status
 
-      def initialize(name:, versioning: true, base_dir: '.', force: true, config:, multiple_files_per_dir: false)
+      def initialize(name:, versioning: true, base_dir: '.', force: true, config: nil, multiple_files_per_dir: false)
             @base_dir               = Pathname.new(base_dir)
             @name                   = name
             @datetime_format        = "%Y%m%dT%H%M"
@@ -20,6 +20,8 @@ class FileManager
 
             @config                 = config
             @multiple_files_per_dir = multiple_files_per_dir
+
+            @created_files          = [] 
       end
 
       def directories_of(dir:)
@@ -68,6 +70,15 @@ class FileManager
             else
                   FileUtils.mkdir_p(dir_path)
             end
+      end
+
+      def create_file(file_name)
+            file_path = Pathname.new(file_name)
+            full_path = dir_path + file_path
+            file = File.open(full_path, 'w')
+            
+            created_files.push(file)
+            return file
       end
 
       def versions
@@ -130,7 +141,7 @@ class FileManager
 
       private
       def _file_name
-            return nil if multiple_files_per_dir
+            return nil if multiple_files_per_dir || config.nil
             config.name + '.' + config.file_type
       end
 end
