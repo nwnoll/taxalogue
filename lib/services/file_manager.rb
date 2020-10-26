@@ -72,14 +72,16 @@ class FileManager
             end
       end
 
-      def create_file(file_name)
+      def create_file(file_name, file_type)
             file_path = Pathname.new(file_name)
             full_path = dir_path + file_path
             file = File.open(full_path, 'w')
             
-            created_files.push(file)
+            created_files.push(_file(file, file_type))
             return file
       end
+
+
 
       def versions
             dirs = base_dir.glob("**/#{name}*").select { |entry| entry.directory? }
@@ -143,5 +145,12 @@ class FileManager
       def _file_name
             return nil if multiple_files_per_dir || config.nil
             config.name + '.' + config.file_type
+      end
+
+      def _file(file_path, file_type)
+            OpenStruct.new(
+                  path: file_path,
+                  type: file_type
+            )
       end
 end

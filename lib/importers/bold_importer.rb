@@ -34,10 +34,18 @@ class BoldImporter
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
 
-    tsv             = file_manager.create_file("#{query_taxon_name}_bold_fast_#{fast_run}_output_test_TEST1.tsv")
-    fasta           = file_manager.create_file("#{query_taxon_name}_bold_fast_#{fast_run}_output_test_TEST1.fas")
-    comparison_file = file_manager.create_file("#{query_taxon_name}_bold_fast_#{fast_run}_comparison_TEST.tsv")
-    p file_manager.created_files
+    tsv             = file_manager.create_file("#{query_taxon_name}_bold_fast_#{fast_run}_output_test_TEST1.tsv", OutputFormat::Tsv)
+    fasta           = file_manager.create_file("#{query_taxon_name}_bold_fast_#{fast_run}_output_test_TEST1.fas", OutputFormat::Fasta)
+    comparison_file = file_manager.create_file("#{query_taxon_name}_bold_fast_#{fast_run}_comparison_TEST.tsv",   OutputFormat::Comparison)
+    
+    tsv_files = file_manager.created_files.select { |f| f.type == OutputFormat::Tsv }
+    fasta_files = file_manager.created_files.select { |f| f.type == OutputFormat::Fasta }
+    comparison_files = file_manager.created_files.select { |f| f.type == OutputFormat::Comparison }
+    
+    p tsv_files
+    p fasta_files
+    p comparison_files
+    # file_manager.created_files
 
     specimens_of_taxon.keys.each do |taxon_name|
       nomial              = specimens_of_taxon[taxon_name][:nomial]
