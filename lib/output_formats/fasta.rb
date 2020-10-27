@@ -8,3 +8,5 @@ class OutputFormat::Fasta
         fasta.puts _fasta_seq(data: data)
     end
 end
+
+class OutputFormat::MergedFasta; end

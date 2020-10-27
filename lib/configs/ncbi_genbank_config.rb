@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 class NcbiGenbankConfig
-  attr_reader :name, :markers, :file_structure
+  attr_reader :name, :markers, :file_structure, :file_manager
   def initialize(name:, markers: nil)
-    @name            = name
-    @markers         = markers
-    @file_structure  = file_structure
+    @name             = name
+    @markers          = markers
+    @file_structure   = file_structure
+    @file_manager     = _file_manager
   end
 
   def downloader
@@ -14,10 +15,6 @@ class NcbiGenbankConfig
 
   def address
     'ftp.ncbi.nlm.nih.gov'
-  end
-
-  def file_manager
-    FileManager.new(name: name, versioning: false, base_dir: "fm_data/#{_source_name}/", config: self, multiple_files_per_dir: true)
   end
 
   def file_structure
@@ -40,4 +37,9 @@ class NcbiGenbankConfig
   def _source_name
     self.class.to_s.gsub('Config', '').upcase
   end
+
+  def _file_manager
+    FileManager.new(name: name, versioning: false, base_dir: "fm_data/#{_source_name}/", config: self, multiple_files_per_dir: true)
+  end
+
 end

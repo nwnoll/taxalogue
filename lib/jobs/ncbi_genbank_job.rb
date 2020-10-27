@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 
 class NcbiGenbankJob
-  attr_reader :taxon, :markers, :taxonomy
+  attr_reader :taxon, :markers, :taxonomy, :result_file_manager
 
   FILE_DESCRIPTION_PART = 10
 
-  def initialize(taxon:, markers: nil, taxonomy:)
-    @taxon      = taxon
-    @markers    = markers
-    @taxonomy   = taxonomy
+  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:)
+    @taxon                = taxon
+    @markers              = markers
+    @taxonomy             = taxonomy
+    @result_file_manager  = result_file_manager
   end
 
   def run
@@ -32,7 +33,9 @@ class NcbiGenbankJob
       file_manager.status = did_download_fail ? 'failure' : 'success'
       fmanagers.push(file_manager)
     end
-    _write_result_files(fmanagers: fmanagers)
+    # _write_result_files(fmanagers: fmanagers)
+    _classify_downloads(download_file_managers: fmanagers)
+    _merge_results
   end
 
 
@@ -80,5 +83,25 @@ class NcbiGenbankJob
       OutputFormat::MergedGenbankDownload.write_to_file(file_name: merged_download_file_name, data: download_successes, header_length: FILE_DESCRIPTION_PART, include_header: false)
       OutputFormat::DownloadInfo.write_to_file(file: download_info_file, fmanagers: fmanagers)
     end
+  end
+
+  def _classify_downloads(download_file_managers:)
+    download_file_managers.each do |download_file_manager|
+      next unless download_file_manager.status == 'success'
+      files = download_file_manager.files_with_name_of(dir: download_file_manager.dir_path)
+      
+      files.each do |file|
+        next unless File.file?(file)
+
+	      classifier = NcbiGenbankImporter.new(fast_run: false, markers: markers, file_name: file, query_taxon_object: taxon, file_manager: result_file_manager)
+        classifier.run ## result_file_manager creates new files and will push those into internal array
+      end
+    end
+  end
+
+  def _merge_results
+    FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Tsv)
+    FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Fasta)
+    FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Comparison)
   end
 end

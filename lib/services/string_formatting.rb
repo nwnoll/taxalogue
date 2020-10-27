@@ -10,7 +10,7 @@ module StringFormatting
   end
 
   def _tsv_header
-    "identifier\tkingdom\tphylum\torder\tfamily\tgenus\tcanonical_name\tsequence"
+    "identifier\tkingdom\tphylum\tclass\torder\tfamily\tgenus\tcanonical_name\tsequence"
   end
 
   def _tsv_row(lineage_data:, identifier:, sequence:)

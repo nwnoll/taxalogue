@@ -34,18 +34,9 @@ class BoldImporter
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
 
-    tsv             = file_manager.create_file("#{query_taxon_name}_bold_fast_#{fast_run}_output_test_TEST1.tsv", OutputFormat::Tsv)
-    fasta           = file_manager.create_file("#{query_taxon_name}_bold_fast_#{fast_run}_output_test_TEST1.fas", OutputFormat::Fasta)
-    comparison_file = file_manager.create_file("#{query_taxon_name}_bold_fast_#{fast_run}_comparison_TEST.tsv",   OutputFormat::Comparison)
-    
-    tsv_files = file_manager.created_files.select { |f| f.type == OutputFormat::Tsv }
-    fasta_files = file_manager.created_files.select { |f| f.type == OutputFormat::Fasta }
-    comparison_files = file_manager.created_files.select { |f| f.type == OutputFormat::Comparison }
-    
-    p tsv_files
-    p fasta_files
-    p comparison_files
-    # file_manager.created_files
+    tsv             = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_bold_fast_#{fast_run}_output.tsv", OutputFormat::Tsv)
+    fasta           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_bold_fast_#{fast_run}_output.fas", OutputFormat::Fasta)
+    comparison_file = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_bold_fast_#{fast_run}_comparison.tsv",   OutputFormat::Comparison)
 
     specimens_of_taxon.keys.each do |taxon_name|
       nomial              = specimens_of_taxon[taxon_name][:nomial]
@@ -59,7 +50,6 @@ class BoldImporter
       syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [GbifTaxon])
 
       OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms)
-
       # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
       
 
@@ -68,6 +58,10 @@ class BoldImporter
         OutputFormat::Fasta.write_to_file(fasta: fasta, data: data, taxonomic_info: taxonomic_info)
       end
     end
+
+    tsv.close
+    fasta.close
+    comparison_file.close
   end
 
   private

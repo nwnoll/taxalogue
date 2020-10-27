@@ -12,3 +12,5 @@ class OutputFormat::Tsv
         tsv.puts _tsv_row(identifier: data[:identifier], lineage_data: taxonomic_info, sequence: data[:sequence])
     end
 end
+
+class OutputFormat::MergedTsv; end

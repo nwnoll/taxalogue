@@ -2,7 +2,7 @@
 
 class NcbiGenbankImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :markers, :fast_run, :regexes_for_markers
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :markers, :fast_run, :regexes_for_markers, :file_manager
 
   FILE_DESCRIPTION_PART = 10
 
@@ -10,7 +10,7 @@ class NcbiGenbankImporter
     ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'phylum_name']
   end
 
-  def initialize(file_name:, query_taxon_object:, markers:, fast_run: true)
+  def initialize(file_name:, query_taxon_object:, markers:, fast_run: true, file_manager:)
     @file_name            = file_name
     @query_taxon_object   = query_taxon_object
     @query_taxon_name     = query_taxon_object.canonical_name
@@ -18,21 +18,31 @@ class NcbiGenbankImporter
     @markers              = markers
     @fast_run             = fast_run
     @regexes_for_markers  = Marker.regexes(db: self, markers: markers)
+    @file_manager         = file_manager
   end
 
 
   def run
+    file_manager.create_dir
+
     file_count = 0
     # file_names = Dir[ 'data/NCBI/sequences/gbinv*' ].select{ |f| File.file? f }
-    file_names = Dir[ 'data/ncbigenbank/inv/gbinv*' ].select{ |f| File.file? f }
-    already_processed = ['data/ncbigenbank/inv/gbinv12.seq.gz','data/ncbigenbank/inv/gbinv16.seq.gz','data/ncbigenbank/inv/gbinv15.seq.gz','data/ncbigenbank/inv/gbinv1.seq.gz','data/ncbigenbank/inv/gbinv20.seq.gz','data/ncbigenbank/inv/gbinv35.seq.gz','data/ncbigenbank/inv/gbinv36.seq.gz','data/ncbigenbank/inv/gbinv38.seq.gz','data/ncbigenbank/inv/gbinv45.seq.gz','data/ncbigenbank/inv/gbinv54.seq.gz','data/ncbigenbank/inv/gbinv56.seq.gz','data/ncbigenbank/inv/gbinv57.seq.gz','data/ncbigenbank/inv/gbinv58.seq.gz','data/ncbigenbank/inv/gbinv60.seq.gz','data/ncbigenbank/inv/gbinv65.seq.gz','data/ncbigenbank/inv/gbinv66.seq.gz','data/ncbigenbank/inv/gbinv67.seq.gz','data/ncbigenbank/inv/gbinv6.seq.gz','data/ncbigenbank/inv/gbinv70.seq.gz','data/ncbigenbank/inv/gbinv71.seq.gz','data/ncbigenbank/inv/gbinv73.seq.gz','data/ncbigenbank/inv/gbinv74.seq.gz','data/ncbigenbank/inv/gbinv75.seq.gz','data/ncbigenbank/inv/gbinv77.seq.gz','data/ncbigenbank/inv/gbinv7.seq.gz','data/ncbigenbank/inv/gbinv81.seq.gz','data/ncbigenbank/inv/gbinv83.seq.gz','data/ncbigenbank/inv/gbinv87.seq.gz']
+    # file_names = Dir[ 'data/ncbigenbank/inv/gbinv*' ].select{ |f| File.file? f }
+
+
+    ## TODO: change to one file per run or both
+    file_names = []
+    file_names.push(file_name)
+
+
+    # already_processed = ['data/ncbigenbank/inv/gbinv12.seq.gz','data/ncbigenbank/inv/gbinv16.seq.gz','data/ncbigenbank/inv/gbinv15.seq.gz','data/ncbigenbank/inv/gbinv1.seq.gz','data/ncbigenbank/inv/gbinv20.seq.gz','data/ncbigenbank/inv/gbinv35.seq.gz','data/ncbigenbank/inv/gbinv36.seq.gz','data/ncbigenbank/inv/gbinv38.seq.gz','data/ncbigenbank/inv/gbinv45.seq.gz','data/ncbigenbank/inv/gbinv54.seq.gz','data/ncbigenbank/inv/gbinv56.seq.gz','data/ncbigenbank/inv/gbinv57.seq.gz','data/ncbigenbank/inv/gbinv58.seq.gz','data/ncbigenbank/inv/gbinv60.seq.gz','data/ncbigenbank/inv/gbinv65.seq.gz','data/ncbigenbank/inv/gbinv66.seq.gz','data/ncbigenbank/inv/gbinv67.seq.gz','data/ncbigenbank/inv/gbinv6.seq.gz','data/ncbigenbank/inv/gbinv70.seq.gz','data/ncbigenbank/inv/gbinv71.seq.gz','data/ncbigenbank/inv/gbinv73.seq.gz','data/ncbigenbank/inv/gbinv74.seq.gz','data/ncbigenbank/inv/gbinv75.seq.gz','data/ncbigenbank/inv/gbinv77.seq.gz','data/ncbigenbank/inv/gbinv7.seq.gz','data/ncbigenbank/inv/gbinv81.seq.gz','data/ncbigenbank/inv/gbinv83.seq.gz','data/ncbigenbank/inv/gbinv87.seq.gz']
     # file_names = Dir[ 'data/NCBI/sequences/gbinv38*' ].select { |f| File.file? f }
     # file_names = Dir[ 'data/ncbigenbank/mam/*' ].select{ |f| File.file? f }
     
     file_names.each do |file|
-      next if already_processed.include?(file)
+      # next if already_processed.include?(file)
       file_count                 += 1
-      file_name_match             = file.match(/gb\w+\d+/)
+      file_name_match             = file.to_s.match(/gb\w+\d+/)
       base_name                   = file_name_match[0]
       specimens_of_taxon          = Hash.new { |hash, key| hash[key] = {} }
       
@@ -61,22 +71,30 @@ class NcbiGenbankImporter
         end
       end
 
-      tsv             = File.open("results3/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output_TEST.tsv", 'w')
-      fasta           = File.open("results3/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_output_TEST.fas", 'w')
-      synonyms_file   = File.open("results3/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_synonyms_TEST.tsv", 'w')
-      comparison_file = File.open("results3/#{query_taxon_name}_ncbi_#{base_name}_fast_#{fast_run}_comparison_TEST.tsv", 'w')
+      tsv             = file_manager.create_file("#{query_taxon_name}_#{file_name.basename.sub(/\..*/, '')}_ncbi_fast_#{fast_run}_output.tsv", OutputFormat::Tsv)
+      fasta           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename.sub(/\..*/, '')}_ncbi_fast_#{fast_run}_output.fas", OutputFormat::Fasta)
+      comparison_file = file_manager.create_file("#{query_taxon_name}_#{file_name.basename.sub(/\..*/, '')}_ncbi_fast_#{fast_run}_comparison.tsv", OutputFormat::Comparison)
   
       specimens_of_taxon.keys.each do |taxon_name|
         nomial              = specimens_of_taxon[taxon_name][:nomial]
         first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
         taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
 
+        p '-----'
+        p taxon_name
+        p nomial
+        p taxonomic_info
+        
         next unless taxonomic_info
         next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
+        p taxon_name
+        p nomial
+        p taxonomic_info
         # Synonym List
-        syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [GbifTaxon])
-        OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms)
+        # syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [GbifTaxon])
+        OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info)
+        # OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms)
 
         # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
 
@@ -131,7 +149,7 @@ class NcbiGenbankImporter
     specimen                      = Specimen.new
     specimen.identifier           = gb.accession
     specimen.sequence             = nucs
-    specimen.source_taxon_name           = source_taxon_name
+    specimen.source_taxon_name    = source_taxon_name
     specimen.taxon_name           = nomial.name
     specimen.nomial               = nomial
     specimen.first_specimen_info  = gb

@@ -1,15 +1,16 @@
 # frozen_string_literal: true
 
 class BoldJob
-  attr_reader   :taxon, :markers, :taxonomy, :taxon_name 
+  attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager
 
   HEADER_LENGTH = 1
 
-  def initialize(taxon:, markers: nil, taxonomy:)
-    @taxon      = taxon
-    @taxon_name = taxon.canonical_name
-    @markers    = markers
-    @taxonomy   = taxonomy
+  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:)
+    @taxon                = taxon
+    @taxon_name           = taxon.canonical_name
+    @markers              = markers
+    @taxonomy             = taxonomy
+    @result_file_manager  = result_file_manager
 
     @pending = Pastel.new.white.on_yellow('pending')
     @failure = Pastel.new.white.on_red('failure')
@@ -64,7 +65,7 @@ class BoldJob
       end
       
       break if reached_family_level
-      # break if i == 1
+      break if i == 1
 
       failed_nodes                      = root_node.find_all { |node| node.content.last == @failure && node.is_leaf? }
       failed_nodes.each do |failed_node| 
@@ -84,7 +85,10 @@ class BoldJob
       end
     end
 
-    _write_result_files(root_node: root_node, fmanagers: fmanagers)
+    _classify_downloads(download_file_managers: fmanagers)
+    _merge_results
+
+    # _write_result_files(root_node: root_node, fmanagers: fmanagers)
   end
 
   def _print_download_progress_report(root_node:, rank_level:)
@@ -155,5 +159,21 @@ class BoldJob
 
     OutputFormat::MergedBoldDownload.write_to_file(file: merged_download_file, data: download_successes, header_length: HEADER_LENGTH, include_header: true)
     OutputFormat::DownloadInfo.write_to_file(file: download_info_file, fmanagers: fmanagers)
+  end
+
+  def _classify_downloads(download_file_managers:)
+    download_file_managers.each do |download_file_manager|
+      next unless download_file_manager.status == 'success'
+      next unless File.file?(download_file_manager.file_path)
+
+	    bold_classifier   = BoldImporter.new(fast_run: false, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager)
+      bold_classifier.run ## result_file_manager creates new files and will push those into internal array
+    end
+  end
+
+  def _merge_results
+    FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Tsv)
+    FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Fasta)
+    FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Comparison)
   end
 end

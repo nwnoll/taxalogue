@@ -39,11 +39,14 @@ end.parse!(into: params)
 
 # byebug
 # exit
-# NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
-# exit
+fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: fm, markers: params[:marker_objects]).run
+exit
 
-# BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon).run
-# exit
+
+fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: fm).run
+exit
 
 
 

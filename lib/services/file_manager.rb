@@ -73,11 +73,10 @@ class FileManager
       end
 
       def create_file(file_name, file_type)
-            file_path = Pathname.new(file_name)
-            full_path = dir_path + file_path
+            path = Pathname.new(file_name)
+            full_path = dir_path + path
             file = File.open(full_path, 'w')
-            
-            created_files.push(_file(file, file_type))
+            created_files.push(_file(full_path, file_type))
             return file
       end
 
@@ -143,7 +142,7 @@ class FileManager
 
       private
       def _file_name
-            return nil if multiple_files_per_dir || config.nil
+            return nil if multiple_files_per_dir || config.nil?
             config.name + '.' + config.file_type
       end
 
