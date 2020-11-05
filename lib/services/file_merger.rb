@@ -16,9 +16,13 @@ class FileMerger
                   next unless File.file?(file.path)
 
                   file_in = File.open(file.path, 'r')
-                  next if file_in.lineno == 1 && i != 0 && file.type != OutputFormat::Fasta # print tsv header only once
+                  
 
-                  fcreate_fileile_in.each_line { |line| merged_file_out.write line }
+                  file_in.each_line do |line|
+                        next if file_in.lineno == 1 && i != 0 && file.type != OutputFormat::Fasta # print tsv header only once
+                        
+                        merged_file_out.write line
+                  end
                   file_in.close
             end
 

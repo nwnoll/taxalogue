@@ -1,16 +1,17 @@
 # frozen_string_literal: true
 
 class NcbiGenbankConfig
-  attr_reader :name, :markers, :file_structure, :file_manager
-  def initialize(name:, markers: nil)
+  attr_reader :name, :markers, :file_structure, :file_manager, :use_http
+  def initialize(name:, markers: nil, use_http: false)
     @name             = name
     @markers          = markers
     @file_structure   = file_structure
     @file_manager     = _file_manager
+    @use_http         = use_http
   end
 
   def downloader
-    FtpDownloader
+    use_http? HttpDownloader : FtpDownloader
   end
 
   def address

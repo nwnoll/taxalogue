@@ -25,49 +25,29 @@ class NcbiGenbankImporter
   def run
     file_manager.create_dir
 
-    file_count = 0
-    # file_names = Dir[ 'data/NCBI/sequences/gbinv*' ].select{ |f| File.file? f }
-    # file_names = Dir[ 'data/ncbigenbank/inv/gbinv*' ].select{ |f| File.file? f }
-
-
     ## TODO: change to one file per run or both
     file_names = []
     file_names.push(file_name)
 
-
-    # already_processed = ['data/ncbigenbank/inv/gbinv12.seq.gz','data/ncbigenbank/inv/gbinv16.seq.gz','data/ncbigenbank/inv/gbinv15.seq.gz','data/ncbigenbank/inv/gbinv1.seq.gz','data/ncbigenbank/inv/gbinv20.seq.gz','data/ncbigenbank/inv/gbinv35.seq.gz','data/ncbigenbank/inv/gbinv36.seq.gz','data/ncbigenbank/inv/gbinv38.seq.gz','data/ncbigenbank/inv/gbinv45.seq.gz','data/ncbigenbank/inv/gbinv54.seq.gz','data/ncbigenbank/inv/gbinv56.seq.gz','data/ncbigenbank/inv/gbinv57.seq.gz','data/ncbigenbank/inv/gbinv58.seq.gz','data/ncbigenbank/inv/gbinv60.seq.gz','data/ncbigenbank/inv/gbinv65.seq.gz','data/ncbigenbank/inv/gbinv66.seq.gz','data/ncbigenbank/inv/gbinv67.seq.gz','data/ncbigenbank/inv/gbinv6.seq.gz','data/ncbigenbank/inv/gbinv70.seq.gz','data/ncbigenbank/inv/gbinv71.seq.gz','data/ncbigenbank/inv/gbinv73.seq.gz','data/ncbigenbank/inv/gbinv74.seq.gz','data/ncbigenbank/inv/gbinv75.seq.gz','data/ncbigenbank/inv/gbinv77.seq.gz','data/ncbigenbank/inv/gbinv7.seq.gz','data/ncbigenbank/inv/gbinv81.seq.gz','data/ncbigenbank/inv/gbinv83.seq.gz','data/ncbigenbank/inv/gbinv87.seq.gz']
-    # file_names = Dir[ 'data/NCBI/sequences/gbinv38*' ].select { |f| File.file? f }
-    # file_names = Dir[ 'data/ncbigenbank/mam/*' ].select{ |f| File.file? f }
-    
     file_names.each do |file|
-      # next if already_processed.include?(file)
-      file_count                 += 1
       file_name_match             = file.to_s.match(/gb\w+\d+/)
       base_name                   = file_name_match[0]
       specimens_of_taxon          = Hash.new { |hash, key| hash[key] = {} }
       
       Zlib::GzipReader.open(file) do |gz_file|
-        gb_entry = ''.dup
-        gz_file.each_line do |line|
-          next if gz_file.lineno <= FILE_DESCRIPTION_PART
-          gb_entry.concat(line); next if line !~ /#{is_gb_entry_end}/
-          gb = Bio::GenBank.new(gb_entry)
+        ff = Bio::FlatFile.new(Bio::GenBank, gz_file)
 
+        ff.each_entry do |gb|
           _matches_query_taxon(gb) ? nil : next if fast_run
-
+          
           features_of_gene  = gb.features.select { |f| _is_gene_feature?(f.feature) && _is_gene_of_marker?(f.qualifiers) && _is_no_pseudogene?(f.qualifiers) }
-          gb_entry = ''.dup; next unless features_of_gene.size == 1 ## why 1 ?
+          next unless features_of_gene.size == 1 ## why 1 ?
           
           nucs = gb.naseq.splicing(features_of_gene.first.position).to_s
-          gb_entry = ''.dup; next if nucs.nil? || nucs.empty?
+          next if nucs.nil? || nucs.empty?
 
           specimen = _get_specimen(gb: gb, nucs: nucs)
-
           SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
-          
-          puts gz_file.lineno
-          gb_entry = ''.dup
-          
         end
       end
 
@@ -80,30 +60,27 @@ class NcbiGenbankImporter
         first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
         taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
 
-        p '-----'
-        p taxon_name
-        p nomial
-        p taxonomic_info
         
         next unless taxonomic_info
         next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
-        p taxon_name
-        p nomial
-        p taxonomic_info
         # Synonym List
         # syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [GbifTaxon])
-        OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info)
-        # OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms)
-
         # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
 
+        OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info)
 
         specimens_of_taxon[taxon_name][:data].each do |data|
           OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
           OutputFormat::Fasta.write_to_file(fasta: fasta, data: data, taxonomic_info: taxonomic_info)
         end
       end
+
+      OutputFormat::Tsv.rewind
+
+      tsv.close
+      fasta.close
+      comparison_file.close
     end
   end
 

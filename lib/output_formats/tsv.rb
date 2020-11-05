@@ -11,6 +11,10 @@ class OutputFormat::Tsv
         tsv.puts _tsv_header if @@count ==  1
         tsv.puts _tsv_row(identifier: data[:identifier], lineage_data: taxonomic_info, sequence: data[:sequence])
     end
+
+    def self.rewind
+        @@count = 0
+    end
 end
 
 class OutputFormat::MergedTsv; end

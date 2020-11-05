@@ -34,10 +34,8 @@ class GbolImporter
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
 
-
     tsv             = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_output.tsv", 'w')
     fasta           = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_output.fas", 'w')
-    synonyms_file   = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_synonyms.tsv", 'w')
     comparison_file = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_comparison.tsv", 'w')
     
     specimens_of_taxon.keys.each do |taxon_name|
@@ -58,7 +56,13 @@ class GbolImporter
         OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
         OutputFormat::Fasta.write_to_file(fasta: fasta, data: data, taxonomic_info: taxonomic_info)
       end
+
     end
+    OutputFormat::Tsv.rewind
+
+    tsv.close
+    fasta.close
+    comparison_file.close
   end
   
   private

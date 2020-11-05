@@ -10,13 +10,16 @@ class FtpDownloader
     end
 
     def run
+        p 'in'
         ftp = Net::FTP.new(config.address)
         ftp.login
         files = ftp.chdir(config.target_directory) if config.target_directory
         files = ftp.nlst("#{config.target_file_base}*")
         files.each_with_index do |file, i|
-          break if i == 3
-          next if file.to_s == "gbinv35.seq.gz"
+          p file
+          break if i == 1
+          next
+          # next if file.to_s == "gbinv35.seq.gz"
           local_path = File.join(config.file_manager.dir_path, file)
           puts "local_path: #{local_path}"
           puts "... downloading #{file}"
