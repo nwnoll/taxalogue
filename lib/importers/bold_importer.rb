@@ -82,6 +82,7 @@ class BoldImporter
     specimen.taxon_name           = nomial.name
     specimen.nomial               = nomial
     specimen.first_specimen_info  = row
+    
     return specimen
   end
 

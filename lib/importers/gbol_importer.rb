@@ -2,7 +2,7 @@
 
 class GbolImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager
 
   def self.get_source_lineage(row)
     OpenStruct.new(
@@ -11,17 +11,19 @@ class GbolImporter
     )
   end
 
-  def initialize(file_name:, query_taxon_object:, fast_run: false)
+  def initialize(file_name:, query_taxon_object:, fast_run: false, file_manager:)
     @file_name                = file_name
     @query_taxon_object       = query_taxon_object
     @query_taxon_name         = query_taxon_object.canonical_name
     @query_taxon_rank         = query_taxon_object.taxon_rank
     @fast_run                 = fast_run
+    @file_manager             = file_manager
   end
 
   ## change to Zip processing
   ## or unzip file to use csv
   def run
+    file_manager.create_dir
     specimens_of_taxon  = Hash.new { |hash, key| hash[key] = {} }
     file                = File.open(file_name, 'r')
     
@@ -34,9 +36,9 @@ class GbolImporter
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
 
-    tsv             = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_output.tsv", 'w')
-    fasta           = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_output.fas", 'w')
-    comparison_file = File.open("results3/#{query_taxon_name}_gbol_fast_#{fast_run}_comparison.tsv", 'w')
+    tsv             = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_fast_#{fast_run}_output.tsv", OutputFormat::Tsv)
+    fasta           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_fast_#{fast_run}_output.fas", OutputFormat::Fasta)
+    comparison_file = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_fast_#{fast_run}_comparison.tsv",   OutputFormat::Comparison)
     
     specimens_of_taxon.keys.each do |taxon_name|
       nomial              = specimens_of_taxon[taxon_name][:nomial]

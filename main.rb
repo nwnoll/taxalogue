@@ -51,7 +51,11 @@ if params[:import_all]
 	genbank_fm 	= FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: genbank_fm, markers: params[:marker_objects])
 
-	as_job = AllSourcesJob.new(jobs: [bold_job, genbank_job])
+
+	gbol_fm 	= FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: false)
+	gbol_job 	= GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: gbol_fm, markers: params[:marker_objects], file_path: Pathname.new(params[:import_gbol]))
+
+	as_job = AllSourcesJob.new(jobs: [gbol_job, bold_job, genbank_job])
 	as_job.run
 end
 # byebug

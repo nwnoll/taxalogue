@@ -38,7 +38,6 @@ class NcbiGenbankJob
       downloader.run
 
       files               = file_manager.files_of(dir: file_manager.dir_path)
-      byebug
       did_download_fail   = false
       files.each { |file| download_did_fail = true; break if File.empty?(file) } 
       file_manager.status = did_download_fail ? 'failure' : 'success'
