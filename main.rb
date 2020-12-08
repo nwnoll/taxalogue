@@ -23,7 +23,12 @@ OptionParser.new do |opts|
 	opts.on('-d', 			  '--download_genbank')
 	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
 
-		taxon_object = GbifTaxon.find_by_canonical_name(taxon_name)
+		## CHANGE lateron
+		taxon_objects = GbifTaxon.where(canonical_name: taxon_name)
+		taxon_objects = taxon_objects.select { |t| t.taxonomic_status == 'accepted' }
+		taxon_object = taxon_objects.first
+		####
+		
 		params[:taxon_object] = taxon_object
 		if taxon_object
 			params[:taxon_rank] = taxon_object.taxon_rank
@@ -35,10 +40,23 @@ OptionParser.new do |opts|
 	opts.on('-m MARKERS', 	String, '--markers') do |markers|
 		params[:marker_objects] = Helper.create_marker_objects(query_marker_names: markers)
 	end
+	opts.on('-s', '--import_all') 
 end.parse!(into: params)
 
+
+if params[:import_all]
+	bold_fm 	= FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+	bold_job 	= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: bold_fm)
+
+	genbank_fm 	= FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: genbank_fm, markers: params[:marker_objects])
+
+	as_job = AllSourcesJob.new(jobs: [bold_job, genbank_job])
+	as_job.run
+end
 # byebug
 # exit
+
 fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: fm, markers: params[:marker_objects]).run
 exit

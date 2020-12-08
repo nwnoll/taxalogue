@@ -53,6 +53,7 @@ end
 
 class Monomial
   require_relative 'string_formatting'
+  require_relative 'taxon_search'
   include TaxonSearch
   include StringFormatting
 

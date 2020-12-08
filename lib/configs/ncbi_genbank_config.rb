@@ -11,7 +11,7 @@ class NcbiGenbankConfig
   end
 
   def downloader
-    use_http? HttpDownloader : FtpDownloader
+    use_http ? HttpDownloader : FtpDownloader
   end
 
   def address

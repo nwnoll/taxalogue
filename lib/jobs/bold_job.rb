@@ -20,6 +20,15 @@ class BoldJob
   end
 
   def run
+    download_file_managers = download_files
+
+    _classify_downloads(download_file_managers: download_file_managers)
+    
+    return result_file_manager
+    # _write_result_files(root_node: root_node, fmanagers: fmanagers)
+  end
+
+  def download_files
     root_node                           = Tree::TreeNode.new(taxon_name, [taxon, @pending])
     
     num_of_ranks                        = GbifTaxon.possible_ranks.size
@@ -85,10 +94,7 @@ class BoldJob
       end
     end
 
-    _classify_downloads(download_file_managers: fmanagers)
-    _merge_results
-
-    # _write_result_files(root_node: root_node, fmanagers: fmanagers)
+    return fmanagers
   end
 
   def _print_download_progress_report(root_node:, rank_level:)

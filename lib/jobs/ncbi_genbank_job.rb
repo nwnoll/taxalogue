@@ -14,7 +14,16 @@ class NcbiGenbankJob
   end
 
   def run
-    ## maybe switch NcbiApi if taxon is of rank family?
+    # _write_result_files(fmanagers: fmanagers)
+    download_file_managers = download_files
+    _classify_downloads(download_file_managers: download_file_managers)
+
+    return result_file_manager
+    # _merge_results
+  end
+
+  def download_files
+     ## maybe switch NcbiApi if taxon is of rank family?
     ## highert taxa might give an incomplete download
     ## it might be annoying if there will be searches
     ## for quite small taxa and the prog tries to download
@@ -29,14 +38,14 @@ class NcbiGenbankJob
       downloader.run
 
       files               = file_manager.files_of(dir: file_manager.dir_path)
+      byebug
       did_download_fail   = false
       files.each { |file| download_did_fail = true; break if File.empty?(file) } 
       file_manager.status = did_download_fail ? 'failure' : 'success'
       fmanagers.push(file_manager)
     end
-    # _write_result_files(fmanagers: fmanagers)
-    _classify_downloads(download_file_managers: fmanagers)
-    _merge_results
+
+    return fmanagers
   end
 
 

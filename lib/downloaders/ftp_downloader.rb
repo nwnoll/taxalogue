@@ -17,9 +17,8 @@ class FtpDownloader
         files = ftp.nlst("#{config.target_file_base}*")
         files.each_with_index do |file, i|
           p file
-          break if i == 1
-          next
-          # next if file.to_s == "gbinv35.seq.gz"
+          # break if i == 1
+          next unless file.to_s == "gbinv35.seq.gz"
           local_path = File.join(config.file_manager.dir_path, file)
           puts "local_path: #{local_path}"
           puts "... downloading #{file}"
