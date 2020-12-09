@@ -15,7 +15,6 @@ class BoldImporter
   end
 
   def run
-    file_manager.create_dir
     specimens_of_taxon    = Hash.new { |hash, key| hash[key] = {} }
     
     file                  = File.file?(file_name) ? File.open(file_name, 'r') : nil

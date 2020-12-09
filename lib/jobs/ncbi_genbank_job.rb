@@ -33,9 +33,13 @@ class NcbiGenbankJob
     _configs.each do |config|
       file_manager        = config.file_manager
       file_manager.create_dir
-
-      downloader          = config.downloader.new(config: config)
-      downloader.run
+      
+      ## TODO: uncomment again, this is because there are some ports not open at the museum...
+      ## This might be the case for other institutions too
+      ## if ftp is used then I might catch that exception and try to download via http
+      
+      # downloader          = config.downloader.new(config: config)
+      # downloader.run
 
       files               = file_manager.files_of(dir: file_manager.dir_path)
       did_download_fail   = false

@@ -23,10 +23,10 @@ OptionParser.new do |opts|
 	opts.on('-d', 			  '--download_genbank')
 	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
 
-		## CHANGE lateron
-		taxon_objects = GbifTaxon.where(canonical_name: taxon_name)
-		taxon_objects = taxon_objects.select { |t| t.taxonomic_status == 'accepted' }
-		taxon_object = taxon_objects.first
+		## TODO: CHANGE lateron
+		taxon_objects 	= GbifTaxon.where(canonical_name: taxon_name)
+		taxon_objects 	= taxon_objects.select { |t| t.taxonomic_status == 'accepted' }
+		taxon_object 	= taxon_objects.first
 		####
 		
 		params[:taxon_object] = taxon_object
@@ -45,19 +45,16 @@ end.parse!(into: params)
 
 
 if params[:import_all]
-	bold_fm 	= FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-	bold_job 	= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: bold_fm)
+	file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+	
+	bold_job 	= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: file_manager)
+	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: file_manager, markers: params[:marker_objects])
+	gbol_job 	= GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: file_manager, markers: params[:marker_objects], file_path: Pathname.new(params[:import_gbol]))
 
-	genbank_fm 	= FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: genbank_fm, markers: params[:marker_objects])
-
-
-	gbol_fm 	= FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: false)
-	gbol_job 	= GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: gbol_fm, markers: params[:marker_objects], file_path: Pathname.new(params[:import_gbol]))
-
-	as_job = AllSourcesJob.new(jobs: [gbol_job, bold_job, genbank_job])
-	as_job.run
+	multiple_jobs = MultipleJobs.new(jobs: [gbol_job, bold_job, genbank_job], file_manager: file_manager)
+	multiple_jobs.run
 end
+exit
 # byebug
 # exit
 

@@ -23,8 +23,6 @@ class NcbiGenbankImporter
 
 
   def run
-    file_manager.create_dir
-
     ## TODO: change to one file per run or both
     file_names = []
     file_names.push(file_name)

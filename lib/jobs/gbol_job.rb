@@ -14,15 +14,10 @@ class GbolJob
     end
 
     def run
-        p 'in gboljob'
         ## TODO change back when release is available again
         # _config.downloader.new(config: _config).run
 
         download_file_managers = download_files
-
-        puts '|||||||'
-        pp download_file_managers
-        puts '|||||||'
 
         _classify_downloads(download_file_managers: download_file_managers)
         
@@ -38,10 +33,7 @@ class GbolJob
         file_manager.status = 'success' # TODO: preliminary
 
         fmanagers.push(file_manager)
-        puts '-------'
-        pp file_manager
-        puts '-------'
-
+        
         return fmanagers
     end
   
@@ -54,7 +46,7 @@ class GbolJob
             ## needs to be changed...
             ## here I also have to change the config file at the moment it says it is zip but the whole processong in the
             ## GBol importer is base on a csv file... maybe botth? but at the moment I just change it to CSV in the config file
-            next unless File.file?(download_file_manager.file_path)
+            next unless File.file?(file_path)
     
             # gbol_classifier   = GbolImporter.new(fast_run: true, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager)
             gbol_classifier   = GbolImporter.new(fast_run: true, file_name: file_path, query_taxon_object: taxon, file_manager: result_file_manager)

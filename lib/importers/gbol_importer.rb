@@ -23,7 +23,6 @@ class GbolImporter
   ## change to Zip processing
   ## or unzip file to use csv
   def run
-    file_manager.create_dir
     specimens_of_taxon  = Hash.new { |hash, key| hash[key] = {} }
     file                = File.open(file_name, 'r')
     
