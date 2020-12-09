@@ -16,11 +16,13 @@ class Helper
       return index_by_column_name
   end
 
-  def self.extract_zip(file:, destination:)
+  def self.extract_zip(name:, destination:, files_to_extract:)
       FileUtils.mkdir_p(destination)
     
-      Zip::File.open(file) do |zip_file|
+      Zip::File.open(name) do |zip_file|
         zip_file.each do |f|
+          next unless files_to_extract.include?(f.name)
+
           fpath = File.join(destination, f.name)
           zip_file.extract(f, fpath) unless File.exist?(fpath)
         end

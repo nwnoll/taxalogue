@@ -1,2 +1,2 @@
 adapter: 'sqlite3'
-database: 'db/database.db'
+database: 'db/db_setup.db'

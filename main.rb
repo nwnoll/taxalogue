@@ -4,6 +4,7 @@ require './requirements'
 
 params = {}
 CONFIG_FILE = 'default_config.yaml'
+
 if File.exists? CONFIG_FILE
 	config_options = YAML.load_file(CONFIG_FILE)
 	params.merge!(config_options)
@@ -23,7 +24,7 @@ OptionParser.new do |opts|
 	opts.on('-d', 			  '--download_genbank')
 	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
 
-		## TODO: CHANGE lateron
+		## TODO: should be changed, maybe
 		taxon_objects 	= GbifTaxon.where(canonical_name: taxon_name)
 		taxon_objects 	= taxon_objects.select { |t| t.taxonomic_status == 'accepted' }
 		taxon_object 	= taxon_objects.first
@@ -54,9 +55,13 @@ if params[:import_all]
 	multiple_jobs = MultipleJobs.new(jobs: [gbol_job, bold_job, genbank_job], file_manager: file_manager)
 	multiple_jobs.run
 end
+
+byebug
+
+
+gbif_taxon_job = GbifTaxonJob.new
+gbif_taxon_job.run
 exit
-# byebug
-# exit
 
 fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: fm, markers: params[:marker_objects]).run

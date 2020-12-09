@@ -85,7 +85,7 @@ class TestHelper < Test::Unit::TestCase
                   end
             end
 
-            Helper.extract_zip(file: zip_path, destination: destination)
+            Helper.extract_zip(name: zip_path, destination: destination)
 
             assert_path_exist destination
 

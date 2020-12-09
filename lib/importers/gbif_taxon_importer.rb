@@ -1,15 +1,19 @@
 # frozen_string_literal: true
 
 class GbifTaxonImporter
-  attr_reader :file_name
+  attr_reader :file_name, :file_manager
 
-  def initialize(file_name:)
-    @file_name        = file_name
+  def initialize(file_name:, file_manager:)
+    @file_name    = file_name
+    @file_manager = file_manager
   end
 
   def run
-    file = File.open(file_name, 'r')
 
+    Helper.extract_zip(name: file_manager.file_path, destination: file_manager.dir_path, files_to_extract: ['Taxon.tsv'])
+    
+    file_path = file_manager.dir_path + file_name
+    file      = File.open(file_path, 'r')
 
     csv = CSV.new(file, headers: true, col_sep: "\t", liberal_parsing: true)
     taxa = []

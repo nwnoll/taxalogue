@@ -13,7 +13,6 @@ class HttpDownloader
     uri = URI(config.address)
 
     config.address.start_with?('https') ? use_ssl = true : use_ssl = false
-    
     # add redirect
     Net::HTTP.start(uri.host, uri.port, use_ssl: use_ssl) do |http|
       http.read_timeout = 0.5

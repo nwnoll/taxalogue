@@ -3,70 +3,63 @@
 class DatabaseSchema
 	def self.create_db
 		ActiveRecord::Schema.define do
-			# create_table :ncbi_ranked_lineages do |t|
-			# 	t.integer :tax_id
-			# 	t.string :name, index: true
-			# 	t.string :species
-			# 	t.string :genus
-			# 	t.string :familia
-			# 	t.string :ordo
-			# 	t.string :classis
-			# 	t.string :phylum
-			# 	t.string :regnum
-			# 	t.string :super_regnum
-			# end
+			create_table :ncbi_ranked_lineages do |t|
+				t.integer :tax_id
+				t.string :name, index: true
+				t.string :species
+				t.string :genus
+				t.string :familia
+				t.string :ordo
+				t.string :classis
+				t.string :phylum
+				t.string :regnum
+				t.string :super_regnum
+			end
 			
-			# create_table :ncbi_names do |t|
-			# 	t.integer	:tax_id, index: true
-			# 	t.string 	:name
-			# 	t.string 	:unique_name
-			# 	t.string 	:name_class
-			# end
+			create_table :ncbi_names do |t|
+				t.integer	:tax_id, index: true
+				t.string 	:name
+				t.string 	:unique_name
+				t.string 	:name_class
+			end
 			
-			# create_table :ncbi_nodes do |t|
-			# 	t.integer 	:tax_id, index: true
-			# 	t.integer 	:parent_tax_id
-			# 	t.string 	:rank
-			# 	t.integer 	:division_id
-			# 	t.integer 	:genetic_code_id
-			# 	t.integer 	:mito_genetic_code_id
-			# 	t.boolean 	:has_specified_species
-			# 	t.integer 	:plastid_genetic_code_id
-			# end
+			create_table :ncbi_nodes do |t|
+				t.integer 	:tax_id, index: true
+				t.integer 	:parent_tax_id
+				t.string 	:rank
+				t.integer 	:division_id
+				t.integer 	:genetic_code_id
+				t.integer 	:mito_genetic_code_id
+				t.boolean 	:has_specified_species
+				t.integer 	:plastid_genetic_code_id
+			end
 
-			# create_table :gbif_taxa do |t|
-			# 	t.integer :taxon_id, index: true
-			# 	t.string :dataset_id
-			# 	t.string :parent_name_usage_id, index: true
-			# 	t.string :accepted_name_usage_id, index: true
-			# 	t.string :original_name_usage_id
-			# 	t.string :scientific_name, index: true
-			# 	t.string :scientific_name_authorship, index: true
-			# 	t.string :canonical_name, index: true
-			# 	t.string :generic_name, index: true
-			# 	t.string :specific_epithet, index: true
-			# 	t.string :infraspecific_epithet, index: true
-			# 	t.string :taxon_rank
-			# 	t.text :name_according_to
-			# 	t.text :name_published_in
-			# 	t.string :taxonomic_status
-			# 	t.string :nomenclatural_status
-			# 	t.text :taxon_remarks
-			# 	t.string :regnum, index: true
-			# 	t.string :phylum, index: true
-			# 	t.string :classis, index: true
-			# 	t.string :ordo, index: true
-			# 	t.string :familia, index: true
-			# 	t.string :genus, index: true
-			# end
+			create_table :gbif_taxa do |t|
+				t.integer :taxon_id, index: true
+				t.string :dataset_id
+				t.string :parent_name_usage_id, index: true
+				t.string :accepted_name_usage_id, index: true
+				t.string :original_name_usage_id
+				t.string :scientific_name, index: true
+				t.string :scientific_name_authorship, index: true
+				t.string :canonical_name, index: true
+				t.string :generic_name, index: true
+				t.string :specific_epithet, index: true
+				t.string :infraspecific_epithet, index: true
+				t.string :taxon_rank
+				t.text :name_according_to
+				t.text :name_published_in
+				t.string :taxonomic_status
+				t.string :nomenclatural_status
+				t.text :taxon_remarks
+				t.string :regnum, index: true
+				t.string :phylum, index: true
+				t.string :classis, index: true
+				t.string :ordo, index: true
+				t.string :familia, index: true
+				t.string :genus, index: true
+			end
 			
-			# create_table :sequences do |t|
-			# 	t.string			:state
-			#   	t.string 			:header
-			#   	t.text				:seq
-			# 	t.references 	:specimen
-			# end
-
 			create_table :gbif_homonyms, force: true do |t|
 				t.integer 	:count
 				t.integer 	:regnum_id

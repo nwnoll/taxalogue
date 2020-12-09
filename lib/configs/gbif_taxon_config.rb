@@ -3,7 +3,7 @@
 class GbifTaxonConfig
     attr_reader :name
     def initialize()
-        @name            = 'backbone'
+        @name            = 'GBIF_TAXONOMY'
     end
   
     def downloader
@@ -12,7 +12,7 @@ class GbifTaxonConfig
 
     def importers
         {
-            'GbifTaxonImporter': 'taxon.tsv',
+            'GbifTaxonImporter': 'Taxon.tsv',
         }
     end
   
