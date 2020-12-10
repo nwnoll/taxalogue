@@ -2,7 +2,7 @@
 
 class Helper
   def self.setup_taxonomy
-    gbif_taxonomy_job 	= GbifTaxonJob.new
+    gbif_taxonomy_job 	= GbifTaxonomyJob.new
     ncbi_taxonomy_job 	= NcbiTaxonomyJob.new
   
     multiple_jobs 		= MultipleJobs.new(jobs: [gbif_taxonomy_job, ncbi_taxonomy_job])
@@ -56,6 +56,6 @@ class Helper
     end
 
     def self.latinize_rank(rank)
-      GbifTaxon.rank_mappings["#{rank}"]
+      GbifTaxonomy.rank_mappings["#{rank}"]
     end
 end

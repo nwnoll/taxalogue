@@ -22,7 +22,7 @@ module Printing
 
 
 
-    module GbifTaxonJob
+    module GbifTaxonomyJob
         def run
             Printing.job_run_start(self.class)
             super
@@ -56,7 +56,7 @@ module Printing
         end
     end
 
-    module GbifTaxonImporter
+    module GbifTaxonomyImporter
         def run
             Printing.importer_message(self.class)
             super

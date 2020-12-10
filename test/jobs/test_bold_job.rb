@@ -5,8 +5,8 @@ require_relative '../test_helper'
 class TestBoldJob < Test::Unit::TestCase
 
       def setup
-            @taxon = GbifTaxon.find_by(canonical_name: 'Arthropoda')
-            @bold_job = BoldJob.new(taxon: @taxon, taxonomy: GbifTaxon)
+            @taxon = GbifTaxonomy.find_by(canonical_name: 'Arthropoda')
+            @bold_job = BoldJob.new(taxon: @taxon, taxonomy: GbifTaxonomy)
       end
 
       def test_taxon

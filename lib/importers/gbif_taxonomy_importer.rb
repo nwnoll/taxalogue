@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class GbifTaxonImporter
+class GbifTaxonomyImporter
   attr_reader :file_name, :file_manager
 
   def initialize(file_name:, file_manager:)
@@ -17,7 +17,7 @@ class GbifTaxonImporter
 
     csv = CSV.new(file, headers: true, col_sep: "\t", liberal_parsing: true)
     taxa = []
-    columns = GbifTaxon.column_names - ['id']
+    columns = GbifTaxonomy.column_names - ['id']
     csv.each do |row|
       next if row['taxonRank'] == 'unranked'
       taxa.push(row.to_h.values)
@@ -31,6 +31,6 @@ class GbifTaxonImporter
 
   private
   def _batch_import(columns, taxa)
-    GbifTaxon.import columns, taxa, validate: false
+    GbifTaxonomy.import columns, taxa, validate: false
   end
 end

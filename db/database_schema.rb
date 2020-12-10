@@ -34,7 +34,7 @@ class DatabaseSchema
 				t.integer 	:plastid_genetic_code_id
 			end
 
-			create_table :gbif_taxa do |t|
+			create_table :gbif_taxonomy do |t|
 				t.integer :taxon_id, index: true
 				t.string :dataset_id
 				t.string :parent_name_usage_id, index: true

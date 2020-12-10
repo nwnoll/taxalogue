@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class GbifTaxonConfig
+class GbifTaxonomyConfig
     attr_reader :name
     def initialize()
         @name            = 'GBIF_TAXONOMY'
@@ -12,7 +12,7 @@ class GbifTaxonConfig
 
     def importers
         {
-            'GbifTaxonImporter': 'Taxon.tsv',
+            'GbifTaxonomyImporter': 'Taxon.tsv',
         }
     end
   

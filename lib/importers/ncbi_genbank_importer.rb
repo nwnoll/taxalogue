@@ -63,7 +63,7 @@ class NcbiGenbankImporter
         next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
         # Synonym List
-        # syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [GbifTaxon])
+        # syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [GbifTaxonomy])
         # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
 
         OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info)

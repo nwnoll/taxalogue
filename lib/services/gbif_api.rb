@@ -23,26 +23,26 @@ class GbifApi
         accepted_name_usage_id          = result['acceptedKey'].to_s
         records.push(_taxon_object_proxy(taxon: result, comment: :used_accepted_info)) and next if accepted_name_usage_id.blank?
         
-        record                          = GbifTaxon.find_by(taxon_id: accepted_name_usage_id)
+        record                          = GbifTaxonomy.find_by(taxon_id: accepted_name_usage_id)
         records.push(record) and next unless record.nil?
 
         resp                            = GbifApi.new(path: 'species/', query: accepted_name_usage_id).response_hash
         nubkey                          = resp['nubKey'].to_s
         records.push(_taxon_object_proxy(taxon: resp)) and next if nubkey.blank?
 
-        record_by_nubkey                = GbifTaxon.find_by(taxon_id: nubkey)
+        record_by_nubkey                = GbifTaxonomy.find_by(taxon_id: nubkey)
         records.push(_taxon_object_proxy(taxon: resp)) and next if record_by_nubkey.nil?
 
         accepted_id                     = record_by_nubkey.accepted_name_usage_id
         records.push(record_by_nubkey) and next if accepted_id.blank?
         
-        record_by_accepted_id_of_nubkey = GbifTaxon.find_by(taxon_id: accepted_id)
+        record_by_accepted_id_of_nubkey = GbifTaxonomy.find_by(taxon_id: accepted_id)
         record_by_accepted_id_of_nubkey.nil? ? records.push(record_by_nubkey) : records.push(record_by_accepted_id_of_nubkey)
       end
     end
 
-    gbif_taxon_records = records.select { |record| record.instance_of?(GbifTaxon) }.uniq
-    return gbif_taxon_records.empty? ? records : gbif_taxon_records
+    gbif_taxonomy_records = records.select { |record| record.instance_of?(GbifTaxonomy) }.uniq
+    return gbif_taxonomy_records.empty? ? records : gbif_taxonomy_records
   end
 
   def response
@@ -111,7 +111,7 @@ class GbifApi
 
   def _get_canonical_name(taxon)
     canonical_name = ''
-    possible_ranks = GbifTaxon.possible_ranks
+    possible_ranks = GbifTaxonomy.possible_ranks
     possible_ranks.reverse.each { |rank| canonical_name = taxon[rank] unless taxon[rank].blank? }
 
     return canonical_name
@@ -119,7 +119,7 @@ class GbifApi
 
   def _get_combined(taxon)
     combined = []
-    possible_ranks = GbifTaxon.possible_ranks
+    possible_ranks = GbifTaxonomy.possible_ranks
     possible_ranks.reverse.each { |rank| combined.push(taxon[rank]) unless taxon[rank].blank? }
     
     return combined

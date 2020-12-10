@@ -8,7 +8,7 @@ CONFIG_FILE = 'default_config.yaml'
 if File.exists? CONFIG_FILE
 	config_options = YAML.load_file(CONFIG_FILE)
 	params.merge!(config_options)
-	params[:taxon_object] 	= GbifTaxon.find_by_canonical_name(params[:taxon])
+	params[:taxon_object] 	= GbifTaxonomy.find_by_canonical_name(params[:taxon])
 	params[:marker_objects] = Helper.create_marker_objects(query_marker_names: params[:markers])
 end
 
@@ -25,7 +25,7 @@ OptionParser.new do |opts|
 	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
 
 		## TODO: should be changed, maybe
-		taxon_objects 	= GbifTaxon.where(canonical_name: taxon_name)
+		taxon_objects 	= GbifTaxonomy.where(canonical_name: taxon_name)
 		taxon_objects 	= taxon_objects.select { |t| t.taxonomic_status == 'accepted' }
 		taxon_object 	= taxon_objects.first
 		####
@@ -52,9 +52,9 @@ end
 if params[:import_all_seqs]
 	file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 
-	bold_job 	= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: file_manager)
-	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: file_manager, markers: params[:marker_objects])
-	gbol_job 	= GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: file_manager, markers: params[:marker_objects], file_path: Pathname.new(params[:import_gbol]))
+	bold_job 	= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager)
+	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects])
+	gbol_job 	= GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], file_path: Pathname.new(params[:import_gbol]))
 
 	file_manager.create_dir
 
@@ -77,17 +77,17 @@ ncbi_taxonomy_job.run
 byebug
 
 
-gbif_taxon_job = GbifTaxonJob.new
-gbif_taxon_job.run
+gbif_taxonomy_job = GbifTaxonomyJob.new
+gbif_taxonomy_job.run
 exit
 
 fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: fm, markers: params[:marker_objects]).run
+NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects]).run
 exit
 
 
 fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: fm).run
+BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm).run
 exit
 
 
@@ -185,18 +185,18 @@ exit
 
 
 
-NcbiGenbankJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
+NcbiGenbankJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxonomy).run
 exit
-BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxon).run
-exit
-
-
-
-
-
+BoldJob.new(taxon: params[:taxon_record], taxonomy: GbifTaxonomy).run
 exit
 
-job = GbifTaxonJob.new
+
+
+
+
+exit
+
+job = GbifTaxonomyJob.new
 job.extend(constantize("Printing::#{job.class}"))
 job.run
 exit
@@ -238,7 +238,7 @@ DatabaseSchema.create_db
 exit
 
 
-GbifTaxonImporter.import(params[:import_gbif]) if params[:import_gbif]
+GbifTaxonomyImporter.import(params[:import_gbif]) if params[:import_gbif]
 
 
 NcbiNameImporter.import(params[:import_names]) if params[:import_names]

@@ -31,7 +31,7 @@ class BoldJob
   def download_files
     root_node                           = Tree::TreeNode.new(taxon_name, [taxon, @pending])
     
-    num_of_ranks                        = GbifTaxon.possible_ranks.size
+    num_of_ranks                        = GbifTaxonomy.possible_ranks.size
     reached_family_level                = false
     fmanagers                           = []
     
@@ -80,11 +80,11 @@ class BoldJob
       failed_nodes.each do |failed_node| 
         node_record                     = failed_node.content.first
         node_name                       = failed_node.name
-        index_of_rank                   = GbifTaxon.possible_ranks.index(node_record.taxon_rank)
+        index_of_rank                   = GbifTaxonomy.possible_ranks.index(node_record.taxon_rank)
         index_of_lower_rank             = index_of_rank - 1
         reached_family_level            = true if index_of_lower_rank == 2
-        taxon_rank_to_try               = GbifTaxon.possible_ranks[index_of_lower_rank]
-        taxa_records_and_names_to_try   = GbifTaxon.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
+        taxon_rank_to_try               = GbifTaxonomy.possible_ranks[index_of_lower_rank]
+        taxa_records_and_names_to_try   = GbifTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
         next if taxa_records_and_names_to_try.nil?
         taxa_records_and_names_to_try.each do |record_and_name|
           record                        = record_and_name.first

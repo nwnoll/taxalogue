@@ -20,7 +20,7 @@ module TaxonSearch
     return unless ncbi_node_object
 
     loop do
-      return ncbi_node_object if GbifTaxon.possible_ranks.include?(ncbi_node_object.rank)
+      return ncbi_node_object if GbifTaxonomy.possible_ranks.include?(ncbi_node_object.rank)
 
       ncbi_node_object = NcbiNode.find_by_tax_id(ncbi_node_object.parent_tax_id)
       return nil unless ncbi_node_object

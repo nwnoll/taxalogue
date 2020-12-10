@@ -5,7 +5,7 @@ class OutputFormat::Comparison
 
     @@count = 0
 
-    def self.write_to_file(file:, nomial:, accepted_taxon:, synonyms: nil, used_taxonomy: GbifTaxon)
+    def self.write_to_file(file:, nomial:, accepted_taxon:, synonyms: nil, used_taxonomy: GbifTaxonomy)
         
         @@count += 1
         if @@count == 1

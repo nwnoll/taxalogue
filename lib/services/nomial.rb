@@ -67,24 +67,24 @@ class Monomial
 
   def taxonomy(first_specimen_info:, importer:)
     records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
-    record  = _gbif_taxon_object(records: records)
+    record  = _gbif_taxonomy_object(records: records)
     return record unless record.nil?
 
     records = _get_records(current_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
-    record  = _gbif_taxon_object(records: records)
+    record  = _gbif_taxonomy_object(records: records)
     return record unless record.nil?
     
     records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_exact: true)
-    record  = _gbif_taxon_object(records: records)
+    record  = _gbif_taxonomy_object(records: records)
     return record unless record.nil?
 
     records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_fuzzy: true)
-    record  = _gbif_taxon_object(records: records)
+    record  = _gbif_taxonomy_object(records: records)
     return record unless record.nil?
   end
 
   private
-  def _gbif_taxon_object(records:)
+  def _gbif_taxonomy_object(records:)
     return nil if records.nil? || records.empty?
 
     accepted_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_accepted?(record) }
@@ -94,7 +94,7 @@ class Monomial
     return doubtful_records.first if doubtful_records.size > 0
 
     synonymous_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_synonym?(record) && _has_accepted_name_usage_id(record) }
-    return GbifTaxon.find_by(taxon_id: synonymous_records.first.accepted_name_usage_id.to_i) if synonymous_records.size > 0
+    return GbifTaxonomy.find_by(taxon_id: synonymous_records.first.accepted_name_usage_id.to_i) if synonymous_records.size > 0
 
     return nil
   end
@@ -102,7 +102,7 @@ class Monomial
   def _get_records(current_name:, importer:, first_specimen_info:, gbif_api_exact: false, gbif_api_fuzzy: false)
     return nil if current_name.nil? || query_taxon_object.nil? || query_taxon_rank.nil?
     
-    all_records = GbifTaxon.where(canonical_name: current_name)               if !gbif_api_exact  && !gbif_api_fuzzy
+    all_records = GbifTaxonomy.where(canonical_name: current_name)               if !gbif_api_exact  && !gbif_api_fuzzy
     all_records = GbifApi.new(query: current_name).records                    if gbif_api_exact   && !gbif_api_fuzzy
     all_records = GbifApi.new(path: _fuzzy_path, query: current_name).records if gbif_api_fuzzy   && !gbif_api_exact
     return nil if all_records.nil?
@@ -176,19 +176,19 @@ end
 class Polynomial < Monomial
   def taxonomy(first_specimen_info:, importer:)
     records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
-    record  = _gbif_taxon_object(records: records)
+    record  = _gbif_taxonomy_object(records: records)
     return record unless record.nil?
     
     records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_exact: true)
-    record  = _gbif_taxon_object(records: records)
+    record  = _gbif_taxonomy_object(records: records)
     return record unless record.nil?
 
     records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_fuzzy: true)
-    record  = _gbif_taxon_object(records: records)
+    record  = _gbif_taxonomy_object(records: records)
     return record unless record.nil?
 
     records = _get_records(current_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
-    record  = _gbif_taxon_object(records: records)
+    record  = _gbif_taxonomy_object(records: records)
     return record unless record.nil?
 
     cutted_name = _remove_last_name_part(name)

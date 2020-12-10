@@ -10,7 +10,6 @@ require 'tree'
 require 'parallel'
 require 'pastel'
 
-
 require "yaml"
 require 'optparse'
 require 'json'
@@ -50,8 +49,8 @@ sections.each do |section|
 	end
 end
 
-unless GbifTaxon.any? 
-	gbif_taxonomy_job = GbifTaxonJob.new
+unless GbifTaxonomy.any? 
+	gbif_taxonomy_job = GbifTaxonomyJob.new
 	gbif_taxonomy_job.run
 end
 
