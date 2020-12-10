@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
 class NcbiRankedLineageImporter
-	attr_reader :archive_name, :file_name
+	attr_reader :file_name, :file_manager
 
-	def initialize(archive_name:, file_name:)
-		@archive_name	= archive_name
+	def initialize(file_name:, file_manager:)
 		@file_name		= file_name
+		@file_manager	= file_manager
 	end
 
 	def run
-		Zip::File.open(archive_name) do |zip_file|
+		Zip::File.open(file_manager.file_path) do |zip_file|
 			entry = zip_file.find_entry(file_name)
 			lineage_records = []
 			columns =[:tax_id, :name, :species, :genus, :familia,
@@ -30,6 +30,6 @@ class NcbiRankedLineageImporter
 
 	private
 	def _batch_import(columns, records)
-		# NcbiRankedLineage.import columns, records, validate: false
+		NcbiRankedLineage.import columns, records, validate: false
 	end
 end

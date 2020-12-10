@@ -8,7 +8,7 @@ CONFIG_FILE = 'default_config.yaml'
 if File.exists? CONFIG_FILE
 	config_options = YAML.load_file(CONFIG_FILE)
 	params.merge!(config_options)
-	params[:taxon_object] = GbifTaxon.find_by_canonical_name(params[:taxon])
+	params[:taxon_object] 	= GbifTaxon.find_by_canonical_name(params[:taxon])
 	params[:marker_objects] = Helper.create_marker_objects(query_marker_names: params[:markers])
 end
 
@@ -41,20 +41,38 @@ OptionParser.new do |opts|
 	opts.on('-m MARKERS', 	String, '--markers') do |markers|
 		params[:marker_objects] = Helper.create_marker_objects(query_marker_names: markers)
 	end
-	opts.on('-s', '--import_all') 
+	opts.on('-s', '--import_all_seqs') 
+	opts.on('-x', '--setup_taxonomy') 
 end.parse!(into: params)
 
+if params[:setup_taxonomy]
+	Helper.setup_taxonomy
+end
 
-if params[:import_all]
+if params[:import_all_seqs]
 	file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-	
+
 	bold_job 	= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: file_manager)
 	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: file_manager, markers: params[:marker_objects])
 	gbol_job 	= GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxon, result_file_manager: file_manager, markers: params[:marker_objects], file_path: Pathname.new(params[:import_gbol]))
 
-	multiple_jobs = MultipleJobs.new(jobs: [gbol_job, bold_job, genbank_job], file_manager: file_manager)
+	file_manager.create_dir
+
+	multiple_jobs = MultipleJobs.new(jobs: [gbol_job, bold_job, genbank_job])
 	multiple_jobs.run
+
+	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
+	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
+	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
 end
+
+byebug
+
+
+ncbi_taxonomy_job = NcbiTaxonomyJob.new
+# ncbi_taxonomy_job.extend(constantize("Printing::#{ncbi_taxonomy_job.class}"))
+ncbi_taxonomy_job.run
+
 
 byebug
 
@@ -174,9 +192,7 @@ exit
 
 
 
-ncbi_taxonomy_job = NcbiTaxonomyJob.new
-ncbi_taxonomy_job.extend(constantize("Printing::#{ncbi_taxonomy_job.class}"))
-ncbi_taxonomy_job.run
+
 
 exit
 

@@ -10,8 +10,7 @@ class GbifHomonymImporter
       def run
             file = File.open(file_name, 'r')
 
-            # skip first line
-            file.readline
+            file.readline # skip first line
 
             csv = CSV.new(file, headers: false, col_sep: "\t", liberal_parsing: true)
 

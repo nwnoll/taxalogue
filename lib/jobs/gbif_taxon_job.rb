@@ -8,9 +8,9 @@ class GbifTaxonJob
         file_manager = _config.file_manager
         file_manager.create_dir
 
-        # downloader = _config.downloader.new(config: _config)
+        downloader = _config.downloader.new(config: _config)
         # downloader.extend(Helper.constantize("Printing::#{downloader.class}"))
-        # downloader.run
+        downloader.run
 
         _config.importers.each do |importer_name, import_file|
             importer_class  = Helper.constantize(importer_name)

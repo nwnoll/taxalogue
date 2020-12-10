@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
 class GbolConfig
-    attr_reader :file_structure, :name
+    attr_reader :name
     def initialize()
-        @file_structure  = file_structure
         @name            = 'GBOL_Dataset_Release-20200426'
     end
   
@@ -24,10 +23,6 @@ class GbolConfig
         # 'zip'
         ## TODO: change back to zip
         'csv'
-    end
-  
-    def file_structure
-        FileStructure.new(config: self)
     end
 
     def file_manager

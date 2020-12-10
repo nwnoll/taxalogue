@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 
 class NcbiGenbankConfig
-  attr_reader :name, :markers, :file_structure, :file_manager, :use_http
+  attr_reader :name, :markers, :file_manager, :use_http
   def initialize(name:, markers: nil, use_http: false)
     @name             = name
     @markers          = markers
-    @file_structure   = file_structure
     @file_manager     = _file_manager
     @use_http         = use_http
   end
@@ -16,10 +15,6 @@ class NcbiGenbankConfig
 
   def address
     'ftp.ncbi.nlm.nih.gov'
-  end
-
-  def file_structure
-    FileStructure.new(config: self)
   end
 
   def target_directory

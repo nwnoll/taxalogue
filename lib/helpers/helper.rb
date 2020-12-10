@@ -1,6 +1,14 @@
 # frozen_string_literal: true
 
 class Helper
+  def self.setup_taxonomy
+    gbif_taxonomy_job 	= GbifTaxonJob.new
+    ncbi_taxonomy_job 	= NcbiTaxonomyJob.new
+  
+    multiple_jobs 		= MultipleJobs.new(jobs: [gbif_taxonomy_job, ncbi_taxonomy_job])
+    multiple_jobs.run
+  end
+  
   def self.constantize(s)
       Object.const_get(s)
   end

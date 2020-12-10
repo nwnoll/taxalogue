@@ -49,3 +49,13 @@ sections.each do |section|
 		require_relative "lib/#{section}/#{File.basename(file, File.extname(file))}"
 	end
 end
+
+unless GbifTaxon.any? 
+	gbif_taxonomy_job = GbifTaxonJob.new
+	gbif_taxonomy_job.run
+end
+
+unless NcbiRankedLineage.any? || NcbiName.any? || NcbiNode.any?
+	ncbi_taxonomy_job = NcbiTaxonomyJob.new
+	ncbi_taxonomy_job.run
+end

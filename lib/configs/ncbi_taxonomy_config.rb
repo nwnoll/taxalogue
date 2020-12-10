@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
 class NcbiTaxonomyConfig
-    attr_reader :file_structure, :name
+    attr_reader :name
     def initialize()
-        @file_structure  = file_structure
-        @name            = 'new_taxdump'
+        @name            = 'NCBI_TAXONOMY'
     end
   
     def downloader
@@ -13,9 +12,9 @@ class NcbiTaxonomyConfig
 
     def importers
         {
+            'NcbiNameImporter': 'names.dmp',
             'NcbiRankedLineageImporter': 'rankedlineage.dmp',
-            'NcbiNodeImporter': 'nodes.dmp',
-            'NcbiNameImporter': 'names.dmp'
+            'NcbiNodeImporter': 'nodes.dmp'
         }
     end
   
@@ -26,8 +25,8 @@ class NcbiTaxonomyConfig
     def file_type
         'zip'
     end
-  
-    def file_structure
-        FileStructure.new(config: self)
+
+    def file_manager
+        FileManager.new(name: name, versioning: false, base_dir: 'fm_data/', config: self)
     end
 end
