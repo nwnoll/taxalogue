@@ -1,6 +1,30 @@
 # frozen_string_literal: true
 
 class Helper
+  include REXML
+
+  def self.new_gbif_backbone_available?
+    file                          = File.new("fm_data/GBIF_TAXONOMY/eml.xml")
+    doc                           = Document.new(file)
+    timestamp_local_gbif_backbone = doc.get_elements('//dateStamp').first.to_s
+    timestamp_local_gbif_backbone =~ />(.*?)</
+    timestamp_local_gbif_backbone = $1
+
+    gbif_backbone_dataset         = GbifApi.new(path: 'dataset/', query: 'd7dddbf4-2cf0-4f39-9b2a-bb099caae36c')
+    gbif_backbone_modified_at 	  = gbif_backbone_dataset.response_hash['modified']
+    
+    return false if timestamp_local_gbif_backbone.nil? || gbif_backbone_modified_at.nil?
+    
+    datetime_local                = DateTime.parse(timestamp_local_gbif_backbone ,"%Y-%m-%dT%H:%M:%S")
+    datetime_remote               = DateTime.parse(gbif_backbone_modified_at,     "%Y-%m-%dT%H:%M:%S")
+
+    if datetime_remote > datetime_local
+      return true
+    else
+      return false
+    end
+  end
+
   def self.setup_taxonomy
     gbif_taxonomy_job 	= GbifTaxonomyJob.new
     ncbi_taxonomy_job 	= NcbiTaxonomyJob.new

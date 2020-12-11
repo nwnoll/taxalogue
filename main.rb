@@ -12,7 +12,6 @@ if File.exists? CONFIG_FILE
 	params[:marker_objects] = Helper.create_marker_objects(query_marker_names: params[:markers])
 end
 
-
 OptionParser.new do |opts|
 	opts.on('-i FASTA', 	String, '--import_fasta')
 	opts.on('-g GBOL', 	String, '--import_gbol')
@@ -42,10 +41,18 @@ OptionParser.new do |opts|
 		params[:marker_objects] = Helper.create_marker_objects(query_marker_names: markers)
 	end
 	opts.on('-s', '--import_all_seqs') 
-	opts.on('-x', '--setup_taxonomy') 
+	opts.on('-x', '--setup_taxonomy')
+	opts.on('-u', '--update_taxonomy')
+	
 end.parse!(into: params)
 
+
+
 if params[:setup_taxonomy]
+	# if GbifTaxonomy.any?
+	# 	last_gbif_taxonomy_object = GbifTaxonomy.last
+	# 	last_gbif_taxonomy_entry = last_gbif_taxonomy_object.created_at
+	# end
 	Helper.setup_taxonomy
 end
 
@@ -66,6 +73,22 @@ if params[:import_all_seqs]
 	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
 end
 
+if params[:update_taxonomy]
+	if Helper.new_gbif_backbone_available?
+		puts "new versio of GBIF Taxonomy available, download starts soon."
+		
+		gbif_taxonomy_job = GbifTaxonomyJob.new
+		gbif_taxonomy_job.run
+	else
+		puts "your GBIF Taxonomy backbone is up to date."
+	end
+
+	## TODO: CHeck if new NCBI Taxonomy is avalaible,
+	## easiest is to check the md5 sums of the zip folders
+end
+
+
+exit
 byebug
 
 

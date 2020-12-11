@@ -24,6 +24,7 @@ require 'ostruct'
 require 'timeout'
 require 'digest/md5'
 require 'time'
+require 'rexml/document'
 
 require_relative "db/database_schema"
 require_relative 'lib/helpers/helper'
@@ -49,7 +50,8 @@ sections.each do |section|
 	end
 end
 
-unless GbifTaxonomy.any? 
+
+unless GbifTaxonomy.any?
 	gbif_taxonomy_job = GbifTaxonomyJob.new
 	gbif_taxonomy_job.run
 end

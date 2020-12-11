@@ -14,6 +14,8 @@ class DatabaseSchema
 				t.string :phylum
 				t.string :regnum
 				t.string :super_regnum
+
+				t.timestamps
 			end
 			
 			create_table :ncbi_names do |t|
@@ -21,6 +23,8 @@ class DatabaseSchema
 				t.string 	:name
 				t.string 	:unique_name
 				t.string 	:name_class
+
+				t.timestamps
 			end
 			
 			create_table :ncbi_nodes do |t|
@@ -32,6 +36,8 @@ class DatabaseSchema
 				t.integer 	:mito_genetic_code_id
 				t.boolean 	:has_specified_species
 				t.integer 	:plastid_genetic_code_id
+
+				t.timestamps
 			end
 
 			create_table :gbif_taxonomy do |t|
@@ -58,6 +64,8 @@ class DatabaseSchema
 				t.string :ordo, index: true
 				t.string :familia, index: true
 				t.string :genus, index: true
+
+				t.timestamps
 			end
 			
 			create_table :gbif_homonyms, force: true do |t|
@@ -65,6 +73,8 @@ class DatabaseSchema
 				t.integer 	:regnum_id
 				t.string	:rank
 				t.string	:canonical_name, index: true
+
+				t.timestamps
 			end
 		end
 	end
