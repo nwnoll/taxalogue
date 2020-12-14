@@ -20,6 +20,7 @@ OptionParser.new do |opts|
 	opts.on('-f GBIF', 	String, '--import_gbif')
 	opts.on('-n NODES', 	String, '--import_nodes')
 	opts.on('-a NAMES', 	String, '--import_names')
+	opts.on('-l RANKED_LINEAGE', 	String, '--import_lineage')
 	opts.on('-d', 			  '--download_genbank')
 	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
 
@@ -42,17 +43,47 @@ OptionParser.new do |opts|
 	end
 	opts.on('-s', '--import_all_seqs') 
 	opts.on('-x', '--setup_taxonomy')
+	opts.on('-c', '--setup_ncbi_taxonomy')
+	opts.on('-y', '--setup_gbif_taxonomy')
 	opts.on('-u', '--update_taxonomy')
+
 	
 end.parse!(into: params)
 
 
+if params[:setup_gbif_taxonomy]
+	if Helper.new_gbif_taxonomy_available?
+		gbif_taxonomy_job = GbifTaxonomyJob.new
+		gbif_taxonomy_job.run
+	else
+		puts "GBIF Taxonomy is already up to date, do you want to replace it? [Y/n]"
+		user_input  		= gets.chomp
+		replace_taxonomy 	= (user_input =~ /y|yes/i) ? true : false
+
+		if replace_taxonomy
+			gbif_taxonomy_job = GbifTaxonomyJob.new
+			gbif_taxonomy_job.run
+		end
+	end
+end
+
+if params[:setup_ncbi_taxonomy]
+	if Helper.new_ncbi_taxonomy_available?
+		ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
+		ncbi_taxonomy_job.run
+	else
+		puts "NCBI Taxonomy is already up to date, do you want to replace it? [Y/n]"
+		user_input  		= gets.chomp
+		replace_taxonomy 	= (user_input =~ /y|yes/i) ? true : false
+
+		if replace_taxonomy
+			ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
+			ncbi_taxonomy_job.run
+		end
+	end
+end
 
 if params[:setup_taxonomy]
-	# if GbifTaxonomy.any?
-	# 	last_gbif_taxonomy_object = GbifTaxonomy.last
-	# 	last_gbif_taxonomy_entry = last_gbif_taxonomy_object.created_at
-	# end
 	Helper.setup_taxonomy
 end
 
@@ -74,8 +105,8 @@ if params[:import_all_seqs]
 end
 
 if params[:update_taxonomy]
-	if Helper.new_gbif_backbone_available?
-		puts "new versio of GBIF Taxonomy available, download starts soon."
+	if Helper.new_gbif_taxonomy_available?
+		puts "new version of GBIF Taxonomy available, download starts soon."
 		
 		gbif_taxonomy_job = GbifTaxonomyJob.new
 		gbif_taxonomy_job.run
@@ -83,8 +114,14 @@ if params[:update_taxonomy]
 		puts "your GBIF Taxonomy backbone is up to date."
 	end
 
-	## TODO: CHeck if new NCBI Taxonomy is avalaible,
-	## easiest is to check the md5 sums of the zip folders
+	if Helper.new_ncbi_taxonomy_available?
+		puts "new version of NCBI Taxonomy available, download starts soon."
+		
+		ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
+		ncbi_taxonomy_job.run
+	else
+		puts "your NCBI Taxonomy backbone is up to date."
+	end
 end
 
 

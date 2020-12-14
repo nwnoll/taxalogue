@@ -1,0 +1,14 @@
+{
+    "name": "NCBI_TAXONOMY",
+    "downloader": "HttpDownloader",
+    "address": "https://ftp.ncbi.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.zip",
+    "file_type": "zip",
+    "importers": {
+        "NcbiNameImporter": "names.dmp",
+        "NcbiRankedLineageImporter": "rankedlineage.dmp",
+        "NcbiNodeImporter": "nodes.dmp"
+    },
+    "versioning": false,
+    "base_dir": "fm_data/",
+    "multiple_files_per_dir": false
+}

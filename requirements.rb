@@ -52,11 +52,16 @@ end
 
 
 unless GbifTaxonomy.any?
+	puts "GBIF Taxonomy is not setup yet, downloading and importing GBIF Taxonomy, this may take a while."
+	
 	gbif_taxonomy_job = GbifTaxonomyJob.new
 	gbif_taxonomy_job.run
 end
 
 unless NcbiRankedLineage.any? || NcbiName.any? || NcbiNode.any?
-	ncbi_taxonomy_job = NcbiTaxonomyJob.new
+	puts "NCBI Taxonomy is not setup yet, downloading and importing NCBI Taxonomy, this may take a while."
+	
+
+	ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
 	ncbi_taxonomy_job.run
 end

@@ -2,15 +2,18 @@
 
 class HttpDownloader
   private
-  attr_reader :config
+  attr_reader :config, :address
 
   public
-  def initialize(config:)
+  def initialize(config: nil, address: nil)
     @config = config
+    @address = address
   end
 
   def run
-    uri = URI(config.address)
+    return nil if config.nil? && address.nil?
+
+    config.nil? ? uri = URI(address) : uri = URI(config.address)
 
     config.address.start_with?('https') ? use_ssl = true : use_ssl = false
     # add redirect
