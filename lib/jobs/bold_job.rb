@@ -1,16 +1,17 @@
 # frozen_string_literal: true
 
 class BoldJob
-  attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager
+  attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params
 
   HEADER_LENGTH = 1
 
-  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:)
+  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil)
     @taxon                = taxon
     @taxon_name           = taxon.canonical_name
     @markers              = markers
     @taxonomy             = taxonomy
     @result_file_manager  = result_file_manager
+    @filter_params        = filter_params
 
     @pending = Pastel.new.white.on_yellow('pending')
     @failure = Pastel.new.white.on_red('failure')
@@ -172,7 +173,7 @@ class BoldJob
       next unless download_file_manager.status == 'success'
       next unless File.file?(download_file_manager.file_path)
 
-	    bold_classifier   = BoldImporter.new(fast_run: false, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager)
+	    bold_classifier   = BoldImporter.new(fast_run: false, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, markers: markers)
       bold_classifier.run ## result_file_manager creates new files and will push those into internal array
     end
   end

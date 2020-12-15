@@ -2,16 +2,19 @@
 
 class BoldImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :markers, :regexes_for_markers
 
   @@index_by_column_name = nil
-  def initialize(file_name:, query_taxon_object:, fast_run: true, file_manager:)
-    @file_name                = file_name
-    @query_taxon_object       = query_taxon_object
-    @query_taxon_name         = query_taxon_object.canonical_name
-    @query_taxon_rank         = query_taxon_object.taxon_rank
-    @fast_run                 = fast_run
-    @file_manager             = file_manager
+  def initialize(file_name:, query_taxon_object:, fast_run: true, file_manager:, filter_params: nil, markers:)
+    @file_name            = file_name
+    @query_taxon_object   = query_taxon_object
+    @query_taxon_name     = query_taxon_object.canonical_name
+    @query_taxon_rank     = query_taxon_object.taxon_rank
+    @fast_run             = fast_run
+    @markers              = markers
+    @regexes_for_markers  = Marker.regexes(db: self, markers: markers)
+    @file_manager         = file_manager
+    @filter_params        = filter_params
   end
 
   def run
@@ -28,7 +31,7 @@ class BoldImporter
       scrubbed_row = row.scrub!.chomp.split("\t")
 
       specimen = _get_specimen(row: scrubbed_row)
-      next if specimen.sequence.nil? || specimen.sequence.empty?
+      next if specimen.nil? || specimen.sequence.nil? || specimen.sequence.empty?
 
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
@@ -58,19 +61,21 @@ class BoldImporter
       end
     end
 
-    OutputFormat::Tsv.rewind
-
     tsv.close
     fasta.close
     comparison_file.close
   end
 
   private
-
   def _get_specimen(row:)
     identifier                    = row[@@index_by_column_name["processid"]]
     source_taxon_name             = SpecimensOfTaxon.find_lowest_ranking_taxon(row, @@index_by_column_name)
     sequence                      = row[@@index_by_column_name['nucleotides']]
+    sequence                      = Helper.filter_seq(sequence, filter_params)
+    marker                        = row[@@index_by_column_name["markercode"]]
+    
+    return nil unless _belongs_to_correct_marker?(marker)
+    return nil if sequence.nil?
 
     nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
 
@@ -83,6 +88,10 @@ class BoldImporter
     specimen.first_specimen_info  = row
     
     return specimen
+  end
+
+  def _belongs_to_correct_marker?(marker)
+    regexes_for_markers === marker
   end
 
   def self.get_source_lineage(row)

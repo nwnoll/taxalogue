@@ -8,7 +8,12 @@ CONFIG_FILE = 'default_config.yaml'
 if File.exists? CONFIG_FILE
 	config_options = YAML.load_file(CONFIG_FILE)
 	params.merge!(config_options)
-	params[:taxon_object] 	= GbifTaxonomy.find_by_canonical_name(params[:taxon])
+
+	taxon_object 			= GbifTaxonomy.find_by_canonical_name(params[:taxon])
+	# if taxon_object.nil?
+	# 	abort "Cannot find default Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species\nMaybe the Taxonomy Database is not properly setup, run the program with --setup_taxonomy to fix the issue."
+	# end
+	params[:taxon_object] 	= taxon_object
 	params[:marker_objects] = Helper.create_marker_objects(query_marker_names: params[:markers])
 end
 
@@ -17,14 +22,13 @@ OptionParser.new do |opts|
 	opts.on('-g GBOL', 	String, '--import_gbol')
 	opts.on('-o BOLD', 	String, '--import_bold')
 	opts.on('-k GENBANK', 	String, '--import_genbank')
-	opts.on('-f GBIF', 	String, '--import_gbif')
+	opts.on('-b GBIF', 	String, '--import_gbif')
 	opts.on('-n NODES', 	String, '--import_nodes')
 	opts.on('-a NAMES', 	String, '--import_names')
 	opts.on('-l RANKED_LINEAGE', 	String, '--import_lineage')
 	opts.on('-d', 			  '--download_genbank')
 	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
-
-		## TODO: should be changed, maybe
+		## TODO: should be changed
 		taxon_objects 	= GbifTaxonomy.where(canonical_name: taxon_name)
 		taxon_objects 	= taxon_objects.select { |t| t.taxonomic_status == 'accepted' }
 		taxon_object 	= taxon_objects.first
@@ -38,18 +42,46 @@ OptionParser.new do |opts|
 		end
 		taxon_name
 	end
+
 	opts.on('-m MARKERS', 	String, '--markers') do |markers|
 		params[:marker_objects] = Helper.create_marker_objects(query_marker_names: markers)
 	end
+
 	opts.on('-s', '--import_all_seqs') 
 	opts.on('-x', '--setup_taxonomy')
 	opts.on('-c', '--setup_ncbi_taxonomy')
 	opts.on('-y', '--setup_gbif_taxonomy')
 	opts.on('-u', '--update_taxonomy')
+	opts.on('-f [FILTER]', String, '--filter') do |filter_params|
+		if filter_params.nil?
+			puts "No arguments provided, will use the following:"
+			puts "No N allowed"
+			puts "No Gaps allowed"
+			puts "Minimum Length is 300 and the maximum Length is 1000"
+			
+			# default:
+			extracted_filter_params = Helper.extract_filter_params("N0,G0,L300-1000")
+		else
+			unless filter_params.match?(/[NnGg\-Ll]/)
+				abort "invalid arguments, use it for example like this: --filter N0,G0,L300-1000\narguments are separated by a comma and no spaces are alllowed."
+			end
 
+			extracted_filter_params = Helper.extract_filter_params(filter_params)
+			unless extracted_filter_params
+				abort "invalid arguments, use it for example like this: --filter N0,G0,L300-1000\narguments are separated by a comma and no spaces are alllowed."
+			end		
+		end
+		extracted_filter_params
+	end
 	
 end.parse!(into: params)
 
+fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+fm.create_dir
+BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects]).run
+
+
+exit
 
 if params[:setup_gbif_taxonomy]
 	if Helper.new_gbif_taxonomy_available?
@@ -90,7 +122,7 @@ end
 if params[:import_all_seqs]
 	file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 
-	bold_job 	= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager)
+	bold_job 	= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects])
 	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects])
 	gbol_job 	= GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], file_path: Pathname.new(params[:import_gbol]))
 
@@ -146,9 +178,7 @@ NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_
 exit
 
 
-fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm).run
-exit
+
 
 
 

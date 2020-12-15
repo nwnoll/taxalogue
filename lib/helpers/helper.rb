@@ -3,6 +3,60 @@
 class Helper
   include REXML
 
+  def self.filter_seq(seq, criteria)
+
+    seq = seq.dup
+    if seq =~ /^-|^N/
+      seq.gsub!(/^-+/, '')
+      seq.gsub!(/^N+/, '')
+      seq.gsub!(/^-+/, '') # needed if seq starts with N----
+    end
+
+    if seq =~ /-$|N$/
+      seq.gsub!(/-+$/, '')
+      seq.gsub!(/N+$/, '')
+      seq.gsub!(/-+$/, '') # needed if seq ends with N----
+    end
+
+    if criteria[:filter_N]
+      return nil if seq.count('N') > criteria[:filter_N]
+    end
+
+    if criteria[:filter_G]
+      return nil if seq.count('-') > criteria[:filter_G]
+    end
+
+    if criteria[:filter_L]
+      range = criteria[:filter_L].split('-')
+      range.map! { |digit| digit.to_i }
+      seq_length = seq.size
+
+      return nil if seq_length < range.min || seq_length > range.max
+    end
+
+    return seq
+  end
+
+  def self.extract_filter_params(filter_params)
+    filter_params_ary = filter_params.split(',')
+
+    extracted = Hash.new
+    filter_params_ary.each do |param|
+      option_and_value = param.scan(/\d+|\D+/)
+      if param =~ /^N(.*?)$/i
+        extracted[:filter_N] = $1.to_i
+      elsif param =~ /^[gG-](.*?)$/
+        extracted[:filter_G] = $1.to_i
+      elsif param =~ /^L(.*?-.*?)$/i
+        extracted[:filter_L] = $1
+      else
+        extracted = nil
+      end
+    end
+
+    return extracted
+  end
+
   def self.json_file_to_hash(file_name)
     file = File.read(file_name)
     hash = JSON.parse(file)
