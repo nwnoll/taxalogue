@@ -1,16 +1,17 @@
 # frozen_string_literal: true
 
 class GbolJob
-    attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :file_path
+    attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :file_path, :filter_params
 
     ## TODO: file_path should be preliminiary, hopefully the GBOL release will be available again
-    def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, file_path:)
+    def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, file_path:, filter_params: nil)
       @taxon                = taxon
       @taxon_name           = taxon.canonical_name
       @markers              = markers
       @taxonomy             = taxonomy
       @result_file_manager  = result_file_manager
       @file_path            = file_path
+      @filter_params        = filter_params
     end
 
     def run
@@ -40,6 +41,7 @@ class GbolJob
   
     private
     def _classify_downloads(download_file_managers:)
+
         download_file_managers.each do |download_file_manager|
             next unless download_file_manager.status == 'success'
             ## TODO: next condition will fail since we ware unable to download at the moment. therefore i copied a version into that folder...
@@ -49,7 +51,7 @@ class GbolJob
             next unless File.file?(file_path)
     
             # gbol_classifier   = GbolImporter.new(fast_run: true, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager)
-            gbol_classifier   = GbolImporter.new(fast_run: true, file_name: file_path, query_taxon_object: taxon, file_manager: result_file_manager)
+            gbol_classifier   = GbolImporter.new(fast_run: true, file_name: file_path, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params)
             gbol_classifier.run ## result_file_manager creates new files and will push those into internal array
         end
     end

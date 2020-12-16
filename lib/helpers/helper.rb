@@ -18,6 +18,9 @@ class Helper
       seq.gsub!(/-+$/, '') # needed if seq ends with N----
     end
 
+    return seq unless criteria
+
+    
     if criteria[:filter_N]
       return nil if seq.count('N') > criteria[:filter_N]
     end

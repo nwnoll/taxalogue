@@ -2,7 +2,7 @@
 
 class NcbiGenbankImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :markers, :fast_run, :regexes_for_markers, :file_manager
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :markers, :fast_run, :regexes_for_markers, :file_manager, :filter_params
 
   FILE_DESCRIPTION_PART = 10
 
@@ -10,7 +10,7 @@ class NcbiGenbankImporter
     ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'phylum_name']
   end
 
-  def initialize(file_name:, query_taxon_object:, markers:, fast_run: true, file_manager:)
+  def initialize(file_name:, query_taxon_object:, markers:, fast_run: true, file_manager:, filter_params: nil)
     @file_name            = file_name
     @query_taxon_object   = query_taxon_object
     @query_taxon_name     = query_taxon_object.canonical_name
@@ -19,6 +19,7 @@ class NcbiGenbankImporter
     @fast_run             = fast_run
     @regexes_for_markers  = Marker.regexes(db: self, markers: markers)
     @file_manager         = file_manager
+    @filter_params        = filter_params
   end
 
 
@@ -39,10 +40,15 @@ class NcbiGenbankImporter
           _matches_query_taxon(gb) ? nil : next if fast_run
           
           features_of_gene  = gb.features.select { |f| _is_gene_feature?(f.feature) && _is_gene_of_marker?(f.qualifiers) && _is_no_pseudogene?(f.qualifiers) }
-          next unless features_of_gene.size == 1 ## why 1 ?
+          next unless features_of_gene.size == 1 ## TODO: why 1 ?
           
           nucs = gb.naseq.splicing(features_of_gene.first.position).to_s
           next if nucs.nil? || nucs.empty?
+
+          nucs = Helper.filter_seq(nucs, filter_params)
+          next if nucs.nil? || nucs.empty?
+
+          nucs.upcase!
 
           specimen = _get_specimen(gb: gb, nucs: nucs)
           SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
@@ -82,12 +88,7 @@ class NcbiGenbankImporter
     end
   end
 
-  def is_gb_entry_end
-    "\/\/"
-  end
-
   private
-
   def _is_gene_feature?(s)
     s == 'gene'
   end

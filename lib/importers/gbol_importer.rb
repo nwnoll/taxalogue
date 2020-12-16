@@ -2,7 +2,7 @@
 
 class GbolImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params
 
   def self.get_source_lineage(row)
     OpenStruct.new(
@@ -11,13 +11,14 @@ class GbolImporter
     )
   end
 
-  def initialize(file_name:, query_taxon_object:, fast_run: false, file_manager:)
+  def initialize(file_name:, query_taxon_object:, fast_run: false, file_manager:, filter_params: nil)
     @file_name                = file_name
     @query_taxon_object       = query_taxon_object
     @query_taxon_name         = query_taxon_object.canonical_name
     @query_taxon_rank         = query_taxon_object.taxon_rank
     @fast_run                 = fast_run
     @file_manager             = file_manager
+    @filter_params            = filter_params
   end
 
   ## change to Zip processing
@@ -29,8 +30,9 @@ class GbolImporter
     _csv_object.each do |row|
       _matches_query_taxon(row) ? nil : next if fast_run
 
+      ## TODO: no filtering atm in fast_run mode...
       specimen = _get_specimen(row: row)
-      next if specimen.sequence.nil? || specimen.sequence.empty?
+      next if specimen.nil? || specimen.sequence.nil? || specimen.sequence.empty?
 
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
@@ -71,6 +73,9 @@ class GbolImporter
     identifier                    = row["CatalogueNumber"]
     source_taxon_name             = row["Species"]
     sequence                      = row['BarcodeSequence']
+    sequence                      = Helper.filter_seq(sequence, filter_params)
+
+    return nil if sequence.nil?
 
     nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
 

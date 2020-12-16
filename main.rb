@@ -10,6 +10,7 @@ if File.exists? CONFIG_FILE
 	params.merge!(config_options)
 
 	taxon_object 			= GbifTaxonomy.find_by_canonical_name(params[:taxon])
+	## TODO: uncomment
 	# if taxon_object.nil?
 	# 	abort "Cannot find default Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species\nMaybe the Taxonomy Database is not properly setup, run the program with --setup_taxonomy to fix the issue."
 	# end
@@ -25,7 +26,7 @@ OptionParser.new do |opts|
 	opts.on('-b GBIF', 	String, '--import_gbif')
 	opts.on('-n NODES', 	String, '--import_nodes')
 	opts.on('-a NAMES', 	String, '--import_names')
-	opts.on('-l RANKED_LINEAGE', 	String, '--import_lineage')
+	opts.on('-l LINEAGE', 	String, '--import_lineage')
 	opts.on('-d', 			  '--download_genbank')
 	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
 		## TODO: should be changed
@@ -76,15 +77,18 @@ OptionParser.new do |opts|
 	
 end.parse!(into: params)
 
-fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-fm.create_dir
-BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects]).run
+# pp params
+# fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+# fm.create_dir
+# BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects]).run
+# NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter]).run
+# GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], file_path: Pathname.new(params[:import_gbol]), filter_params: params[:filter]).run
 
-
-exit
+# exit
 
 if params[:setup_gbif_taxonomy]
 	if Helper.new_gbif_taxonomy_available?
+		puts "starting GBIF Taxonomy setup"
 		gbif_taxonomy_job = GbifTaxonomyJob.new
 		gbif_taxonomy_job.run
 	else
@@ -98,6 +102,7 @@ if params[:setup_gbif_taxonomy]
 		end
 	end
 end
+
 
 if params[:setup_ncbi_taxonomy]
 	if Helper.new_ncbi_taxonomy_available?
@@ -115,6 +120,7 @@ if params[:setup_ncbi_taxonomy]
 	end
 end
 
+
 if params[:setup_taxonomy]
 	Helper.setup_taxonomy
 end
@@ -122,10 +128,13 @@ end
 if params[:import_all_seqs]
 	file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 
-	bold_job 	= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects])
-	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects])
-	gbol_job 	= GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], file_path: Pathname.new(params[:import_gbol]))
+	bold_job 	= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter])
+	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter])
+	gbol_job 	= GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], file_path: Pathname.new(params[:import_gbol]), filter_params: params[:filter])
 
+	## TODO: maybe bad, since if one Job does not work there is still the folder
+	## could delte it if exit status is not 0 or some failure in between
+	## catch error with begin except?
 	file_manager.create_dir
 
 	multiple_jobs = MultipleJobs.new(jobs: [gbol_job, bold_job, genbank_job])
@@ -135,6 +144,8 @@ if params[:import_all_seqs]
 	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
 	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
 end
+
+exit
 
 if params[:update_taxonomy]
 	if Helper.new_gbif_taxonomy_available?
