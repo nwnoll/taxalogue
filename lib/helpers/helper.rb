@@ -3,6 +3,39 @@
 class Helper
   include REXML
 
+  def self.is_extinct?(taxon_name)
+
+    file_name = Pathname.new('fm_data/GBIF_ZOOLOGIAL_NAMES/names.txt')
+
+    unless File.exists?(file_name)
+
+      config_name = 'lib/configs/gbif_zoological_names_config.json' 
+      params = Helper.json_file_to_hash(config_name)
+      config = Config.new(params)
+      
+      config.file_manager.create_dir
+
+      downloader = HttpDownloader2.new(address: config.address, destination: config.file_manager.file_path)
+      downloader.run
+
+      unless File.exists?(config.file_manager.file_path)
+        return false
+      end
+
+      Helper.extract_zip(name: config.file_manager.file_path, destination: config.file_manager.dir_path, files_to_extract: ['zoological names/names.txt'])
+    end
+
+    file  = File.open(file_name, 'r')
+    csv   = CSV.new(file, headers: false, col_sep: "\t", liberal_parsing: true)
+
+    csv.each do |row|
+      taxon_without_author = row[3].split(' ')[0]
+      return true if taxon_without_author == taxon_name && row[2] == 'true'
+    end
+
+    return false
+  end
+
   def self.filter_seq(seq, criteria)
 
     seq = seq.dup
@@ -146,15 +179,27 @@ class Helper
       return index_by_column_name
   end
 
-  def self.extract_zip(name:, destination:, files_to_extract:)
+  def self.extract_zip(name:, destination:, files_to_extract:, retain_hierarchy: false)
       FileUtils.mkdir_p(destination)
-    
       Zip::File.open(name) do |zip_file|
         zip_file.each do |f|
+          
+          pathname  = Pathname.new(f.name)
+          basename  = pathname.basename
+          dirname   = pathname.dirname
+          
           next unless files_to_extract.include?(f.name)
 
-          fpath = File.join(destination, f.name)
-          zip_file.extract(f, fpath) unless File.exist?(fpath)
+          if retain_hierarchy
+            dir_path = File.join(destination, dirname)
+            FileUtils.mkpath(dir_path)
+
+            fpath = File.join(destination, pathname)
+            zip_file.extract(f, fpath) unless File.exist?(fpath)
+          else
+            fpath = File.join(destination, basename)
+            zip_file.extract(f, fpath) unless File.exist?(fpath)
+          end
         end
       end
     end

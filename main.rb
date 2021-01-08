@@ -77,6 +77,9 @@ OptionParser.new do |opts|
 	
 end.parse!(into: params)
 
+p Helper.is_extinct?('Porocentrinea')
+exit
+
 byebug
 
 

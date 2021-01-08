@@ -1,0 +1,10 @@
+{
+    "name": "GBIF_ZOOLOGIAL_NAMES",
+    "downloader": "HttpDownloader",
+    "address": "https://hosted-datasets.gbif.org/datasets/zoological_names.zip",
+    "file_type": "zip",
+    "importers": {},
+    "versioning" : false,
+    "base_dir": "fm_data/",
+    "multiple_files_per_dir": false
+}
