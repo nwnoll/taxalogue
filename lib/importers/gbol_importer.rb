@@ -30,7 +30,6 @@ class GbolImporter
     _csv_object.each do |row|
       _matches_query_taxon(row) ? nil : next if fast_run
 
-      ## TODO: no filtering atm in fast_run mode...
       specimen = _get_specimen(row: row)
       next if specimen.nil? || specimen.sequence.nil? || specimen.sequence.empty?
 

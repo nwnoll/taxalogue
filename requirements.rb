@@ -65,3 +65,7 @@ unless NcbiRankedLineage.any? || NcbiName.any? || NcbiNode.any?
 	ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
 	ncbi_taxonomy_job.run
 end
+
+unless GbifHomonym.any?
+	GbifHomonymImporter.new(file_name: 'homonyms.txt').run
+end

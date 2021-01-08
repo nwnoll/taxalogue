@@ -127,6 +127,8 @@ class Helper
   
     multiple_jobs 		  = MultipleJobs.new(jobs: [gbif_taxonomy_job, ncbi_taxonomy_job])
     multiple_jobs.run
+
+    GbifHomonymImporter.new(file_name: 'homonyms.txt').run
   end
   
   def self.constantize(s)
