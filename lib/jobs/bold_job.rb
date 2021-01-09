@@ -20,8 +20,8 @@ class BoldJob
     @loading = Pastel.new.white.on_blue('loading')
     @loading_color_char_num = (@loading.size) -'loading'.size
 
-    @file = File.new('syns.txt', 'a')
-    @file2 = File.new('pool.txt', 'a')
+    @file = File.new('syns.txt', 'w')
+    @file2 = File.new('pool.txt', 'w')
   end
 
   def run
@@ -66,15 +66,22 @@ class BoldJob
               syn = Synonym.new(accepted_taxon: node.content.first, sources: [GbifTaxonomy])
               @file.puts(node.content.first.canonical_name)
               syn.synonyms.each do |synonym|
-                puts "trying synonym #{synonym.canonical_name}"
-                # ActiveRecord::Base.connection_pool.with_connection do
-                  synonym_config      = BoldConfig.new(name: synonym.canonical_name, markers: markers)
+                ## TODO: kind of works now, but it needs to go throught the same process as
+                ## the failed node :(, maybe just exclude it? the file_manager also needs to
+                ## know where it can find the file, there might be multiple successfull file_managers
+                ## but they get overriden... well reconsider this
+                  parent_dir      = _get_parentage_as_dir_structure(node)
+                  synonym_config  = BoldConfig.new(name: synonym.canonical_name, markers: markers, parent_dir: parent_dir)
+                  
+                  file_manager    = synonym_config.file_manager
+                  file_manager.create_dir
+                  
                   @file.puts("    #{synonym.canonical_name}")
                   @file2.puts
                   @file2.puts(ActiveRecord::Base.connection_pool.stat)
+
                   synonym_downloader  = synonym_config.downloader.new(config: synonym_config)
                   downloader.run
-                # end
               end
             end
             # puts "No records found for #{node.name}."
@@ -177,12 +184,20 @@ class BoldJob
 
   def _create_config(node:)
     if node.parentage
-      parent_names  = []
-      node.parentage.each { |parent| parent_names.push(parent.name) } 
-      parent_dir    = parent_names.reverse.join('/')
+      parent_dir    = _get_parentage_as_dir_structure(node)
       config        = BoldConfig.new(name: node.name, markers: markers, parent_dir: parent_dir)
     else
       config        = BoldConfig.new(name: node.name, markers: markers)
+    end
+  end
+
+  def _get_parentage_as_dir_structure(node)
+    if node.parentage
+      parent_names  = []
+      node.parentage.each { |parent| parent_names.push(parent.name) } 
+      parent_dir    = parent_names.reverse.join('/')
+      
+      return parent_dir
     end
   end
 
