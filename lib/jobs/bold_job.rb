@@ -1,23 +1,27 @@
 # frozen_string_literal: true
 
 class BoldJob
-  attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params
+  attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params, :try_synonyms
 
   HEADER_LENGTH = 1
 
-  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil)
+  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil, try_synonyms: false)
     @taxon                = taxon
     @taxon_name           = taxon.canonical_name
     @markers              = markers
     @taxonomy             = taxonomy
     @result_file_manager  = result_file_manager
     @filter_params        = filter_params
+    @try_synonyms         = try_synonyms
 
     @pending = Pastel.new.white.on_yellow('pending')
     @failure = Pastel.new.white.on_red('failure')
     @success = Pastel.new.white.on_green('success')
     @loading = Pastel.new.white.on_blue('loading')
     @loading_color_char_num = (@loading.size) -'loading'.size
+
+    @file = File.new('syns.txt', 'a')
+    @file2 = File.new('pool.txt', 'a')
   end
 
   def run
@@ -41,6 +45,7 @@ class BoldJob
       _print_download_progress_report(root_node: root_node, rank_level: i)
       
       Parallel.map(root_node.entries, in_threads: 5) do |node|
+        @file2.puts(ActiveRecord::Base.connection_pool.stat)
         next unless node.content.last == @pending
 
         config = _create_config(node: node)
@@ -57,6 +62,21 @@ class BoldJob
           _print_download_progress_report(root_node: root_node, rank_level: i)
           downloader.run
           if File.empty?(file_manager.file_path)
+            if try_synonyms
+              syn = Synonym.new(accepted_taxon: node.content.first, sources: [GbifTaxonomy])
+              @file.puts(node.content.first.canonical_name)
+              syn.synonyms.each do |synonym|
+                puts "trying synonym #{synonym.canonical_name}"
+                # ActiveRecord::Base.connection_pool.with_connection do
+                  synonym_config      = BoldConfig.new(name: synonym.canonical_name, markers: markers)
+                  @file.puts("    #{synonym.canonical_name}")
+                  @file2.puts
+                  @file2.puts(ActiveRecord::Base.connection_pool.stat)
+                  synonym_downloader  = synonym_config.downloader.new(config: synonym_config)
+                  downloader.run
+                # end
+              end
+            end
             # puts "No records found for #{node.name}."
             node.content[1] = @failure
             file_manager.status = 'failure'
@@ -77,7 +97,8 @@ class BoldJob
       break if reached_family_level
 
       failed_nodes                      = root_node.find_all { |node| node.content.last == @failure && node.is_leaf? }
-      failed_nodes.each do |failed_node| 
+      failed_nodes.each do |failed_node|
+
         node_record                     = failed_node.content.first
         node_name                       = failed_node.name
         index_of_rank                   = GbifTaxonomy.possible_ranks.index(node_record.taxon_rank)
@@ -87,15 +108,17 @@ class BoldJob
         taxa_records_and_names_to_try   = GbifTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
         
         next if taxa_records_and_names_to_try.nil?
-        
+        added_names = []
         taxa_records_and_names_to_try.each do |record_and_name|
 
           record  = record_and_name.first
           name    = record_and_name.last
           
           next if Helper.is_extinct?(name)
+          next if added_names.include?(name) # prevent breaking if name occurs multiple times maybe due to wrong backbone
 
           failed_node << Tree::TreeNode.new(name, [record, @pending])
+          added_names.push(name)
         end
       end
     end

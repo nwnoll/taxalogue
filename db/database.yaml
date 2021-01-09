@@ -1,2 +1,3 @@
 adapter: 'sqlite3'
 database: 'db/db_setup.db'
+pool: 10
