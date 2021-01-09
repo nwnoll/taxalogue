@@ -75,7 +75,6 @@ class BoldJob
       end
       
       break if reached_family_level
-      break if i == 1
 
       failed_nodes                      = root_node.find_all { |node| node.content.last == @failure && node.is_leaf? }
       failed_nodes.each do |failed_node| 
@@ -86,11 +85,17 @@ class BoldJob
         reached_family_level            = true if index_of_lower_rank == 2
         taxon_rank_to_try               = GbifTaxonomy.possible_ranks[index_of_lower_rank]
         taxa_records_and_names_to_try   = GbifTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
+        
         next if taxa_records_and_names_to_try.nil?
+        
         taxa_records_and_names_to_try.each do |record_and_name|
-          record                        = record_and_name.first
-          name                          = record_and_name.last
-          failed_node                   << Tree::TreeNode.new(name, [record, @pending])
+
+          record  = record_and_name.first
+          name    = record_and_name.last
+          
+          next if Helper.is_extinct?(name)
+
+          failed_node << Tree::TreeNode.new(name, [record, @pending])
         end
       end
     end

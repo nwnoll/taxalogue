@@ -29,6 +29,9 @@ OptionParser.new do |opts|
 	opts.on('-l LINEAGE', 	String, '--import_lineage')
 	opts.on('-d', 			  '--download_genbank')
 	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
+
+		abort 'Taxon is extinct, please choose another Taxon' if Helper.is_extinct?(taxon_name)
+
 		## TODO: should be changed
 		taxon_objects 	= GbifTaxonomy.where(canonical_name: taxon_name)
 		taxon_objects 	= taxon_objects.select { |t| t.taxonomic_status == 'accepted' }
@@ -76,6 +79,14 @@ OptionParser.new do |opts|
 	end
 	
 end.parse!(into: params)
+
+# file_manager 	= FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+# bold_job 		= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter])
+# file_manager.create_dir
+# bold_job.run
+
+
+# exit
 
 p Helper.is_extinct?('Porocentrinea')
 exit
