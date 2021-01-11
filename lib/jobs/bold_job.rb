@@ -63,36 +63,23 @@ class BoldJob
           downloader.run
           if File.empty?(file_manager.file_path)
             if try_synonyms
-              syn = Synonym.new(accepted_taxon: node.content.first, sources: [GbifTaxonomy])
-              @file.puts(node.content.first.canonical_name)
-              syn.synonyms.each do |synonym|
-                ## TODO: kind of works now, but it needs to go throught the same process as
-                ## the failed node :(, maybe just exclude it? the file_manager also needs to
-                ## know where it can find the file, there might be multiple successfull file_managers
-                ## but they get overriden... well reconsider this
-                  parent_dir      = _get_parentage_as_dir_structure(node)
-                  synonym_config  = BoldConfig.new(name: synonym.canonical_name, markers: markers, parent_dir: parent_dir)
-                  
-                  file_manager    = synonym_config.file_manager
-                  file_manager.create_dir
-                  
-                  @file.puts("    #{synonym.canonical_name}")
-                  @file2.puts
-                  @file2.puts(ActiveRecord::Base.connection_pool.stat)
-
-                  synonym_downloader  = synonym_config.downloader.new(config: synonym_config)
-                  downloader.run
+              synonym_file_manager = _download_synonym(node: node)
+              if synonym_file_manager && synonym_file_manager.status == 'success'
+                file_manager = synonym_file_manager 
+                node.content[1] = @success
+              else
+                node.content[1] = @failure
+                file_manager.status = 'failure'
               end
+            else
+              node.content[1] = @failure
+              file_manager.status = 'failure'
             end
-            # puts "No records found for #{node.name}."
-            node.content[1] = @failure
-            file_manager.status = 'failure'
           else
             node.content[1] = @success
             file_manager.status = 'success'
           end
         rescue Net::ReadTimeout
-          # puts "Download did take too long, most probably #{node.name} has too many records. Trying lower ranks soon."
           node.content[1] = @failure
           file_manager.status = 'failure'
         end
@@ -102,6 +89,7 @@ class BoldJob
       end
       
       break if reached_family_level
+      break if i == 2
 
       failed_nodes                      = root_node.find_all { |node| node.content.last == @failure && node.is_leaf? }
       failed_nodes.each do |failed_node|
@@ -198,6 +186,44 @@ class BoldJob
       parent_dir    = parent_names.reverse.join('/')
       
       return parent_dir
+    end
+  end
+
+  def _download_synonym(node:)
+    syn = Synonym.new(accepted_taxon: node.content.first, sources: [GbifTaxonomy])
+    @file.puts(node.content.first.canonical_name)
+    file_manager = nil
+
+    syn.synonyms.each do |synonym|
+      parent_dir      = _get_parentage_as_dir_structure(node)
+      synonym_config  = BoldConfig.new(name: synonym.canonical_name, markers: markers, parent_dir: parent_dir)
+      
+      file_manager    = synonym_config.file_manager
+      file_manager.create_dir
+      
+      @file.puts("    #{synonym.canonical_name}")
+      @file2.puts
+      @file2.puts(ActiveRecord::Base.connection_pool.stat)
+
+      synonym_downloader  = synonym_config.downloader.new(config: synonym_config)
+      
+      begin
+        synonym_downloader.run
+        if File.empty?(file_manager.file_path)
+          file_manager.status = 'failure'
+        else
+          file_manager.status = 'success'
+          break
+        end
+      rescue Net::ReadTimeout
+        file_manager.status = 'failure'
+      end
+    end
+
+    if file_manager && file_manager.status == 'success'
+      return file_manager
+    else  
+      return nil
     end
   end
 
