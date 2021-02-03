@@ -1,23 +1,24 @@
 # frozen_string_literal: true
 
 class Nomial
-  attr_reader :name, :query_taxon_object, :query_taxon_rank, :cleaned_name_parts, :cleaned_name
+  attr_reader :name, :query_taxon_object, :query_taxon_rank, :cleaned_name_parts, :cleaned_name, :taxonomy_to_use
 
-  def initialize(name:, query_taxon_object:, query_taxon_rank:)
+  def initialize(name:, query_taxon_object:, query_taxon_rank:, taxonomy_to_use:)
     @name                     = name
     @query_taxon_object       = query_taxon_object
     @query_taxon_rank         = query_taxon_rank
     @cleaned_name_parts       = _cleaned_name_parts
     @cleaned_name             = _cleaned_name
+    @taxonomy_to_use          = taxonomy_to_use
   end
 
-  def self.generate(name:, query_taxon_object:, query_taxon_rank:)
-    new(name: name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank).generate
+  def self.generate(name:, query_taxon_object:, query_taxon_rank:, taxonomy_to_use:)
+    new(name: name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use).generate
   end
 
   def generate
-    return Monomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)    if cleaned_name_parts.size == 1
-    return Polynomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)  if cleaned_name_parts.size > 1
+    return Monomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use)    if cleaned_name_parts.size == 1
+    return Polynomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use)  if cleaned_name_parts.size > 1
     return self
   end
 
@@ -57,12 +58,13 @@ class Monomial
   include TaxonSearch
   include StringFormatting
 
-  attr_reader :name, :query_taxon_object, :query_taxon_rank, :query_taxon_name
-  def initialize(name:, query_taxon_object:, query_taxon_rank:)
+  attr_reader :name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :taxonomy_to_use
+  def initialize(name:, query_taxon_object:, query_taxon_rank:, taxonomy_to_use:)
     @name               = name
     @query_taxon_object = query_taxon_object
     @query_taxon_name   = query_taxon_object.canonical_name
     @query_taxon_rank   = query_taxon_rank
+    @taxonomy_to_use    = taxonomy_to_use
   end
 
   def taxonomy(first_specimen_info:, importer:)
@@ -193,7 +195,7 @@ class Polynomial < Monomial
 
     cutted_name = _remove_last_name_part(name)
     return nil if cutted_name.blank?
-    nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
+    nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use)
     nomial.taxonomy(first_specimen_info: first_specimen_info, importer: importer)
   end
 

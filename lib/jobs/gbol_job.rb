@@ -26,7 +26,9 @@ class GbolJob
 
         file_manager = _config.file_manager
         file_manager.create_dir
-        _config.downloader.new(config: _config).run
+
+        ## TODO: uncomment just to test
+        # _config.downloader.new(config: _config).run
 
         fmanagers.push(file_manager)
         
@@ -39,7 +41,7 @@ class GbolJob
         download_file_managers.each do |download_file_manager|
             next unless File.file?(download_file_manager.file_path)
     
-            gbol_classifier   = GbolImporter.new(fast_run: true, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager)
+            gbol_classifier   = GbolImporter.new(fast_run: true, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager, taxonomy_to_use: taxonomy)
             gbol_classifier.run ## result_file_manager creates new files and will push those into internal array
         end
     end

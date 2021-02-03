@@ -2,7 +2,7 @@
 
 class GbolImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :taxonomy_to_use
 
   def self.get_source_lineage(row)
     OpenStruct.new(
@@ -11,7 +11,7 @@ class GbolImporter
     )
   end
 
-  def initialize(file_name:, query_taxon_object:, fast_run: false, file_manager:, filter_params: nil)
+  def initialize(file_name:, query_taxon_object:, fast_run: false, file_manager:, filter_params: nil, taxonomy_to_use:)
     @file_name                = file_name
     @query_taxon_object       = query_taxon_object
     @query_taxon_name         = query_taxon_object.canonical_name
@@ -19,13 +19,14 @@ class GbolImporter
     @fast_run                 = fast_run
     @file_manager             = file_manager
     @filter_params            = filter_params
+    @taxonomy_to_use          = taxonomy_to_use
   end
 
   def run
     specimens_of_taxon  = Hash.new { |hash, key| hash[key] = {} }
 
-    Helper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: ['GBOL_Dataset_Release-20210128.csv', 'metadata.xml'])
-    csv_file_name = Pathname.new(file_name).sub_ext('.csv')
+    Helper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: [file_name.basename, 'metadata.xml'])
+    csv_file_name = file_name.sub_ext('.csv')
     csv_file = File.open(csv_file_name, 'r')
     csv_object = CSV.new(csv_file, headers: true, col_sep: "\t", liberal_parsing: true)
 
@@ -79,7 +80,7 @@ class GbolImporter
 
     return nil if sequence.nil?
 
-    nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
+    nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use)
 
     specimen                      = Specimen.new
     specimen.identifier           = identifier
