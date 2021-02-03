@@ -3,7 +3,7 @@
 class GbolConfig
     attr_reader :name
     def initialize()
-        @name            = 'GBOL_Dataset_Release-20200426'
+        @name            = 'GBOL_Dataset_Release-20210128'
     end
   
     def downloader
@@ -12,7 +12,7 @@ class GbolConfig
   
     def address
         ## does not work anymore :(
-        'https://bolgermany.de/release/GBOL_Dataset_Release-20200426.zip'
+        'https://www.bolgermany.de/gbol1/release/GBOL_Dataset_Release-20210128.zip'
 
         ## other possible slution is to build a crawler and cut out sequence data :
         # https://collections.zfmk.de/specimendetail/656103
@@ -20,9 +20,9 @@ class GbolConfig
     end
 
     def file_type
-        # 'zip'
-        ## TODO: change back to zip
-        'csv'
+        'zip'
+        # ## TODO: change back to zip
+        # 'csv'
     end
 
     def file_manager

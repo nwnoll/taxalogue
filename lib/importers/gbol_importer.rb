@@ -21,13 +21,16 @@ class GbolImporter
     @filter_params            = filter_params
   end
 
-  ## change to Zip processing
-  ## or unzip file to use csv
   def run
     specimens_of_taxon  = Hash.new { |hash, key| hash[key] = {} }
-    file                = File.open(file_name, 'r')
-    
-    _csv_object.each do |row|
+
+    Helper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: ['GBOL_Dataset_Release-20210128.csv', 'metadata.xml'])
+    csv_file_name = Pathname.new(file_name).sub_ext('.csv')
+    csv_file = File.open(csv_file_name, 'r')
+    csv_object = CSV.new(csv_file, headers: true, col_sep: "\t", liberal_parsing: true)
+
+
+    csv_object.each do |row|
       _matches_query_taxon(row) ? nil : next if fast_run
 
       specimen = _get_specimen(row: row)
@@ -87,14 +90,6 @@ class GbolImporter
     specimen.first_specimen_info  = row
     
     return specimen
-  end
-
-  def _csv_object
-    CSV.new(_opened_file_in_read_mode, headers: true, col_sep: "\t", liberal_parsing: true)
-  end
-
-  def _opened_file_in_read_mode
-    file = File.open(file_name, 'r')
   end
 
   def _matches_query_taxon(row)

@@ -10,10 +10,10 @@ if File.exists? CONFIG_FILE
 	params.merge!(config_options)
 
 	taxon_object 			= GbifTaxonomy.find_by_canonical_name(params[:taxon])
-	## TODO: uncomment
-	# if taxon_object.nil?
-	# 	abort "Cannot find default Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species\nMaybe the Taxonomy Database is not properly setup, run the program with --setup_taxonomy to fix the issue."
-	# end
+	if taxon_object.nil?
+		abort "Cannot find default Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species\nMaybe the Taxonomy Database is not properly setup, run the program with --setup_taxonomy to fix the issue."
+	end
+
 	params[:taxon_object] 	= taxon_object
 	params[:marker_objects] = Helper.create_marker_objects(query_marker_names: params[:markers])
 end
@@ -80,7 +80,15 @@ OptionParser.new do |opts|
 	
 end.parse!(into: params)
 
-# byebug
+pp params
+
+fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+fm.create_dir
+# BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects]).run
+# NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter]).run
+GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter]).run
+
+exit
 
 byebug
 
@@ -89,25 +97,7 @@ bold_job 		= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, r
 file_manager.create_dir
 bold_job.run
 
-
-# exit
-
-p Helper.is_extinct?('Porocentrinea')
 exit
-
-byebug
-
-
-exit
-
-# pp params
-# fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-# fm.create_dir
-# BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects]).run
-# NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter]).run
-# GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], file_path: Pathname.new(params[:import_gbol]), filter_params: params[:filter]).run
-
-# exit
 
 if params[:setup_gbif_taxonomy]
 	if Helper.new_gbif_taxonomy_available?
