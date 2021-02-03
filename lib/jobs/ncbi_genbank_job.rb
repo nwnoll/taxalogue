@@ -39,8 +39,8 @@ class NcbiGenbankJob
       ## This might be the case for other institutions too
       ## if ftp is used then I might catch that exception and try to download via http
       
-      # downloader          = config.downloader.new(config: config)
-      # downloader.run
+      downloader          = config.downloader.new(config: config)
+      downloader.run
 
       files               = file_manager.files_of(dir: file_manager.dir_path)
       did_download_fail   = false
