@@ -20,8 +20,6 @@ class BoldJob
     @loading = Pastel.new.white.on_blue('loading')
     @loading_color_char_num = (@loading.size) -'loading'.size
 
-    @file = File.new('syns.txt', 'w')
-    @file2 = File.new('pool.txt', 'w')
   end
 
   def run
@@ -45,7 +43,6 @@ class BoldJob
       _print_download_progress_report(root_node: root_node, rank_level: i)
       
       Parallel.map(root_node.entries, in_threads: 5) do |node|
-        @file2.puts(ActiveRecord::Base.connection_pool.stat)
         next unless node.content.last == @pending
 
         config = _create_config(node: node)
@@ -191,7 +188,6 @@ class BoldJob
 
   def _download_synonym(node:)
     syn = Synonym.new(accepted_taxon: node.content.first, sources: [GbifTaxonomy])
-    @file.puts(node.content.first.canonical_name)
     file_manager = nil
 
     syn.synonyms.each do |synonym|
@@ -201,10 +197,6 @@ class BoldJob
       file_manager    = synonym_config.file_manager
       file_manager.create_dir
       
-      @file.puts("    #{synonym.canonical_name}")
-      @file2.puts
-      @file2.puts(ActiveRecord::Base.connection_pool.stat)
-
       synonym_downloader  = synonym_config.downloader.new(config: synonym_config)
       
       begin

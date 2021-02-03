@@ -39,6 +39,7 @@ GEM
     pastel (0.8.0)
       tty-color (~> 0.5)
     power_assert (1.2.0)
+    rexml (3.2.4)
     rubyzip (2.3.0)
     sqlite3 (1.4.2)
     structured_warnings (0.4.0)
@@ -61,10 +62,11 @@ DEPENDENCIES
   fuzzy-string-match (~> 0.9.7)
   parallel (~> 1.19, >= 1.19.2)
   pastel (~> 0.8.0)
+  rexml (~> 3.2, >= 3.2.4)
   rubytree!
   rubyzip (~> 2.3)
   sqlite3
   test-unit
 
 BUNDLED WITH
-   2.1.4
+   2.2.3

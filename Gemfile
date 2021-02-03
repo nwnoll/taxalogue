@@ -15,3 +15,4 @@ gem 'rubytree', git: 'https://github.com/nwnoll/RubyTree.git', branch: 'fix-synt
 gem 'parallel', '~> 1.19', '>= 1.19.2'
 gem 'pastel', '~> 0.8.0'
 gem 'test-unit'
+gem 'rexml', '~> 3.2', '>= 3.2.4'
