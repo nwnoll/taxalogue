@@ -7,7 +7,8 @@ params = {
 	download: Hash.new,
 	setup: Hash.new,
 	update: Hash.new,
-	filter: Hash.new
+	filter: Hash.new,
+	taxonomy: Hash.new
 }
 CONFIG_FILE = 'default_config.yaml'
 
@@ -27,11 +28,12 @@ end
 ## modified after https://gist.github.com/rkumar/445735
 subtext = <<HELP
 Commonly used commands are:
-   import   :  imports files into SQL databse
+   import   :  imports files into SQL database, in general this happens after first start automatically
    download :  downloads sequence and specimen data
    setup    :  setup Taxonomies
    update   :  update taxonomies or sequences
    filter   :  filter sequences
+   taxonomy :  different options regarding the used taxonomy
 
 See 'bundle exec ruby main.rb COMMAND --help' for more information on a specific command.
 HELP
@@ -66,7 +68,7 @@ end
 
 subcommands = { 
 	import: OptionParser.new do |opts|
-		opts.banner = "Usage: import [params]"
+		opts.banner = "Usage: import [options]"
 		opts.on('-f FASTA', String, '--fasta')
 		opts.on('-g GBOL', String, '--gbol')
 		opts.on('-o BOLD', String, '--bold')
@@ -78,19 +80,19 @@ subcommands = {
 		opts.on('-a', '--all_seqs') 
    end,
    download: OptionParser.new do |opts|
-		opts.banner = "Usage: download [params]"
+		opts.banner = "Usage: download [options]"
 		opts.on('-g', '--gbol')
 		opts.on('-o', '--bold')
 		opts.on('-k', '--genbank')
    end,
    setup: OptionParser.new do |opts|
-		opts.banner = "Usage: setup [params]"
+		opts.banner = "Usage: setup [options]"
 		opts.on('-t', '--taxonomies')
 		opts.on('-n', '--ncbi_taxonomy')
 		opts.on('-g', '--gbif_taxonomy')
    end,
    update: OptionParser.new do |opts|
-		opts.banner = "Usage: update [params]"
+		opts.banner = "Usage: update [options]"
 		opts.on('-A', '--all_taxonomies')
 		opts.on('-b', '--gbif_taxonomy')
 		opts.on('-n', '--ncbi_taxonomy')
@@ -100,11 +102,19 @@ subcommands = {
 		opts.on('-g', '--gbol_sequences')
 	end,
 	filter: OptionParser.new do |opts|
-		opts.banner = "Usage: filter [params]"
+		opts.banner = "Usage: filter [options]"
 		opts.on('-N MAX_N', Integer, '--max_N')
 		opts.on('-G MAX_GAPS', Integer,'--max_G')
 		opts.on('-l MIN_LENGTH', Integer,'--min_length')
 		opts.on('-L MAX_LENGTH', Integer,'--max_length')
+	end,
+	taxonomy: OptionParser.new do |opts|
+		opts.banner = "Usage: taxonomy [options]"
+		opts.on('-b', '--gbif', 'Taxon information is harmonized to GBIF Taxonomy backbone + additional available datasets from the GBIF API')
+		opts.on('-B', '--gbif_backbone', 'Taxon information is harmonized to GBIF Taxonomy backbone')
+		opts.on('-n', '--ncbi', 'Taxon information is harmonized to NCBI Taxonomy')
+		opts.on('-s', '--synonyms_allowed', 'Allows Taxon information of synonyms to be set to sequences')
+		opts.on('-u', '--unharmonized', 'No harmonization takes place, original sequence information is used but only standard ranks are used (e.g. no subfamilies)')
 	end
  }
 
@@ -116,7 +126,8 @@ loop do
 end
 
 
-pp params[:filter]
+pp params
+exit
 
 fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 fm.create_dir
