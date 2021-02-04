@@ -2,7 +2,97 @@
 
 require './requirements'
 
-params = {}
+# params = {}
+# CONFIG_FILE = 'default_config.yaml'
+
+# if File.exists? CONFIG_FILE
+# 	config_options = YAML.load_file(CONFIG_FILE)
+# 	params.merge!(config_options)
+
+# 	taxon_object 			= GbifTaxonomy.find_by_canonical_name(params[:taxon])
+# 	if taxon_object.nil?
+# 		abort "Cannot find default Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species\nMaybe the Taxonomy Database is not properly setup, run the program with --setup_taxonomy to fix the issue."
+# 	end
+
+# 	params[:taxon_object] 	= taxon_object
+# 	params[:marker_objects] = Helper.create_marker_objects(query_marker_names: params[:markers])
+# end
+
+# OptionParser.new do |opts|
+# 	opts.on('-i FASTA', 	String, '--import_fasta')
+# 	opts.on('-g GBOL', 	String, '--import_gbol')
+# 	opts.on('-o BOLD', 	String, '--import_bold')
+# 	opts.on('-k GENBANK', 	String, '--import_genbank')
+# 	opts.on('-b GBIF', 	String, '--import_gbif')
+# 	opts.on('-n NODES', 	String, '--import_nodes')
+# 	opts.on('-a NAMES', 	String, '--import_names')
+# 	opts.on('-l LINEAGE', 	String, '--import_lineage')
+# 	opts.on('-d', 			  '--download_genbank')
+# 	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
+
+# 		abort 'Taxon is extinct, please choose another Taxon' if Helper.is_extinct?(taxon_name)
+
+# 		## TODO: should be changed
+# 		taxon_objects 	= GbifTaxonomy.where(canonical_name: taxon_name)
+# 		taxon_objects 	= taxon_objects.select { |t| t.taxonomic_status == 'accepted' }
+# 		taxon_object 	= taxon_objects.first
+# 		####
+		
+# 		params[:taxon_object] = taxon_object
+# 		if taxon_object
+# 			params[:taxon_rank] = taxon_object.taxon_rank
+# 		else
+# 			abort 'Cannot find Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species'
+# 		end
+# 		taxon_name
+# 	end
+
+# 	opts.on('-m MARKERS', 	String, '--markers') do |markers|
+# 		params[:marker_objects] = Helper.create_marker_objects(query_marker_names: markers)
+# 	end
+
+# 	opts.on('-s', '--import_all_seqs') 
+# 	opts.on('-x', '--setup_taxonomy')
+# 	opts.on('-c', '--setup_ncbi_taxonomy')
+# 	opts.on('-y', '--setup_gbif_taxonomy')
+# 	opts.on('-u', '--update_taxonomy')
+# 	opts.on('-f [FILTER]', String, '--filter') do |filter_params|
+# 		if filter_params.nil?
+# 			puts "No arguments provided, will use the following:"
+# 			puts "No N allowed"
+# 			puts "No Gaps allowed"
+# 			puts "Minimum Length is 300 and the maximum Length is 1000"
+			
+# 			# default:
+# 			extracted_filter_params = Helper.extract_filter_params("N0,G0,L300-1000")
+# 		else
+# 			unless filter_params.match?(/[NnGg\-Ll]/)
+# 				abort "invalid arguments, use it for example like this: --filter N0,G0,L300-1000\narguments are separated by a comma and no spaces are alllowed."
+# 			end
+
+# 			extracted_filter_params = Helper.extract_filter_params(filter_params)
+# 			unless extracted_filter_params
+# 				abort "invalid arguments, use it for example like this: --filter N0,G0,L300-1000\narguments are separated by a comma and no spaces are alllowed."
+# 			end		
+# 		end
+# 		extracted_filter_params
+# 	end
+	
+# end.parse!(into: params)
+
+
+###################################################
+###################################################
+
+
+## modified after https://gist.github.com/rkumar/445735
+params = {
+	import: Hash.new,
+	download: Hash.new,
+	setup: Hash.new,
+	update: Hash.new,
+	filter: Hash.new
+}
 CONFIG_FILE = 'default_config.yaml'
 
 if File.exists? CONFIG_FILE
@@ -18,18 +108,21 @@ if File.exists? CONFIG_FILE
 	params[:marker_objects] = Helper.create_marker_objects(query_marker_names: params[:markers])
 end
 
-OptionParser.new do |opts|
-	opts.on('-i FASTA', 	String, '--import_fasta')
-	opts.on('-g GBOL', 	String, '--import_gbol')
-	opts.on('-o BOLD', 	String, '--import_bold')
-	opts.on('-k GENBANK', 	String, '--import_genbank')
-	opts.on('-b GBIF', 	String, '--import_gbif')
-	opts.on('-n NODES', 	String, '--import_nodes')
-	opts.on('-a NAMES', 	String, '--import_names')
-	opts.on('-l LINEAGE', 	String, '--import_lineage')
-	opts.on('-d', 			  '--download_genbank')
-	opts.on('-t TAXON', 	String, '--taxon') do |taxon_name|
 
+subtext = <<HELP
+Commonly used commands are:
+   import   :  imports files into SQL databse
+   download :  downloads sequence and specimen data
+   setup    :  setup Taxonomies
+   update   :  update taxonomies or sequences
+   filter   :  filter sequences
+
+See 'bundle exec ruby main.rb COMMAND --help' for more information on a specific command.
+HELP
+
+global = OptionParser.new do |opts|
+	opts.banner = "Usage: bundle exec ruby main.rb [params] [subcommand [params]]"
+	opts.on('-t TAXON', 	String, '--taxon', 'Choose a taxon to build your database, if you want a database for a species, put "" around the option: e.g.: -t "Apis mellifera". default: Arthropoda') do |taxon_name|
 		abort 'Taxon is extinct, please choose another Taxon' if Helper.is_extinct?(taxon_name)
 
 		## TODO: should be changed
@@ -46,39 +139,86 @@ OptionParser.new do |opts|
 		end
 		taxon_name
 	end
-
+	
 	opts.on('-m MARKERS', 	String, '--markers') do |markers|
 		params[:marker_objects] = Helper.create_marker_objects(query_marker_names: markers)
 	end
+  
+  opts.separator ""
+  opts.separator subtext
+end
+#end.parse!
 
-	opts.on('-s', '--import_all_seqs') 
-	opts.on('-x', '--setup_taxonomy')
-	opts.on('-c', '--setup_ncbi_taxonomy')
-	opts.on('-y', '--setup_gbif_taxonomy')
-	opts.on('-u', '--update_taxonomy')
-	opts.on('-f [FILTER]', String, '--filter') do |filter_params|
-		if filter_params.nil?
-			puts "No arguments provided, will use the following:"
-			puts "No N allowed"
-			puts "No Gaps allowed"
-			puts "Minimum Length is 300 and the maximum Length is 1000"
-			
-			# default:
-			extracted_filter_params = Helper.extract_filter_params("N0,G0,L300-1000")
-		else
-			unless filter_params.match?(/[NnGg\-Ll]/)
-				abort "invalid arguments, use it for example like this: --filter N0,G0,L300-1000\narguments are separated by a comma and no spaces are alllowed."
-			end
-
-			extracted_filter_params = Helper.extract_filter_params(filter_params)
-			unless extracted_filter_params
-				abort "invalid arguments, use it for example like this: --filter N0,G0,L300-1000\narguments are separated by a comma and no spaces are alllowed."
-			end		
-		end
-		extracted_filter_params
+subcommands = { 
+	import: OptionParser.new do |opts|
+		opts.banner = "Usage: import [params]"
+		opts.on('-f FASTA', String, '--fasta')
+		opts.on('-g GBOL', String, '--gbol')
+		opts.on('-o BOLD', String, '--bold')
+		opts.on('-k GENBANK', String, '--genbank')
+		opts.on('-b GBIF', String, '--gbif')
+		opts.on('-n NODES', String, '--nodes')
+		opts.on('-m NAMES', String, '--names')
+		opts.on('-l LINEAGE', String, '--lineage')
+		opts.on('-a', '--import_all_seqs') 
+   end,
+   download: OptionParser.new do |opts|
+		opts.banner = "Usage: download [params]"
+		opts.on('-g', '--gbol')
+		opts.on('-o', '--bold')
+		opts.on('-k', '--genbank')
+   end,
+   setup: OptionParser.new do |opts|
+		opts.banner = "Usage: setup [params]"
+		opts.on('-t', '--taxonomies')
+		opts.on('-n', '--ncbi_taxonomy')
+		opts.on('-g', '--gbif_taxonomy')
+   end,
+   update: OptionParser.new do |opts|
+		opts.banner = "Usage: update [params]"
+		opts.on('-A', '--all_taxonomies')
+		opts.on('-b', '--gbif_taxonomy')
+		opts.on('-n', '--ncbi_taxonomy')
+		opts.on('-a', '--all_sequences')
+		opts.on('-o', '--bold_sequences')
+		opts.on('-k', '--genbank_sequences')
+		opts.on('-g', '--gbol_sequences')
+	end,
+	filter: OptionParser.new do |opts|
+		opts.banner = "Usage: filter [params]"
+		opts.on('-N', '--max_N')
+		opts.on('-G', '--max_G')
+		opts.on('-l', '--min_length')
+		opts.on('-L', '--max_length')
 	end
-	
-end.parse!(into: params)
+ }
+
+
+command = ARGV.shift.to_sym
+
+subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
+
+if params[:setup][:taxonomies]
+	pp params[:setup]
+end
+
+exit
+puts "Command: #{command} "
+pp params
+puts "ARGV:"
+p ARGV
+pp subcommands['import'][:bold]
+
+
+exit
+
+###################################################
+###################################################
+
+
+
+
+
 
 
 pp params
