@@ -53,7 +53,6 @@ class Helper
 
     return seq unless criteria
 
-    
     if criteria[:max_N]
       return nil if seq.count('N') > criteria[:max_N]
     end
@@ -71,35 +70,7 @@ class Helper
       return nil if seq_length > criteria[:max_length]
     end
 
-    # if criteria[:filter_L]
-    #   range = criteria[:filter_L].split('-')
-    #   range.map! { |digit| digit.to_i }
-    #   seq_length = seq.size
-
-    #   return nil if seq_length < range.min || seq_length > range.max
-    # end
-
     return seq
-  end
-
-  def self.extract_filter_params(filter_params)
-    filter_params_ary = filter_params.split(',')
-
-    extracted = Hash.new
-    filter_params_ary.each do |param|
-      option_and_value = param.scan(/\d+|\D+/)
-      if param =~ /^N(.*?)$/i
-        extracted[:filter_N] = $1.to_i
-      elsif param =~ /^[gG-](.*?)$/
-        extracted[:filter_G] = $1.to_i
-      elsif param =~ /^L(.*?-.*?)$/i
-        extracted[:filter_L] = $1
-      else
-        extracted = nil
-      end
-    end
-
-    return extracted
   end
 
   def self.json_file_to_hash(file_name)
@@ -118,7 +89,7 @@ class Helper
     downloader.run
 
     unless File.exists?('fm_data/NCBI_TAXONOMY/NCBI_TAXONOMY.zip')
-      puts "The NCBI Taxonomy has not been setup yet, please use --setup_ncbi_taxonomy"
+      puts "The NCBI Taxonomy has not been setup yet, please use setup --ncbi_taxonomy"
       return true
     end
 
@@ -137,7 +108,7 @@ class Helper
   def self.new_gbif_taxonomy_available?
 
     unless File.exists?('fm_data/GBIF_TAXONOMY/eml.xml') || File.exists?('fm_data/GBIF_TAXONOMY/Taxon.tsv')
-      puts "The GBIF Taxonomy has not been setup yet, please use --setup_gbif_taxonomy"
+      puts "The GBIF Taxonomy has not been setup yet, please use setup --gbif_taxonomy"
       return true
     end
 
