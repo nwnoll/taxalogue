@@ -27,8 +27,11 @@ GEM
       tzinfo (~> 1.1)
       zeitwerk (~> 2.2, >= 2.2.2)
     bio (2.0.1)
+    biodiversity (5.1.2)
+      ffi (~> 1.14)
     byebug (11.1.3)
     concurrent-ruby (1.1.7)
+    ffi (1.14.2)
     fuzzy-string-match (0.9.9)
       RubyInline (>= 3.8.6)
     i18n (1.8.5)
@@ -58,6 +61,7 @@ DEPENDENCIES
   activerecord (~> 6.0, >= 6.0.3.3)
   activerecord-import
   bio
+  biodiversity (~> 5.1, >= 5.1.2)
   byebug
   fuzzy-string-match (~> 0.9.7)
   parallel (~> 1.19, >= 1.19.2)

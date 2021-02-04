@@ -1,24 +1,25 @@
 # frozen_string_literal: true
 
 class Nomial
-  attr_reader :name, :query_taxon_object, :query_taxon_rank, :cleaned_name_parts, :cleaned_name, :taxonomy_to_use
+  attr_reader :name, :query_taxon_object, :query_taxon_rank, :cleaned_name_parts, :cleaned_name, :taxonomy_to_use, :are_synonyms_allowed
 
-  def initialize(name:, query_taxon_object:, query_taxon_rank:, taxonomy_to_use:)
+  def initialize(name:, query_taxon_object:, query_taxon_rank:, taxonomy_to_use:, are_synonyms_allowed: false)
     @name                     = name
     @query_taxon_object       = query_taxon_object
     @query_taxon_rank         = query_taxon_rank
     @cleaned_name_parts       = _cleaned_name_parts
     @cleaned_name             = _cleaned_name
     @taxonomy_to_use          = taxonomy_to_use
+    @are_synonyms_allowed     = are_synonyms_allowed
   end
 
-  def self.generate(name:, query_taxon_object:, query_taxon_rank:, taxonomy_to_use:)
-    new(name: name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use).generate
+  def self.generate(name:, query_taxon_object:, query_taxon_rank:, taxonomy_to_use:, are_synonyms_allowed: false)
+    new(name: name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use, are_synonyms_allowed: are_synonyms_allowed).generate
   end
 
   def generate
-    return Monomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use)    if cleaned_name_parts.size == 1
-    return Polynomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use)  if cleaned_name_parts.size > 1
+    return Monomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use, are_synonyms_allowed: are_synonyms_allowed)    if cleaned_name_parts.size == 1
+    return Polynomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use, are_synonyms_allowed: are_synonyms_allowed)  if cleaned_name_parts.size > 1
     return self
   end
 
@@ -58,13 +59,14 @@ class Monomial
   include TaxonSearch
   include StringFormatting
 
-  attr_reader :name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :taxonomy_to_use
-  def initialize(name:, query_taxon_object:, query_taxon_rank:, taxonomy_to_use:)
-    @name               = name
-    @query_taxon_object = query_taxon_object
-    @query_taxon_name   = query_taxon_object.canonical_name
-    @query_taxon_rank   = query_taxon_rank
-    @taxonomy_to_use    = taxonomy_to_use
+  attr_reader :name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :taxonomy_to_use, :are_synonyms_allowed
+  def initialize(name:, query_taxon_object:, query_taxon_rank:, taxonomy_to_use:, are_synonyms_allowed: false)
+    @name                 = name
+    @query_taxon_object   = query_taxon_object
+    @query_taxon_name     = query_taxon_object.canonical_name
+    @query_taxon_rank     = query_taxon_rank
+    @taxonomy_to_use      = taxonomy_to_use
+    @are_synonyms_allowed = are_synonyms_allowed
   end
 
   def taxonomy(first_specimen_info:, importer:)
@@ -87,6 +89,10 @@ class Monomial
 
   private
   def _gbif_taxonomy_object(records:)
+    ## TODO: exclude, just for testing purpose
+    are_synonyms_allowed =  true
+    ##
+
     return nil if records.nil? || records.empty?
 
     accepted_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_accepted?(record) }
@@ -95,8 +101,13 @@ class Monomial
     doubtful_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_doubtful?(record) }
     return doubtful_records.first if doubtful_records.size > 0
 
-    synonymous_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_synonym?(record) && _has_accepted_name_usage_id(record) }
-    return GbifTaxonomy.find_by(taxon_id: synonymous_records.first.accepted_name_usage_id.to_i) if synonymous_records.size > 0
+    if are_synonyms_allowed
+      synonymous_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_synonym?(record) }
+      return synonymous_records.first if synonymous_records.size > 0
+    else
+      synonymous_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_synonym?(record) && _has_accepted_name_usage_id(record) }
+      return GbifTaxonomy.find_by(taxon_id: synonymous_records.first.accepted_name_usage_id.to_i) if synonymous_records.size > 0
+    end
 
     return nil
   end
@@ -104,7 +115,7 @@ class Monomial
   def _get_records(current_name:, importer:, first_specimen_info:, gbif_api_exact: false, gbif_api_fuzzy: false)
     return nil if current_name.nil? || query_taxon_object.nil? || query_taxon_rank.nil?
     
-    all_records = GbifTaxonomy.where(canonical_name: current_name)               if !gbif_api_exact  && !gbif_api_fuzzy
+    all_records = GbifTaxonomy.where(canonical_name: current_name)            if !gbif_api_exact  && !gbif_api_fuzzy
     all_records = GbifApi.new(query: current_name).records                    if gbif_api_exact   && !gbif_api_fuzzy
     all_records = GbifApi.new(path: _fuzzy_path, query: current_name).records if gbif_api_fuzzy   && !gbif_api_exact
     return nil if all_records.nil?
@@ -180,6 +191,15 @@ class Polynomial < Monomial
     records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
     record  = _gbif_taxonomy_object(records: records)
     return record unless record.nil?
+
+    parsed = Biodiversity::Parser.parse(name)
+    if parsed[:parsed]
+      name_stem = parsed[:canonical][:stemmed]
+      records = _get_records(current_name: name_stem, importer: importer, first_specimen_info: first_specimen_info)
+      record  = _gbif_taxonomy_object(records: records)
+
+      return record unless record.nil?
+    end
     
     records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_exact: true)
     record  = _gbif_taxonomy_object(records: records)
@@ -195,7 +215,7 @@ class Polynomial < Monomial
 
     cutted_name = _remove_last_name_part(name)
     return nil if cutted_name.blank?
-    nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use)
+    nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use, are_synonyms_allowed: are_synonyms_allowed)
     nomial.taxonomy(first_specimen_info: first_specimen_info, importer: importer)
   end
 

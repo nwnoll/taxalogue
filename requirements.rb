@@ -25,6 +25,7 @@ require 'timeout'
 require 'digest/md5'
 require 'time'
 require 'rexml/document'
+require 'biodiversity'
 
 require_relative "db/database_schema"
 require_relative 'lib/helpers/helper'

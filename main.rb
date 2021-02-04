@@ -80,6 +80,7 @@ OptionParser.new do |opts|
 	
 end.parse!(into: params)
 
+
 pp params
 
 fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)

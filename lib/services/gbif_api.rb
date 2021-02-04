@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 class GbifApi
-  attr_reader :path, :query, :response_hash
-  def initialize(path: 'species?name=', query:)
-    @path  = path
-    @query = CGI::escape(Helper.normalize(query.to_s))
-    @response_hash = JSON.parse response.body
+  attr_reader :path, :query, :response_hash, :are_synonyms_allowed
+  def initialize(path: 'species?name=', query:, are_synonyms_allowed: false)
+    @path                 = path
+    @query                = CGI::escape(Helper.normalize(query.to_s))
+    @response_hash        = JSON.parse response.body
+    @are_synonyms_allowed = are_synonyms_allowed
   end
 
 
@@ -19,6 +20,8 @@ class GbifApi
       records.push(_taxon_object_proxy(taxon: result)) and next if _is_accepted?(taxonomic_status) || _is_doubtful?(taxonomic_status)
       
       if _is_synonym?(taxonomic_status)
+        
+        records.push(_taxon_object_proxy(taxon: result)) and next if are_synonyms_allowed
         
         accepted_name_usage_id          = result['acceptedKey'].to_s
         records.push(_taxon_object_proxy(taxon: result, comment: :used_accepted_info)) and next if accepted_name_usage_id.blank?
@@ -89,11 +92,12 @@ class GbifApi
     taxonomic_status  = 'accepted' if comment == :used_accepted_info
     canonical_name    = _get_canonical_name(taxon)
     combined          = _get_combined(taxon)
+    taxon['kingdom'] == 'Metazoa' ? kingdom = 'Animalia' : kingdom = taxon['kingdom']
     
     OpenStruct.new(
       taxon_id:               taxon['nubKey'],
       api_taxon_id:           taxon['key'],
-      regnum:                 taxon['kingdom'],
+      regnum:                 kingdom,
       phylum:                 taxon['phylum'],
       classis:                taxon['class'],
       ordo:                   taxon['order'],
@@ -112,7 +116,15 @@ class GbifApi
   def _get_canonical_name(taxon)
     canonical_name = ''
     possible_ranks = GbifTaxonomy.possible_ranks
-    possible_ranks.reverse.each { |rank| canonical_name = taxon[rank] unless taxon[rank].blank? }
+    if are_synonyms_allowed
+      if taxon['canonicalName'].blank?
+        possible_ranks.reverse.each { |rank| canonical_name = taxon[rank] unless taxon[rank].blank? }
+      else
+        canonical_name = taxon['canonicalName'] unless taxon['canonicalName'].blank?
+      end
+    else
+      possible_ranks.reverse.each { |rank| canonical_name = taxon[rank] unless taxon[rank].blank? }
+    end
 
     return canonical_name
   end
