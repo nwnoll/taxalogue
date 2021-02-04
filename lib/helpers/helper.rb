@@ -54,21 +54,30 @@ class Helper
     return seq unless criteria
 
     
-    if criteria[:filter_N]
-      return nil if seq.count('N') > criteria[:filter_N]
+    if criteria[:max_N]
+      return nil if seq.count('N') > criteria[:max_N]
     end
 
-    if criteria[:filter_G]
-      return nil if seq.count('-') > criteria[:filter_G]
+    if criteria[:max_G]
+      return nil if seq.count('-') > criteria[:max_G]
     end
 
-    if criteria[:filter_L]
-      range = criteria[:filter_L].split('-')
-      range.map! { |digit| digit.to_i }
-      seq_length = seq.size
-
-      return nil if seq_length < range.min || seq_length > range.max
+    seq_length = seq.size
+    if criteria[:min_length]
+      return nil if seq_length < criteria[:min_length]
     end
+
+    if criteria[:max_length]
+      return nil if seq_length > criteria[:max_length]
+    end
+
+    # if criteria[:filter_L]
+    #   range = criteria[:filter_L].split('-')
+    #   range.map! { |digit| digit.to_i }
+    #   seq_length = seq.size
+
+    #   return nil if seq_length < range.min || seq_length > range.max
+    # end
 
     return seq
   end

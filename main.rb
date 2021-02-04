@@ -147,7 +147,6 @@ global = OptionParser.new do |opts|
   opts.separator ""
   opts.separator subtext
 end
-#end.parse!
 
 subcommands = { 
 	import: OptionParser.new do |opts|
@@ -160,7 +159,7 @@ subcommands = {
 		opts.on('-n NODES', String, '--nodes')
 		opts.on('-m NAMES', String, '--names')
 		opts.on('-l LINEAGE', String, '--lineage')
-		opts.on('-a', '--import_all_seqs') 
+		opts.on('-a', '--all_seqs') 
    end,
    download: OptionParser.new do |opts|
 		opts.banner = "Usage: download [params]"
@@ -186,36 +185,21 @@ subcommands = {
 	end,
 	filter: OptionParser.new do |opts|
 		opts.banner = "Usage: filter [params]"
-		opts.on('-N', '--max_N')
-		opts.on('-G', '--max_G')
-		opts.on('-l', '--min_length')
-		opts.on('-L', '--max_length')
+		opts.on('-N MAX_N', Integer, '--max_N')
+		opts.on('-G MAX_GAPS', Integer,'--max_G')
+		opts.on('-l MIN_LENGTH', Integer,'--min_length')
+		opts.on('-L MAX_LENGTH', Integer,'--max_length')
 	end
  }
 
-
-command = ARGV.shift.to_sym
-
-subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
-
-if params[:setup][:taxonomies]
-	pp params[:setup]
+global.order!
+loop do 
+	break if ARGV.empty?
+	command = ARGV.shift.to_sym
+	subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
 end
 
 exit
-puts "Command: #{command} "
-pp params
-puts "ARGV:"
-p ARGV
-pp subcommands['import'][:bold]
-
-
-exit
-
-###################################################
-###################################################
-
-
 
 
 
@@ -240,7 +224,7 @@ bold_job.run
 
 exit
 
-if params[:setup_gbif_taxonomy]
+if params[:setup][:gbif_taxonomy]
 	if Helper.new_gbif_taxonomy_available?
 		puts "starting GBIF Taxonomy setup"
 		gbif_taxonomy_job = GbifTaxonomyJob.new
@@ -258,7 +242,7 @@ if params[:setup_gbif_taxonomy]
 end
 
 
-if params[:setup_ncbi_taxonomy]
+if params[:setup][:ncbi_taxonomy]
 	if Helper.new_ncbi_taxonomy_available?
 		ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
 		ncbi_taxonomy_job.run
@@ -275,11 +259,11 @@ if params[:setup_ncbi_taxonomy]
 end
 
 
-if params[:setup_taxonomy]
+if params[:setup]:taxonomies]
 	Helper.setup_taxonomy
 end
 
-if params[:import_all_seqs]
+if params[:import][:all_seqs]
 	file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 
 	bold_job 	= BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter])
@@ -301,7 +285,7 @@ end
 
 exit
 
-if params[:update_taxonomy]
+if params[:update][:all_taxonomies]
 	if Helper.new_gbif_taxonomy_available?
 		puts "new version of GBIF Taxonomy available, download starts soon."
 		
