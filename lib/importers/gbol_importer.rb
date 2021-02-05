@@ -47,15 +47,23 @@ class GbolImporter
     specimens_of_taxon.keys.each do |taxon_name|
       nomial              = specimens_of_taxon[taxon_name][:nomial]
       first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
+
+      ## TODO: reimplement
       # taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
       taxonomic_info      = nomial.ncbi_taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
       
       next unless taxonomic_info
       next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
+      ## TODO: reimplement
       # Synonym List
       # syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [GbifTaxonomy])
       # OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms)
+
+
+
+
+
 
       # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
 
