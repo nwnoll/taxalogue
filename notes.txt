@@ -103,3 +103,173 @@ pp NcbiName.where(name: "Reptilia")
 
 
 
+for includes I actually could use tax_id, although it is not a synonym
+for in-part it is more difficult since it seems that here are multiple tax_id associated..
+eg Sympata includes 3 families
+
+(byebug) pp NcbiName.where(name: "Sympata")
+[#<NcbiName:0x00005604e1783bb0
+  id: 44993,
+  tax_id: 32409,
+  name: "Sympata",
+  unique_name: "Sympata <Pergidae>",
+  name_class: "in-part",
+  created_at: 2021-02-02 20:51:39.250609 UTC,
+  updated_at: 2021-02-02 20:51:39.250609 UTC>,
+ #<NcbiName:0x00005604e1783a20
+  id: 52759,
+  tax_id: 36760,
+  name: "Sympata",
+  unique_name: "Sympata <Xiphydriidae>",
+  name_class: "in-part",
+  created_at: 2021-02-02 20:51:39.250609 UTC,
+  updated_at: 2021-02-02 20:51:39.250609 UTC>,
+ #<NcbiName:0x00005604e1783840
+  id: 75847,
+  tax_id: 48206,
+  name: "Sympata",
+  unique_name: "Sympata <Xyelidae>",
+  name_class: "in-part",
+  created_at: 2021-02-02 20:51:39.250609 UTC,
+  updated_at: 2021-02-02 20:51:39.250609 UTC>]
+
+
+here the qestion could pop up if multiple taxa should be searched.. so these 3?
+could look how i have done it in the BOLD downloader... just creating multiple configs?
+
+
+no synonyms allowed
+
+Search for NcbiName
+if scientific_name  -> good -> take tax_id
+if synonym          -> good -> take tax_id
+if includes         -> good -> take tax_id
+if in-part          -> unsure, could use all tax_ids and then download... but not really during taxonobject assignment..
+
+
+
+with tax_id I will search the NcbiNode and use the rank information
+
+
+
+
+
+
+
+
+taxon['rank'].blank? ? taxon_rank = 'unranked' : taxon_rank = taxon['rank'].downcase
+taxon_rank.gsub!('sub', '') if taxon_rank =~ /sub/
+
+taxonomic_status  = taxon['taxonomicStatus'].to_s.downcase
+taxonomic_status  = 'accepted' if comment == :used_accepted_info
+canonical_name    = _get_canonical_name(taxon)
+combined          = _get_combined(taxon)
+taxon['kingdom'] == 'Metazoa' ? kingdom = 'Animalia' : kingdom = taxon['kingdom']
+
+OpenStruct.new(
+    taxon_id:               taxon['nubKey'],
+    api_taxon_id:           taxon['key'],
+    regnum:                 kingdom,
+    phylum:                 taxon['phylum'],
+    classis:                taxon['class'],
+    ordo:                   taxon['order'],
+    familia:                taxon['family'],
+    genus:                  taxon['genus'],
+    canonical_name:         canonical_name,
+    scientific_name:        taxon['scientificName'],
+    taxonomic_status:       taxonomic_status,
+    taxon_rank:             taxon_rank,
+    combined:               combined,
+    accepted_name_usage_id: nil,
+    comment:                comment
+)
+
+probably I need to divide the Synoynm class into Ncbisynonym and GbifSynonym 
+too much differences and it will make problems if i trý to combine both
+
+
+migrate database
+class RecreateNcbiNameTable < ActiveRecord::Migration[6.0]
+    def change
+        create_table :ncbi_names do |t|
+            t.integer	:tax_id, index: true
+            t.string 	:name, index: true
+            t.string 	:unique_name
+            t.string 	:name_class
+
+            t.timestamps
+        end
+    end
+end
+
+RecreateNcbiNameTable.migrate(:down)
+RecreateNcbiNameTable.migrate(:up)
+
+
+# ### import ncbi names do not delete should use it for later....
+# conf_params = Helper.json_file_to_hash('lib/configs/ncbi_taxonomy_config.json')
+# config = Config.new(conf_params)
+# file_manager = config.file_manager
+
+# ncbi_name_importer = NcbiNameImporter.new(file_manager: file_manager, file_name: 'names.dmp')
+# ncbi_name_importer.run
+# ###
+
+
+
+class RecreateNcbiRankedLineageTable < ActiveRecord::Migration[6.0]
+    def change
+        create_table :ncbi_ranked_lineages do |t|
+            t.integer :tax_id, index: true
+            t.string :name, index: true
+            t.string :species
+            t.string :genus
+            t.string :familia
+            t.string :ordo
+            t.string :classis
+            t.string :phylum
+            t.string :regnum
+            t.string :super_regnum
+
+            t.timestamps
+        end
+    end
+end
+
+RecreateNcbiRankedLineageTable.migrate(:down)
+RecreateNcbiRankedLineageTable.migrate(:up)
+
+
+
+class RecreateNcbiRankedLineageTable < ActiveRecord::Migration[6.0]
+    def change
+        create_table :ncbi_ranked_lineages do |t|
+            t.integer :tax_id, index: true
+            t.string :name, index: true
+            t.string :species
+            t.string :genus
+            t.string :familia
+            t.string :ordo
+            t.string :classis
+            t.string :phylum
+            t.string :regnum
+            t.string :super_regnum
+
+            t.timestamps
+        end
+    end
+end
+
+RecreateNcbiRankedLineageTable.migrate(:down)
+RecreateNcbiRankedLineageTable.migrate(:up)
+
+
+### import ncbi names do not delete should use it for later....
+conf_params = Helper.json_file_to_hash('lib/configs/ncbi_taxonomy_config.json')
+config = Config.new(conf_params)
+file_manager = config.file_manager
+
+ncbi_ranked_lineage_importer = NcbiRankedLineageImporter.new(file_manager: file_manager, file_name: 'rankedlineage.dmp')
+ncbi_ranked_lineage_importer.run
+###
+exit

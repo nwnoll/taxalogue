@@ -113,12 +113,10 @@ class Monomial
     return record unless record.nil?
   end
 
-  def ncbi_taxonomy
-    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
-    record  = _gbif_taxonomy_object(records: records)
+  def ncbi_taxonomy(first_specimen_info:, importer:)
+    records = _get_ncbi_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
+    record  = _ncbi_taxonomy_object(records: records)
     return record unless record.nil?
-
-    return nil if current_name.nil? || query_taxon_object.nil? || query_taxon_rank.nil?
 
   end
 
@@ -146,18 +144,61 @@ class Monomial
   def _ncbi_taxonomy_object(records:)
     return nil if records.nil? || records.empty?
 
-    scientific_name_records = records.select
-    authority_records
-    synonym_records
-    includes_records
-    in_part_records
+    scientific_name_records = records.select do |record| 
+      ncbi_ranked_lineage_record = NcbiRankedLineage.find_by(tax_id: record.tax_id)
+      _belongs_to_correct_query_taxon_rank?(ncbi_ranked_lineage_record) && has_scientific_name_in_ncbi?(record) 
+    end
+
+    # synonym_records = records.select do |record| 
+    #   ncbi_ranked_lineage_record = NcbiRankedLineage.find_by(tax_id: record.tax_id)
+    #   _belongs_to_correct_query_taxon_rank?(ncbi_ranked_lineage_record) && is_synonym_in_ncbi?(record) 
+    # end
+    
+    # authority_records = records.select do |record| 
+    #   _belongs_to_correct_query_taxon_rank?(record) && is_authority_in_ncbi?(record) }
+    
+    # synonym_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && is_synonym_in_ncbi?(record) }
+    
+    # includes_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && is_includes_in_ncbi?(record) }
+
+
+    # scientific_name_records = records.select {  }
+    # authority_records
+    # synonym_records
+    # includes_records
+    # in_part_records
 
     ## NEXT
     # if i want to use _belongs_to_correct_query_taxon_rank than i need the NcbiRankedLineage
     # what is here the best way?
     # ask for if tere are any scientif names
-    # if not search for synonym names and includes or in-part names
+    # if not search for synonym names and maybe for includes or in-part names
     # 
+    obj = nil
+    if scientific_name_records.size > 0
+      scientific_name_records.each do |record|
+        ncbi_ranked_lineage_record  = NcbiRankedLineage.find_by(tax_id: record.tax_id)
+        ncbi_node_record             = NcbiNode.find_by(tax_id: record.tax_id)
+        
+
+        obj = OpenStruct.new(
+          regnum:                 ncbi_ranked_lineage_record.regnum,
+          phylum:                 ncbi_ranked_lineage_record.phylum,
+          classis:                ncbi_ranked_lineage_record.classis,
+          ordo:                   ncbi_ranked_lineage_record.ordo,
+          familia:                ncbi_ranked_lineage_record.familia,
+          genus:                  ncbi_ranked_lineage_record.genus,
+          canonical_name:         ncbi_ranked_lineage_record.name,
+          scientific_name:        'blank_sciname',
+          taxonomic_status:       record.name_class,
+          taxon_rank:             ncbi_node_record.rank,
+          combined:               'blank_combined',
+          comment:                'blank_comment'
+        )
+        pp obj 
+        return obj
+      end
+    end
 
   end
 
@@ -193,8 +234,11 @@ class Monomial
     all_records = NcbiName.where(name: current_name)
     return nil if all_records.nil?
 
-    records = _is_homonym?(current_name) ? _records_with_matching_lineage(current_name: current_name, lineage: importer.get_source_lineage(first_specimen_info), all_records: all_records) : all_records
 
+    ## TODO: NcbIname record does not have taxon rank so maybe i need to 
+    ## get NcbiNode and NcbiRankedLineage beforehand??
+    # records = _is_homonym?(current_name) ? _records_with_matching_lineage(current_name: current_name, lineage: importer.get_source_lineage(first_specimen_info), all_records: all_records) : all_records
+    records = all_records
     return records
   end
 
@@ -220,6 +264,26 @@ class Monomial
 
   def _belongs_to_correct_query_taxon_rank?(record)
     record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+  end
+
+  def has_scientific_name_in_ncbi?(record)
+    record.name_class =~ /scientific name/
+  end
+
+  def is_authority_in_ncbi?(record)
+    record.name_class =~ /authority/
+  end
+
+  def is_synonym_in_ncbi?(record)
+    record.name_class =~ /synonym/
+  end
+
+  def is_includes_in_ncbi?(record)
+    record.name_class =~ /includes/
+  end
+
+  def is_in_part_in_ncbi?(record)
+    record.name_class =~ /in-part/
   end
 
   def _fuzzy_path

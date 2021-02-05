@@ -127,16 +127,26 @@ loop do
 end
 
 
-pp params
 
-byebug
-exit
+
+
+
+
+# ### import ncbi names do not delete should use it for later....
+# conf_params = Helper.json_file_to_hash('lib/configs/ncbi_taxonomy_config.json')
+# config = Config.new(conf_params)
+# file_manager = config.file_manager
+
+# ncbi_ranked_lineage_importer = NcbiRankedLineageImporter.new(file_manager: file_manager, file_name: 'rankedlineage.dmp')
+# ncbi_ranked_lineage_importer.run
+# ###
+# exit
 
 fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 fm.create_dir
 # BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects]).run
 # NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter]).run
-GbolJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter]).run
+GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter]).run
 
 exit
 

@@ -4,7 +4,7 @@ class DatabaseSchema
 	def self.create_db
 		ActiveRecord::Schema.define do
 			create_table :ncbi_ranked_lineages do |t|
-				t.integer :tax_id # should be indexed
+				t.integer :tax_id, index: true
 				t.string :name, index: true
 				t.string :species
 				t.string :genus
@@ -20,7 +20,7 @@ class DatabaseSchema
 			
 			create_table :ncbi_names do |t|
 				t.integer	:tax_id, index: true
-				t.string 	:name # should be indexed
+				t.string 	:name, index: true
 				t.string 	:unique_name
 				t.string 	:name_class
 
