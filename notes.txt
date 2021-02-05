@@ -1,0 +1,105 @@
+notes
+
+
+NcbiTaxonomy
+helpful: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3245000/
+
+Other name types (includes and in-part) are for names which are useful as retrieval terms but which do not correspond with unique taxa in our classification (e.g. Reptilia).
+
+
+
+single entry... use find_by
+NcbiRankedLineage
+gives all imprtant ranks
+oen thing is that if the rank is non-standard than the name might not be present in the other ranks
+another thing is that name gives the actual nam and ven if this taxon name is of rank species, on species, there is just an empty string
+
+single entry use find_by
+NcbiNode.where(tax_id: 1417371)
+mainly useful for rank and parent_tax_id
+
+multiple entires for tax_id use where
+NcbiName.where(tax_id: 1417371)
+gives info about taxonomic status..
+all synonyms
+
+possible name_classes
+["synonym", "scientific name", "blast name", "genbank common name", "in-part", "authority", "equivalent name", "includes", "common name", "genbank synonym", "acronym", "genbank acronym"]
+intersting here is:
+    synonym -> this name is according to NCBI Taxonomy a synonym in the Webbrowser there is also the info if it homotypic or hetero dont know wehre it might be in the db
+    scientific name -> binary .. trinomen.. without author
+    authority -> binary + author
+
+
+
+
+no synonyms allowed
+NcbiName.where(name: "")
+NcbiNode.find_by_tax_id(tax_id)
+NcbiRankeLineage.find_by_tax_id(tax_id)
+
+synonyms allowed
+NcbiName.where(name: "") for tax_id and name_class
+NcbiNode.find_by_tax_id(tax_id) for rank
+NcbiRankeLineage.find_by_tax_id(tax_id) for rank names
+
+
+pp NcbiName.where(name: "Reptilia")
+[#<NcbiName:0x000055dbebfbcbc0
+  id: 23181,
+  tax_id: 8459,
+  name: "Reptilia",
+  unique_name: "Reptilia <turtles>",
+  name_class: "in-part",
+  created_at: 2021-02-02 20:51:39.250609 UTC,
+  updated_at: 2021-02-02 20:51:39.250609 UTC>,
+ #<NcbiName:0x000055dbebfe58b8
+  id: 23309,
+  tax_id: 8504,
+  name: "Reptilia",
+  unique_name: "Reptilia <lizards>",
+  name_class: "in-part",
+  created_at: 2021-02-02 20:51:39.250609 UTC,
+  updated_at: 2021-02-02 20:51:39.250609 UTC>,
+ #<NcbiName:0x000055dbebfe5728
+  id: 1586854,
+  tax_id: 1294634,
+  name: "Reptilia",
+  unique_name: "Reptilia <vertebrates>",
+  name_class: "in-part",
+  created_at: 2021-02-02 20:53:12.460127 UTC,
+  updated_at: 2021-02-02 20:53:12.460127 UTC>]
+#<ActiveRecord::Relation [#<NcbiName id: 23181, tax_id: 8459, name: "Reptilia", unique_name: "Reptilia <turtles>", name_class: "in-part", created_at: "2021-02-02 20:51:39", updated_at: "2021-02-02 20:51:39">, #<NcbiName id: 23309, tax_id: 8504, name: "Reptilia", unique_name: "Reptilia <lizards>", name_class: "in-part", created_at: "2021-02-02 20:51:39", updated_at: "2021-02-02 20:51:39">, #<NcbiName id: 1586854, tax_id: 1294634, name: "Reptilia", unique_name: "Reptilia <vertebrates>", name_class: "in-part", created_at: "2021-02-02 20:53:12", updated_at: "2021-02-02 20:53:12">]>
+(byebug) pp NcbiName.where(name: "Satyridae")
+[#<NcbiName:0x000055dbec10ac70
+  id: 46154,
+  tax_id: 33415,
+  name: "Satyridae",
+  unique_name: "",
+  name_class: "includes",
+  created_at: 2021-02-02 20:51:39.250609 UTC,
+  updated_at: 2021-02-02 20:51:39.250609 UTC>]
+#<ActiveRecord::Relation [#<NcbiName id: 46154, tax_id: 33415, name: "Satyridae", unique_name: "", name_class: "includes", created_at: "2021-02-02 20:51:39", updated_at: "2021-02-02 20:51:39">]>
+(byebug) NcbiRankedLineage.where(tax_id: 33415)
+#<ActiveRecord::Relation [#<NcbiRankedLineage id: 1043705, tax_id: 33415, name: "Nymphalidae", species: "", genus: "", familia: "", ordo: "Lepidoptera", classis: "Insecta", phylum: "Arthropoda", regnum: "Metazoa", super_regnum: "Eukaryota", created_at: "2021-02-02 20:56:45", updated_at: "2021-02-02 20:56:45">]>
+(byebug) pp NcbiRankedLineage.where(tax_id: 33415)
+[#<NcbiRankedLineage:0x000055dbec8bbc80
+  id: 1043705,
+  tax_id: 33415,
+  name: "Nymphalidae",
+  species: "",
+  genus: "",
+  familia: "",
+  ordo: "Lepidoptera",
+  classis: "Insecta",
+  phylum: "Arthropoda",
+  regnum: "Metazoa",
+  super_regnum: "Eukaryota",
+  created_at: 2021-02-02 20:56:45.339576 UTC,
+  updated_at: 2021-02-02 20:56:45.339576 UTC>]
+#<ActiveRecord::Relation [#<NcbiRankedLineage id: 1043705, tax_id: 33415, name: "Nymphalidae", species: "", genus: "", familia: "", ordo: "Lepidoptera", classis: "Insecta", phylum: "Arthropoda", regnum: "Metazoa", super_regnum: "Eukaryota", created_at: "2021-02-02 20:56:45", updated_at: "2021-02-02 20:56:45">]>
+(byebug) 
+
+
+
+
