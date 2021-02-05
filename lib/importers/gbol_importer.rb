@@ -2,7 +2,7 @@
 
 class GbolImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :taxonomy_to_use
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :taxonomy_params
 
   def self.get_source_lineage(row)
     OpenStruct.new(
@@ -11,7 +11,7 @@ class GbolImporter
     )
   end
 
-  def initialize(file_name:, query_taxon_object:, fast_run: false, file_manager:, filter_params: nil, taxonomy_to_use:)
+  def initialize(file_name:, query_taxon_object:, fast_run: false, file_manager:, filter_params: nil, taxonomy_params:)
     @file_name                = file_name
     @query_taxon_object       = query_taxon_object
     @query_taxon_name         = query_taxon_object.canonical_name
@@ -19,7 +19,7 @@ class GbolImporter
     @fast_run                 = fast_run
     @file_manager             = file_manager
     @filter_params            = filter_params
-    @taxonomy_to_use          = taxonomy_to_use
+    @taxonomy_params          = taxonomy_params
   end
 
   def run
@@ -80,7 +80,7 @@ class GbolImporter
 
     return nil if sequence.nil?
 
-    nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use)
+    nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
 
     specimen                      = Specimen.new
     specimen.identifier           = identifier

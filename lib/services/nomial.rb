@@ -1,25 +1,24 @@
 # frozen_string_literal: true
 
 class Nomial
-  attr_reader :name, :query_taxon_object, :query_taxon_rank, :cleaned_name_parts, :cleaned_name, :taxonomy_to_use, :are_synonyms_allowed
+  attr_reader :name, :query_taxon_object, :query_taxon_rank, :cleaned_name_parts, :cleaned_name, :taxonomy_params
 
-  def initialize(name:, query_taxon_object:, query_taxon_rank:, taxonomy_to_use:, are_synonyms_allowed: false)
+  def initialize(name:, query_taxon_object:, query_taxon_rank:, taxonomy_params:)
     @name                     = name
     @query_taxon_object       = query_taxon_object
     @query_taxon_rank         = query_taxon_rank
     @cleaned_name_parts       = _cleaned_name_parts
     @cleaned_name             = _cleaned_name
-    @taxonomy_to_use          = taxonomy_to_use
-    @are_synonyms_allowed     = are_synonyms_allowed
+    @taxonomy_params          = taxonomy_params
   end
 
-  def self.generate(name:, query_taxon_object:, query_taxon_rank:, taxonomy_to_use:, are_synonyms_allowed: false)
-    new(name: name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use, are_synonyms_allowed: are_synonyms_allowed).generate
+  def self.generate(name:, query_taxon_object:, query_taxon_rank:, taxonomy_params:)
+    new(name: name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params).generate
   end
 
   def generate
-    return Monomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use, are_synonyms_allowed: are_synonyms_allowed)    if cleaned_name_parts.size == 1
-    return Polynomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use, are_synonyms_allowed: are_synonyms_allowed)  if cleaned_name_parts.size > 1
+    return Monomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)    if cleaned_name_parts.size == 1
+    return Polynomial.new(name: cleaned_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)  if cleaned_name_parts.size > 1
     return self
   end
 
@@ -59,14 +58,13 @@ class Monomial
   include TaxonSearch
   include StringFormatting
 
-  attr_reader :name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :taxonomy_to_use, :are_synonyms_allowed
-  def initialize(name:, query_taxon_object:, query_taxon_rank:, taxonomy_to_use:, are_synonyms_allowed: false)
+  attr_reader :name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :taxonomy_params
+  def initialize(name:, query_taxon_object:, query_taxon_rank:, taxonomy_params:)
     @name                 = name
     @query_taxon_object   = query_taxon_object
     @query_taxon_name     = query_taxon_object.canonical_name
     @query_taxon_rank     = query_taxon_rank
-    @taxonomy_to_use      = taxonomy_to_use
-    @are_synonyms_allowed = are_synonyms_allowed
+    @taxonomy_params      = taxonomy_params
   end
 
   def taxonomy(first_specimen_info:, importer:)
@@ -87,12 +85,40 @@ class Monomial
     return record unless record.nil?
   end
 
+  def gbif_taxonomy(first_specimen_info:, importer:)
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
+    record  = _gbif_taxonomy_object(records: records)
+    return record unless record.nil?
+
+    records = _get_records(current_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
+    record  = _gbif_taxonomy_object(records: records)
+    return record unless record.nil?
+    
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_exact: true)
+    record  = _gbif_taxonomy_object(records: records)
+    return record unless record.nil?
+
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_fuzzy: true)
+    record  = _gbif_taxonomy_object(records: records)
+    return record unless record.nil?
+  end
+
+  def gbif_taxonomy_backbone(first_specimen_info:, importer:)
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
+    record  = _gbif_taxonomy_object(records: records)
+    return record unless record.nil?
+
+    records = _get_records(current_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
+    record  = _gbif_taxonomy_object(records: records)
+    return record unless record.nil?
+  end
+
+  def ncbi_taxonomy
+    ## NEXT: implement NCBI Taxonomy
+  end
+
   private
   def _gbif_taxonomy_object(records:)
-    ## TODO: exclude, just for testing purpose
-    are_synonyms_allowed =  true
-    ##
-
     return nil if records.nil? || records.empty?
 
     accepted_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_accepted?(record) }
@@ -215,9 +241,71 @@ class Polynomial < Monomial
 
     cutted_name = _remove_last_name_part(name)
     return nil if cutted_name.blank?
-    nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_to_use: taxonomy_to_use, are_synonyms_allowed: are_synonyms_allowed)
+    nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
     nomial.taxonomy(first_specimen_info: first_specimen_info, importer: importer)
   end
+
+  def gbif_taxonomy(first_specimen_info:, importer:)
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
+    record  = _gbif_taxonomy_object(records: records)
+    return record unless record.nil?
+
+    parsed = Biodiversity::Parser.parse(name)
+    if parsed[:parsed]
+      name_stem = parsed[:canonical][:stemmed]
+      records = _get_records(current_name: name_stem, importer: importer, first_specimen_info: first_specimen_info)
+      record  = _gbif_taxonomy_object(records: records)
+
+      return record unless record.nil?
+    end
+    
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_exact: true)
+    record  = _gbif_taxonomy_object(records: records)
+    return record unless record.nil?
+
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_fuzzy: true)
+    record  = _gbif_taxonomy_object(records: records)
+    return record unless record.nil?
+
+    records = _get_records(current_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
+    record  = _gbif_taxonomy_object(records: records)
+    return record unless record.nil?
+
+    cutted_name = _remove_last_name_part(name)
+    return nil if cutted_name.blank?
+    nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
+    nomial.gbif_taxonomy(first_specimen_info: first_specimen_info, importer: importer)
+  end
+
+
+  def gbif_taxonomy_backbone(first_specimen_info:, importer:)
+    records = _get_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
+    record  = _gbif_taxonomy_object(records: records)
+    return record unless record.nil?
+
+    parsed = Biodiversity::Parser.parse(name)
+    if parsed[:parsed]
+      name_stem = parsed[:canonical][:stemmed]
+      records = _get_records(current_name: name_stem, importer: importer, first_specimen_info: first_specimen_info)
+      record  = _gbif_taxonomy_object(records: records)
+
+      return record unless record.nil?
+    end
+
+    records = _get_records(current_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
+    record  = _gbif_taxonomy_object(records: records)
+    return record unless record.nil?
+
+    cutted_name = _remove_last_name_part(name)
+    return nil if cutted_name.blank?
+    nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
+    nomial.gbif_taxonomy_backbone(first_specimen_info: first_specimen_info, importer: importer)
+  end
+
+
+
+
+
 
   private
   def _remove_last_name_part(name_to_clean)

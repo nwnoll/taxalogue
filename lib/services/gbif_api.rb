@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 class GbifApi
-  attr_reader :path, :query, :response_hash, :are_synonyms_allowed
-  def initialize(path: 'species?name=', query:, are_synonyms_allowed: false)
+  attr_reader :path, :query, :response_hash, :taxonomy_params, :are_synonyms_allowed
+  def initialize(path: 'species?name=', query:, taxonomy_params:)
     @path                 = path
     @query                = CGI::escape(Helper.normalize(query.to_s))
     @response_hash        = JSON.parse response.body
-    @are_synonyms_allowed = are_synonyms_allowed
+    @taxonomy_params      = taxonomy_params
+    @are_synonyms_allowed = taxonomy_params[:taxonomy][:synonyms_allowed]
   end
 
 

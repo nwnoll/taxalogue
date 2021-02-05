@@ -114,7 +114,8 @@ subcommands = {
 		opts.on('-B', '--gbif_backbone', 'Taxon information is harmonized to GBIF Taxonomy backbone')
 		opts.on('-n', '--ncbi', 'Taxon information is harmonized to NCBI Taxonomy')
 		opts.on('-s', '--synonyms_allowed', 'Allows Taxon information of synonyms to be set to sequences')
-		opts.on('-u', '--unharmonized', 'No harmonization takes place, original sequence information is used but only standard ranks are used (e.g. no subfamilies)')
+		opts.on('-u', '--unharmonized', 'No harmonization takes place, original specimen information is used but only standard ranks are used (e.g. no subfamilies)')
+		opts.on('-r', '--retain', 'retains sequences for taxa that are not present in chosen taxonomy')
 	end
  }
 
