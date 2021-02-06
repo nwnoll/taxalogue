@@ -93,8 +93,8 @@ class GbifApi
     taxonomic_status  = 'accepted' if comment == :used_accepted_info
     canonical_name    = _get_canonical_name(taxon)
     combined          = _get_combined(taxon)
-    ## PRELIM
     genus = nil
+    
     if are_synonyms_allowed
       if taxon_rank == 'species' || taxon_rank  == 'genus' || taxon_rank  == 'unranked'
         genus = canonical_name.split(' ')[0]
@@ -102,7 +102,10 @@ class GbifApi
     else
       genus = taxon['genus']
     end
-    ##
+
+    
+    ## change to Animalia since this is the general term in GBIF for the kingdom rank
+    ## if the info is from other dataset this mitgh be different
     taxon['kingdom'] == 'Metazoa' ? kingdom = 'Animalia' : kingdom = taxon['kingdom']
     
     OpenStruct.new(
@@ -113,8 +116,6 @@ class GbifApi
       classis:                taxon['class'],
       ordo:                   taxon['order'],
       familia:                taxon['family'],
-      # TODO: change genus like in ncbi_taxonomy_object?
-      # genus:                  taxon['genus'],
       genus:                  genus,
       canonical_name:         canonical_name,
       scientific_name:        taxon['scientificName'],

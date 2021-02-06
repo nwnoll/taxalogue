@@ -126,8 +126,6 @@ class Monomial
   def _gbif_taxonomy_object(records:)
     return nil if records.nil? || records.empty?
 
-    byebug if name == 'Absidia prolixa'
-
     accepted_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_accepted?(record) }
     return accepted_records.first if accepted_records.size > 0
 
@@ -249,18 +247,39 @@ class Monomial
       ncbi_name_records = NcbiName.where(name: current_name)
       return nil if ncbi_name_records.nil?
       
+      ## NEXT
+      ## TODO
       usable_ncbi_name_record = ncbi_name_records.select { |record| record.name_class == 'scientific name' || record.name_class == 'synonym' || record.name_class == 'includes' || record.name_class == 'authority'  }.first
+      
+      ## TODO: take into account
+      ## these seem to be homonyms i cant use .first since its not unique therfore the outer .each loopt is good but in general i dont need it...
+      [#<NcbiName:0x00005566785d63d8
+    #   id: 346359,
+    #   tax_id: 211496,
+    #   name: "Clusia flava",
+    #   unique_name: "Clusia flava <eudicots>",
+    #   name_class: "synonym",
+    #   created_at: 2021-02-05 16:37:07.576233 UTC,
+    #   updated_at: 2021-02-05 16:37:07.576233 UTC>,
+    # #<NcbiName:0x00005566785d6248
+    #   id: 852442,
+    #   tax_id: 576925,
+    #   name: "Clusia flava",
+    #   unique_name: "Clusia flava <flies>",
+    #   name_class: "synonym",
+    #   created_at: 2021-02-05 16:38:00.680083 UTC,
+    #   updated_at: 2021-02-05 16:38:00.680083 UTC>]
+      byebug if usable_ncbi_name_record.size > 1
       return nil if usable_ncbi_name_record.nil?
       
-      
-
       ncbi_tax_id = ncbi_name_records.first.tax_id
       ncbi_name_records_for_tax_id = NcbiName.where(tax_id: ncbi_tax_id)
       return nil if ncbi_name_records_for_tax_id.nil?
 
       ncbi_ranked_lineage_record = NcbiRankedLineage.find_by(tax_id: ncbi_tax_id)
-      ncbi_node_record           = NcbiNode.find_by(tax_id: ncbi_tax_id)
-
+      next unless _belongs_to_correct_query_taxon_rank?(ncbi_ranked_lineage_record)
+      
+      ncbi_node_record = NcbiNode.find_by(tax_id: ncbi_tax_id)
 
       authority = nil
       canonical_name = nil
@@ -286,9 +305,6 @@ class Monomial
         taxonomic_status = scientifc_name_record.name_class unless scientifc_name_record.nil?
       end
 
-
-
-
       obj = OpenStruct.new(
         taxon_id:               record.tax_id,
         regnum:                 ncbi_ranked_lineage_record.regnum,
@@ -305,9 +321,6 @@ class Monomial
         comment:                'blank_comment'
       )
 
-      pp obj if record.name_class == 'synonym'
-
-
       ncbi_taxonomy_objects.push(obj)
     end
 
@@ -319,9 +332,11 @@ class Monomial
 
     ## TODO: NcbIname record does not have taxon rank so maybe i need to 
     ## get NcbiNode and NcbiRankedLineage beforehand??
+
     records = _is_homonym?(current_name) ? _records_with_matching_lineage(current_name: current_name, lineage: importer.get_source_lineage(first_specimen_info), all_records: ncbi_taxonomy_objects) : ncbi_taxonomy_objects
     # records = all_records
-
+    pp records
+    byebug if records.size > 1
     return records
   end
 
