@@ -7,7 +7,7 @@ class GbifApi
     @query                = CGI::escape(Helper.normalize(query.to_s))
     @response_hash        = JSON.parse response.body
     @taxonomy_params      = taxonomy_params
-    @are_synonyms_allowed = taxonomy_params[:taxonomy][:synonyms_allowed]
+    @are_synonyms_allowed = taxonomy_params[:synonyms_allowed]
   end
 
 
@@ -30,7 +30,7 @@ class GbifApi
         record                          = GbifTaxonomy.find_by(taxon_id: accepted_name_usage_id)
         records.push(record) and next unless record.nil?
 
-        resp                            = GbifApi.new(path: 'species/', query: accepted_name_usage_id).response_hash
+        resp                            = GbifApi.new(path: 'species/', query: accepted_name_usage_id, taxonomy_params: taxonomy_params).response_hash
         nubkey                          = resp['nubKey'].to_s
         records.push(_taxon_object_proxy(taxon: resp)) and next if nubkey.blank?
 
@@ -93,6 +93,16 @@ class GbifApi
     taxonomic_status  = 'accepted' if comment == :used_accepted_info
     canonical_name    = _get_canonical_name(taxon)
     combined          = _get_combined(taxon)
+    ## PRELIM
+    genus = nil
+    if are_synonyms_allowed
+      if taxon_rank == 'species' || taxon_rank  == 'genus' || taxon_rank  == 'unranked'
+        genus = canonical_name.split(' ')[0]
+      end
+    else
+      genus = taxon['genus']
+    end
+    ##
     taxon['kingdom'] == 'Metazoa' ? kingdom = 'Animalia' : kingdom = taxon['kingdom']
     
     OpenStruct.new(
@@ -103,7 +113,9 @@ class GbifApi
       classis:                taxon['class'],
       ordo:                   taxon['order'],
       familia:                taxon['family'],
-      genus:                  taxon['genus'],
+      # TODO: change genus like in ncbi_taxonomy_object?
+      # genus:                  taxon['genus'],
+      genus:                  genus,
       canonical_name:         canonical_name,
       scientific_name:        taxon['scientificName'],
       taxonomic_status:       taxonomic_status,

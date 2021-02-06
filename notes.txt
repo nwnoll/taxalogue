@@ -155,6 +155,19 @@ with tax_id I will search the NcbiNode and use the rank information
 
 
 
+type_name				-- name of type material type
+	synonyms				-- alternative names for type material type
+	nomenclature				-- Taxonomic Code of Nomenclature coded by a single letter:
+						-- B - International Code for algae, fungi and plants (ICN), previously Botanical Code,
+						-- P - International Code of Nomenclature of Prokaryotes (ICNP),
+						-- Z - International Code of Zoological Nomenclature (ICZN),
+						-- V - International Committee on Taxonomy of Viruses (ICTV) virus classification.
+	description				-- descriptive text
+
+
+
+
+
 
 
 taxon['rank'].blank? ? taxon_rank = 'unranked' : taxon_rank = taxon['rank'].downcase
@@ -273,3 +286,61 @@ ncbi_ranked_lineage_importer = NcbiRankedLineageImporter.new(file_manager: file_
 ncbi_ranked_lineage_importer.run
 ###
 exit
+
+
+
+  def _taxon_object_proxy(taxon:, comment: nil)
+    return if taxon.nil?
+    
+    taxon['rank'].blank? ? taxon_rank = 'unranked' : taxon_rank = taxon['rank'].downcase
+    taxon_rank.gsub!('sub', '') if taxon_rank =~ /sub/
+    
+    taxonomic_status  = taxon['taxonomicStatus'].to_s.downcase
+    taxonomic_status  = 'accepted' if comment == :used_accepted_info
+    canonical_name    = _get_canonical_name(taxon)
+    combined          = _get_combined(taxon)
+    taxon['kingdom'] == 'Metazoa' ? kingdom = 'Animalia' : kingdom = taxon['kingdom']
+    
+    OpenStruct.new(
+      taxon_id:               taxon['nubKey'],
+      api_taxon_id:           taxon['key'],
+      regnum:                 kingdom,
+      phylum:                 taxon['phylum'],
+      classis:                taxon['class'],
+      ordo:                   taxon['order'],
+      familia:                taxon['family'],
+      genus:                  taxon['genus'],
+      canonical_name:         canonical_name,
+      scientific_name:        taxon['scientificName'],
+      taxonomic_status:       taxonomic_status,
+      taxon_rank:             taxon_rank,
+      combined:               combined,
+      accepted_name_usage_id: nil,
+      comment:                comment
+    )
+  end
+
+  def _get_canonical_name(taxon)
+    canonical_name = ''
+    possible_ranks = GbifTaxonomy.possible_ranks
+    if are_synonyms_allowed
+      if taxon['canonicalName'].blank?
+        possible_ranks.reverse.each { |rank| canonical_name = taxon[rank] unless taxon[rank].blank? }
+      else
+        canonical_name = taxon['canonicalName'] unless taxon['canonicalName'].blank?
+      end
+    else
+      possible_ranks.reverse.each { |rank| canonical_name = taxon[rank] unless taxon[rank].blank? }
+    end
+
+    return canonical_name
+  end
+
+  def _get_combined(taxon)
+    combined = []
+    possible_ranks = GbifTaxonomy.possible_ranks
+    possible_ranks.reverse.each { |rank| combined.push(taxon[rank]) unless taxon[rank].blank? }
+    
+    return combined
+  end
+end

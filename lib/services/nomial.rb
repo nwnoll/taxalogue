@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Nomial
-  attr_reader :name, :query_taxon_object, :query_taxon_rank, :cleaned_name_parts, :cleaned_name, :taxonomy_params
+  attr_reader :name, :query_taxon_object, :query_taxon_rank, :cleaned_name_parts, :cleaned_name, :taxonomy_params, :are_synonyms_allowed
 
   def initialize(name:, query_taxon_object:, query_taxon_rank:, taxonomy_params:)
     @name                     = name
@@ -10,6 +10,7 @@ class Nomial
     @cleaned_name_parts       = _cleaned_name_parts
     @cleaned_name             = _cleaned_name
     @taxonomy_params          = taxonomy_params
+    @are_synonyms_allowed     = taxonomy_params[:synonyms_allowed]
   end
 
   def self.generate(name:, query_taxon_object:, query_taxon_rank:, taxonomy_params:)
@@ -58,13 +59,14 @@ class Monomial
   include TaxonSearch
   include StringFormatting
 
-  attr_reader :name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :taxonomy_params
+  attr_reader :name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :taxonomy_params, :are_synonyms_allowed
   def initialize(name:, query_taxon_object:, query_taxon_rank:, taxonomy_params:)
     @name                 = name
     @query_taxon_object   = query_taxon_object
     @query_taxon_name     = query_taxon_object.canonical_name
     @query_taxon_rank     = query_taxon_rank
     @taxonomy_params      = taxonomy_params
+    @are_synonyms_allowed = taxonomy_params[:synonyms_allowed]
   end
 
   def taxonomy(first_specimen_info:, importer:)
@@ -124,6 +126,8 @@ class Monomial
   def _gbif_taxonomy_object(records:)
     return nil if records.nil? || records.empty?
 
+    byebug if name == 'Absidia prolixa'
+
     accepted_records = records.select { |record| _belongs_to_correct_query_taxon_rank?(record) && _is_accepted?(record) }
     return accepted_records.first if accepted_records.size > 0
 
@@ -151,7 +155,7 @@ class Monomial
 
 
     synonym_records = records.select do |record|
-      _belongs_to_correct_query_taxon_rank?(record) && has_scientific_name_in_ncbi?(record) 
+      _belongs_to_correct_query_taxon_rank?(record) && is_synonym_in_ncbi?(record) 
     end
 
     # synonym_records = records.select do |record| 
@@ -187,8 +191,8 @@ class Monomial
     return nil if current_name.nil? || query_taxon_object.nil? || query_taxon_rank.nil?
     
     all_records = GbifTaxonomy.where(canonical_name: current_name)            if !gbif_api_exact  && !gbif_api_fuzzy
-    all_records = GbifApi.new(query: current_name).records                    if gbif_api_exact   && !gbif_api_fuzzy
-    all_records = GbifApi.new(path: _fuzzy_path, query: current_name).records if gbif_api_fuzzy   && !gbif_api_exact
+    all_records = GbifApi.new(query: current_name, taxonomy_params: taxonomy_params).records                    if gbif_api_exact   && !gbif_api_fuzzy
+    all_records = GbifApi.new(path: _fuzzy_path, query: current_name, taxonomy_params: taxonomy_params).records if gbif_api_fuzzy   && !gbif_api_exact
     return nil if all_records.nil?
 
     records = _is_homonym?(current_name) ? _records_with_matching_lineage(current_name: current_name, lineage: importer.get_source_lineage(first_specimen_info), all_records: all_records) : all_records
@@ -200,8 +204,8 @@ class Monomial
     return nil if current_name.nil? || query_taxon_object.nil? || query_taxon_rank.nil?
     
     all_records = GbifTaxonomy.where(canonical_name: current_name)            if !gbif_api_exact  && !gbif_api_fuzzy
-    all_records = GbifApi.new(query: current_name).records                    if gbif_api_exact   && !gbif_api_fuzzy
-    all_records = GbifApi.new(path: _fuzzy_path, query: current_name).records if gbif_api_fuzzy   && !gbif_api_exact
+    all_records = GbifApi.new(query: current_name, taxonomy_params: taxonomy_params).records                    if gbif_api_exact   && !gbif_api_fuzzy
+    all_records = GbifApi.new(path: _fuzzy_path, query: current_name, taxonomy_params: taxonomy_params).records if gbif_api_fuzzy   && !gbif_api_exact
     return nil if all_records.nil?
 
     records = _is_homonym?(current_name) ? _records_with_matching_lineage(current_name: current_name, lineage: importer.get_source_lineage(first_specimen_info), all_records: all_records) : all_records
@@ -215,10 +219,17 @@ class Monomial
     all_records = NcbiName.where(name: current_name)
     return nil if all_records.nil?
 
+    # all_records.select! { |record| record.name_class == 'scientific name' || record.name_class == 'synonym' || record.name_class == 'includes' || record.name_class == 'authority'  }
+    # return nil if all_records.nil?
+
     ncbi_taxonomy_objects = []
+    
     all_records.each do |record|
-      ncbi_ranked_lineage_record = NcbiRankedLineage.find_by(tax_id: record.tax_id)
-      ncbi_node_record           = NcbiNode.find_by(tax_id: record.tax_id)
+
+
+      
+
+
 
       ## NEXT
       # Problem here is that taxon_id points to the scientific name taxon_id
@@ -228,6 +239,56 @@ class Monomial
       # but most probably they will have the same genus etc info...
       # this might not work, other thing would be to ignore, if its a homonym
       # and synonms are allowed than ignore genus?
+
+      
+      # HERE
+      # if 
+      # if are_synonyms_allowed ? canonical_name = record.name and record.name is_a synonym? : canonical_name = ncbi_ranked_lineage_record.name
+
+      
+      ncbi_name_records = NcbiName.where(name: current_name)
+      return nil if ncbi_name_records.nil?
+      
+      usable_ncbi_name_record = ncbi_name_records.select { |record| record.name_class == 'scientific name' || record.name_class == 'synonym' || record.name_class == 'includes' || record.name_class == 'authority'  }.first
+      return nil if usable_ncbi_name_record.nil?
+      
+      
+
+      ncbi_tax_id = ncbi_name_records.first.tax_id
+      ncbi_name_records_for_tax_id = NcbiName.where(tax_id: ncbi_tax_id)
+      return nil if ncbi_name_records_for_tax_id.nil?
+
+      ncbi_ranked_lineage_record = NcbiRankedLineage.find_by(tax_id: ncbi_tax_id)
+      ncbi_node_record           = NcbiNode.find_by(tax_id: ncbi_tax_id)
+
+
+      authority = nil
+      canonical_name = nil
+      genus = nil
+      taxonomic_status = nil
+      if are_synonyms_allowed
+        canonical_name = usable_ncbi_name_record.name
+        authority = canonical_name
+        taxonomic_status = usable_ncbi_name_record.name_class
+
+        if ncbi_node_record.rank == 'species' || ncbi_node_record.rank == 'subspecies' || ncbi_node_record.rank == 'genus' 
+          genus = usable_ncbi_name_record.name.split(' ')[0]
+        end
+      else
+        scientifc_name_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'scientific name' }.first
+        canonical_name = scientifc_name_record.name unless scientifc_name_record.nil?
+
+        authority_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'authority' }.first
+        authority = authority_record.name unless authority_record.nil?
+
+        genus = ncbi_ranked_lineage_record.genus
+
+        taxonomic_status = scientifc_name_record.name_class unless scientifc_name_record.nil?
+      end
+
+
+
+
       obj = OpenStruct.new(
         taxon_id:               record.tax_id,
         regnum:                 ncbi_ranked_lineage_record.regnum,
@@ -235,20 +296,25 @@ class Monomial
         classis:                ncbi_ranked_lineage_record.classis,
         ordo:                   ncbi_ranked_lineage_record.ordo,
         familia:                ncbi_ranked_lineage_record.familia,
-        genus:                  ncbi_ranked_lineage_record.genus,
-        canonical_name:         ncbi_ranked_lineage_record.name,
-        scientific_name:        'blank_sciname',
-        taxonomic_status:       record.name_class,
+        genus:                  genus,
+        canonical_name:         canonical_name,
+        scientific_name:        authority,
+        taxonomic_status:       taxonomic_status,
         taxon_rank:             ncbi_node_record.rank,
         combined:               'blank_combined',
         comment:                'blank_comment'
       )
 
+      pp obj if record.name_class == 'synonym'
+
+
       ncbi_taxonomy_objects.push(obj)
     end
 
 
-    pp ncbi_taxonomy_objects
+    # byebug if current_name == 'Absidia prolixa'
+
+    # pp ncbi_taxonomy_objects
 
 
     ## TODO: NcbIname record does not have taxon rank so maybe i need to 
