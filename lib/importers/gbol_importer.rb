@@ -50,7 +50,7 @@ class GbolImporter
 
       ## TODO: reimplement
       # taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
-      taxonomic_info      = nomial.ncbi_taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
+      taxonomic_info      = nomial.taxonomy2(first_specimen_info: first_specimen_info, importer: self.class)
       
       next unless taxonomic_info
       next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
