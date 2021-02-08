@@ -6,11 +6,9 @@ class OutputFormat::Comparison
     @@count = 0
 
     def self.write_to_file(file:, nomial:, accepted_taxon:, synonyms: nil, used_taxonomy:)
-        
         @@count += 1
         if @@count == 1
             file.puts "source_taxon_name\taccepted_taxon_name\taccepted_full_taxon_name\taccepted_taxonomic_status\tused_taxonomy\tsynonyms_for_accepted_taxon"
-            return
         end
         source_taxon_name           = nomial.name
         accepted_taxon_name         = accepted_taxon.canonical_name

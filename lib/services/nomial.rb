@@ -202,9 +202,6 @@ class Monomial
 
   def _get_ncbi_records(current_name:, importer:, first_specimen_info:)
     return nil if current_name.nil? || query_taxon_object.nil? || query_taxon_rank.nil?
-    
-    all_records = NcbiName.where(name: current_name)
-    return nil if all_records.nil?
 
     ncbi_name_records         = NcbiName.where(name: current_name)
     usable_ncbi_name_records  = ncbi_name_records.select { |record| record.name_class == 'scientific name' || record.name_class == 'synonym' || record.name_class == 'includes' || record.name_class == 'authority' } # || record.name_class == 'in-part'  }
@@ -227,6 +224,11 @@ class Monomial
       canonical_name    = nil
       genus             = nil
       taxonomic_status  = nil
+      familia           = ncbi_node_record.rank == 'family'   ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.familia
+      ordo              = ncbi_node_record.rank == 'order'    ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.ordo
+      classis           = ncbi_node_record.rank == 'class'    ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.classis
+      phylum            = ncbi_node_record.rank == 'phylum'   ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.phylum
+      regnum            = ncbi_node_record.rank == 'kingdom'  ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.regnum
 
       if are_synonyms_allowed
         canonical_name = usable_ncbi_name_record.name
@@ -250,16 +252,16 @@ class Monomial
 
       combined = _get_combined(ncbi_ranked_lineage_record, ncbi_node_record.rank)
 
-      combined.push(genus)          if genus
+      combined.push(genus)          if genus && !genus.empty?
       combined.push(canonical_name) unless combined.include?(canonical_name)
 
       obj = OpenStruct.new(
         taxon_id:               usable_ncbi_name_record.tax_id,
-        regnum:                 ncbi_ranked_lineage_record.regnum,
-        phylum:                 ncbi_ranked_lineage_record.phylum,
-        classis:                ncbi_ranked_lineage_record.classis,
-        ordo:                   ncbi_ranked_lineage_record.ordo,
-        familia:                ncbi_ranked_lineage_record.familia,
+        regnum:                 regnum,
+        phylum:                 phylum,
+        classis:                classis,
+        ordo:                   ordo,
+        familia:                familia,
         genus:                  genus,
         canonical_name:         canonical_name,
         scientific_name:        authority,
@@ -298,7 +300,14 @@ class Monomial
   end
 
   def _belongs_to_correct_query_taxon_rank?(record)
-    record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+    if taxonomy_params[:gbif] || taxonomy_params[:gbif_backbone]
+      record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+    elsif taxonomy_params[:unharmonized]
+      ## TODO:
+    else
+      # ncbi
+      record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name || record.name == query_taxon_name
+    end
   end
 
   def has_scientific_name_in_ncbi?(record)

@@ -2,10 +2,10 @@
 
 class BoldImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :markers, :regexes_for_markers
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :markers, :regexes_for_markers, :taxonomy_params
 
   @@index_by_column_name = nil
-  def initialize(file_name:, query_taxon_object:, fast_run: true, file_manager:, filter_params: nil, markers:)
+  def initialize(file_name:, query_taxon_object:, fast_run: true, file_manager:, filter_params: nil, markers:, taxonomy_params:)
     @file_name            = file_name
     @query_taxon_object   = query_taxon_object
     @query_taxon_name     = query_taxon_object.canonical_name
@@ -15,6 +15,7 @@ class BoldImporter
     @regexes_for_markers  = Marker.regexes(db: self, markers: markers)
     @file_manager         = file_manager
     @filter_params        = filter_params
+    @taxonomy_params      = taxonomy_params
   end
 
   def run
@@ -44,14 +45,14 @@ class BoldImporter
       nomial              = specimens_of_taxon[taxon_name][:nomial]
       first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
       taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
-
+      
       next unless taxonomic_info
       next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
       # Synonym List
-      syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [GbifTaxonomy])
-
-      OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms)
+      syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [Helper.get_source_db(taxonomy_params)])
+      pp syn
+      OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms[Helper.get_source_db(taxonomy_params)], used_taxonomy: Helper.get_source_db(taxonomy_params) )
       # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
       
 
@@ -77,7 +78,7 @@ class BoldImporter
     return nil unless _belongs_to_correct_marker?(marker)
     return nil if sequence.nil?
 
-    nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
+    nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
 
     specimen                      = Specimen.new
     specimen.identifier           = identifier
