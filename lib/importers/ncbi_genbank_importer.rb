@@ -2,7 +2,7 @@
 
 class NcbiGenbankImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :markers, :fast_run, :regexes_for_markers, :file_manager, :filter_params
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :markers, :fast_run, :regexes_for_markers, :file_manager, :filter_params, :taxonomy_params
 
   FILE_DESCRIPTION_PART = 10
 
@@ -10,7 +10,7 @@ class NcbiGenbankImporter
     ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'phylum_name']
   end
 
-  def initialize(file_name:, query_taxon_object:, markers:, fast_run: true, file_manager:, filter_params: nil)
+  def initialize(file_name:, query_taxon_object:, markers:, fast_run: true, file_manager:, filter_params: nil, taxonomy_params:)
     @file_name            = file_name
     @query_taxon_object   = query_taxon_object
     @query_taxon_name     = query_taxon_object.canonical_name
@@ -20,6 +20,7 @@ class NcbiGenbankImporter
     @regexes_for_markers  = Marker.regexes(db: self, markers: markers)
     @file_manager         = file_manager
     @filter_params        = filter_params
+    @taxonomy_params      = taxonomy_params
   end
 
 
@@ -34,6 +35,27 @@ class NcbiGenbankImporter
       specimens_of_taxon          = Hash.new { |hash, key| hash[key] = {} }
       
       Zlib::GzipReader.open(file) do |gz_file|
+        ## TODO: catch corrupted files
+        ## see if Download has been aborted:
+        # /home/nnoll/.rvm/gems/ruby-3.0.0/gems/bio-2.0.1/lib/bio/io/flatfile/buffer.rb:250:in `gets': unexpected end of file (Zlib::GzipFile::Error)
+        # from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/bio-2.0.1/lib/bio/io/flatfile/buffer.rb:250:in `gets'
+        # from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/bio-2.0.1/lib/bio/io/flatfile/splitter.rb:182:in `get_entry'
+        # from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/bio-2.0.1/lib/bio/io/flatfile/splitter.rb:53:in `get_parsed_entry'
+        # from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/bio-2.0.1/lib/bio/io/flatfile.rb:288:in `next_entry'
+        # from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/bio-2.0.1/lib/bio/io/flatfile.rb:335:in `each_entry'
+        # from /home/nnoll/phd/db_merger/lib/importers/ncbi_genbank_importer.rb:40:in `block (2 levels) in run'
+        # from /home/nnoll/phd/db_merger/lib/importers/ncbi_genbank_importer.rb:37:in `open'
+        # from /home/nnoll/phd/db_merger/lib/importers/ncbi_genbank_importer.rb:37:in `block in run'
+        # from /home/nnoll/phd/db_merger/lib/importers/ncbi_genbank_importer.rb:32:in `each'
+        # from /home/nnoll/phd/db_merger/lib/importers/ncbi_genbank_importer.rb:32:in `run'
+        # from /home/nnoll/phd/db_merger/lib/jobs/ncbi_genbank_job.rb:112:in `block (2 levels) in _classify_downloads'
+        # from /home/nnoll/phd/db_merger/lib/jobs/ncbi_genbank_job.rb:108:in `each'
+        # from /home/nnoll/phd/db_merger/lib/jobs/ncbi_genbank_job.rb:108:in `block in _classify_downloads'
+        # from /home/nnoll/phd/db_merger/lib/jobs/ncbi_genbank_job.rb:104:in `each'
+        # from /home/nnoll/phd/db_merger/lib/jobs/ncbi_genbank_job.rb:104:in `_classify_downloads'
+        # from /home/nnoll/phd/db_merger/lib/jobs/ncbi_genbank_job.rb:21:in `run'
+        # from main.rb:148:in `<main>'
+
         ff = Bio::FlatFile.new(Bio::GenBank, gz_file)
 
         ff.each_entry do |gb|
@@ -69,10 +91,10 @@ class NcbiGenbankImporter
         next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
         # Synonym List
-        # syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [GbifTaxonomy])
+        syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [Helper.get_source_db(taxonomy_params)])
         # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
 
-        OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info)
+        OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms[Helper.get_source_db(taxonomy_params)], used_taxonomy: Helper.get_source_db(taxonomy_params) )
 
         specimens_of_taxon[taxon_name][:data].each do |data|
           OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
@@ -120,7 +142,7 @@ class NcbiGenbankImporter
 
   def _get_specimen(gb:, nucs:)
     source_taxon_name             = gb.organism
-    nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank)
+    nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
 
     specimen                      = Specimen.new
     specimen.identifier           = gb.accession

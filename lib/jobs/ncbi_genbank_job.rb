@@ -1,17 +1,18 @@
 # frozen_string_literal: true
 
 class NcbiGenbankJob
-  attr_reader :taxon, :markers, :taxonomy, :result_file_manager, :use_http, :filter_params
+  attr_reader :taxon, :markers, :taxonomy, :result_file_manager, :use_http, :filter_params, :taxonomy_params
 
   FILE_DESCRIPTION_PART = 10
 
-  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, use_http: false, filter_params: nil)
+  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, use_http: false, filter_params: nil, taxonomy_params:)
     @taxon                = taxon
     @markers              = markers
     @taxonomy             = taxonomy
     @result_file_manager  = result_file_manager
     @use_http             = use_http
     @filter_params        = filter_params
+    @taxonomy_params      = taxonomy_params
   end
 
   def run
@@ -107,7 +108,7 @@ class NcbiGenbankJob
       files.each do |file|
         next unless File.file?(file)
 
-	      classifier = NcbiGenbankImporter.new(fast_run: true, markers: markers, file_name: file, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params)
+	      classifier = NcbiGenbankImporter.new(fast_run: true, markers: markers, file_name: file, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, taxonomy_params: taxonomy_params)
         classifier.run ## result_file_manager creates new files and will push those into internal array
       end
     end
