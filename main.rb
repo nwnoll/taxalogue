@@ -127,6 +127,7 @@ loop do
 end
 
 
+byebug
 
 abort 'Please use only one Taxonomy mapping strategy e.g. bundle exec ruby main.rb taxonomy -B' if (params[:taxonomy].keys.reject { |o| o == :retain || o == :synonyms_allowed }.size) > 1
 ## TODO: same for other options...

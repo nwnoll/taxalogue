@@ -9,6 +9,7 @@ require 'zip'
 require 'tree'
 require 'parallel'
 require 'pastel'
+require 'countries'
 
 require "yaml"
 require 'optparse'

@@ -47,6 +47,19 @@ class GbolImporter
     specimens_of_taxon.keys.each do |taxon_name|
       nomial              = specimens_of_taxon[taxon_name][:nomial]
       first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
+      specimen = specimens_of_taxon[taxon_name][:obj]
+      
+
+      p specimen.location
+      locations = specimen.location.split(', ')
+      locations.each do |loc|
+        c = LocationSearch.by_name(loc)
+        p c.nil? ? next : c
+      end
+      puts
+      ## europe LocationSearch.by_region('Europe')
+      ## europe.each { |o| p o.name }
+      next
 
       taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
       
@@ -76,6 +89,9 @@ class GbolImporter
     identifier                    = row["CatalogueNumber"]
     source_taxon_name             = row["Species"]
     sequence                      = row['BarcodeSequence']
+    location                      = row["Location"]
+    lat                           = row["Latitude"]
+    long                          = row["Longitude"]
     sequence                      = Helper.filter_seq(sequence, filter_params)
 
     return nil if sequence.nil?
@@ -88,6 +104,9 @@ class GbolImporter
     specimen.source_taxon_name    = source_taxon_name
     specimen.taxon_name           = nomial.name
     specimen.nomial               = nomial
+    specimen.location             = location
+    specimen.lat                  = lat
+    specimen.long                 = long
     specimen.first_specimen_info  = row
     
     return specimen

@@ -18,6 +18,7 @@ class SpecimensOfTaxon
             specimens_of_taxon[taxon_name][:nomial]                 = nomial
             specimens_of_taxon[taxon_name][:first_specimen_info]    = first_specimen_info
             specimens_of_taxon[taxon_name][:data]                   = [specimen]
+            specimens_of_taxon[taxon_name][:obj]                    = specimen_object
         end
     
         return specimens_of_taxon
