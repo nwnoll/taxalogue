@@ -5,7 +5,7 @@ class OutputFormat::Comparison
 
     @@count = 0
 
-    def self.write_to_file(file:, nomial:, accepted_taxon:, synonyms: nil, used_taxonomy: GbifTaxonomy)
+    def self.write_to_file(file:, nomial:, accepted_taxon:, synonyms: nil, used_taxonomy:)
         
         @@count += 1
         if @@count == 1
@@ -21,7 +21,11 @@ class OutputFormat::Comparison
         synonyms_str = ''
         if synonyms
             synonyms_ary = []
-            synonyms.each { |synonym| synonym.scientific_name.blank? || synonym.scientific_name.nil? ? synonyms_ary.push(synonym.canonical_name) : synonyms_ary.push(synonym.scientific_name) }
+            if used_taxonomy == NcbiTaxonomy
+                synonyms.each { |synonym| synonyms_ary.push(synonym.name) }
+            elsif used_taxonomy == GbifTaxonomy
+                synonyms.each { |synonym| synonym.scientific_name.blank? || synonym.scientific_name.nil? ? synonyms_ary.push(synonym.canonical_name) : synonyms_ary.push(synonym.scientific_name) }
+            end
             synonyms_str = synonyms_ary.join(', ')
         end
 

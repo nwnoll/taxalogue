@@ -124,8 +124,6 @@ class Monomial
     record  = _ncbi_taxonomy_object(records: records)
     return record unless record.nil?
 
-    ## TODO:
-    ## untested, test it!
     parsed = Biodiversity::Parser.parse(name)
     if parsed[:parsed]
       name_stem = parsed[:canonical][:stemmed]
@@ -139,7 +137,7 @@ class Monomial
     record  = _ncbi_taxonomy_object(records: records)
     return record unless record.nil?
 
-    if self.class == Polynomial
+    if self.class == Polynomial # otherwise there would be nothing to cut...
       cutted_name = _remove_last_name_part(name)
       return nil if cutted_name.blank?
       nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
@@ -233,7 +231,7 @@ class Monomial
       if are_synonyms_allowed
         canonical_name = usable_ncbi_name_record.name
         authority = canonical_name
-        taxonomic_status = usable_ncbi_name_record.name_class
+        taxonomic_status = _taxonomic_name(usable_ncbi_name_record)
 
         if ncbi_node_record.rank == 'species' || ncbi_node_record.rank == 'subspecies' || ncbi_node_record.rank == 'genus' 
           genus = usable_ncbi_name_record.name.split(' ')[0]
@@ -247,7 +245,7 @@ class Monomial
 
         genus = ncbi_node_record.rank == 'genus' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.genus
 
-        taxonomic_status = scientifc_name_record.name_class unless scientifc_name_record.nil?
+        taxonomic_status = _taxonomic_name(scientifc_name_record) unless scientifc_name_record.nil?
       end
 
       combined = _get_combined(ncbi_ranked_lineage_record, ncbi_node_record.rank)
@@ -369,6 +367,20 @@ class Monomial
     end
 
     return combined
+  end
+
+  def _taxonomic_name(record)
+    return if record.nil?
+
+    if record.name_class == 'scientific name'
+      return 'accepted'
+    elsif record.name_class == 'synonym'
+      return 'synonym'
+    elsif record.name_class == 'includes'
+      return 'synonym'
+    elsif record.name_class == 'in-part' ## UNUSED atm
+      return 'synonym'
+    end
   end
 end
 

@@ -53,15 +53,8 @@ class GbolImporter
       next unless taxonomic_info
       next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
-      ## TODO: reimplement
-      # Synonym List
-      # syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [GbifTaxonomy])
-      # OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms)
-      ##
-
-
-
-
+      syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [_get_sources])
+      OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms[_get_sources], used_taxonomy: _get_sources)
 
       # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
 
@@ -102,5 +95,13 @@ class GbolImporter
 
   def _matches_query_taxon(row)
     /#{query_taxon_name}/.match?(row["HigherTaxa"]) || /#{query_taxon_name}/.match?(row["Species"])
+  end
+
+  def _get_sources
+    if taxonomy_params[:gbif] || taxonomy_params[:gbif_backbone]
+      return GbifTaxonomy
+    else
+      return NcbiTaxonomy
+    end
   end
 end

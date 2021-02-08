@@ -15,16 +15,17 @@ class Synonym
             return [] if sources.nil? || sources.empty? || sources.blank?
             ## for now only the GbifTaxonomyomy backbone will be searched,
             ## later on also synonyms from NcbiTaxonomy and ITIS will be implemented
-            return [] unless sources.size == 1 && sources.include?(GbifTaxonomy)
+            return [] unless sources.size == 1 && sources.include?(GbifTaxonomy) || sources.include?(NcbiTaxonomy)
             return [] if accepted_taxon.nil?
             return [] if accepted_taxon.taxon_id.blank? || accepted_taxon.taxon_id.nil? 
 
 
             synonyms_of = Hash.new
             sources.each do |source|
-                  synonyms_of[source] = source.where(accepted_name_usage_id: accepted_taxon.taxon_id)
+                  synonyms_of[source] = source.where(accepted_name_usage_id: accepted_taxon.taxon_id) if source == GbifTaxonomy
+                  synonyms_of[source] = source.where(tax_id: accepted_taxon.taxon_id) if source == NcbiTaxonomy
             end
 
-            return synonyms_of[GbifTaxonomy]
+            return synonyms_of
       end
 end
