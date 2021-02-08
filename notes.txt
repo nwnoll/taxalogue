@@ -390,3 +390,12 @@ end
  "superphylum",
  "subsection",
  "pathogroup"]
+
+
+How to gu with the unmapped option?
+SHould it jast be the raw sequences information?
+Problem here is that for GBOL we dont have ranks and although this would still for work the fasta output
+a reliable way of constructing a TSV is impossible
+
+another wy would be the distinction between raw -> really raw and unmapped... 
+which means not mapped to a particular taxonomy but using all infromation possible to infer ranks..

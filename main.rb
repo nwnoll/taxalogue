@@ -110,10 +110,10 @@ subcommands = {
 	end,
 	taxonomy: OptionParser.new do |opts|
 		opts.banner = "Usage: taxonomy [options]"
-		opts.on('-b', '--gbif', 'Taxon information is harmonized to GBIF Taxonomy backbone + additional available datasets from the GBIF API')
-		opts.on('-B', '--gbif_backbone', 'Taxon information is harmonized to GBIF Taxonomy backbone')
-		opts.on('-n', '--ncbi', 'Taxon information is harmonized to NCBI Taxonomy')
-		opts.on('-u', '--unharmonized', 'No harmonization takes place, original specimen information is used but only standard ranks are used (e.g. no subfamilies)')
+		opts.on('-b', '--gbif', 'Taxon information is mapped to GBIF Taxonomy backbone + additional available datasets from the GBIF API')
+		opts.on('-B', '--gbif_backbone', 'Taxon information is mapped to GBIF Taxonomy backbone')
+		opts.on('-n', '--ncbi', 'Taxon information is mapped to NCBI Taxonomy')
+		opts.on('-u', '--unmapped', 'No mapping takes place, original specimen information is used but only standard ranks are used (e.g. no subfamilies)')
 		opts.on('-s', '--synonyms_allowed', 'Allows Taxon information of synonyms to be set to sequences')
 		opts.on('-r', '--retain', 'retains sequences for taxa that are not present in chosen taxonomy')
 	end
@@ -145,8 +145,8 @@ abort 'Please use only one Taxonomy mapping strategy e.g. bundle exec ruby main.
 fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 fm.create_dir
 # BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy]).run
-NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy]).run
-# GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter]).run
+# NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy]).run
+GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter]).run
 
 exit
 

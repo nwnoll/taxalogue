@@ -82,8 +82,8 @@ class Monomial
       record = ncbi_taxonomy(first_specimen_info: first_specimen_info, importer: importer)
       return record
 
-    elsif taxonomy_params[:unharmonized]
-      ## TODO
+    elsif taxonomy_params[:unmapped]
+      unmapped_taxonomy(first_specimen_info: first_specimen_info, importer: importer)
     else 
       ## default is ncbi_taxonomy
       record = ncbi_taxonomy(first_specimen_info: first_specimen_info, importer: importer)
@@ -107,6 +107,13 @@ class Monomial
     records = _get_gbif_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_fuzzy: true)
     record  = _gbif_taxonomy_object(records: records)
     return record unless record.nil?
+
+    source_lineage = importer.get_source_lineage(first_specimen_info)
+    source_lineage.combined.reverse.each do |source_lineage_taxon_name|
+      records = _get_gbif_records(current_name: source_lineage_taxon_name, importer: importer, first_specimen_info: first_specimen_info)
+      record  = _gbif_taxonomy_object(records: records)
+      return record unless record.nil?
+    end
   end
 
   def gbif_taxonomy_backbone(first_specimen_info:, importer:)
@@ -117,6 +124,13 @@ class Monomial
     records = _get_gbif_records(current_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
     record  = _gbif_taxonomy_object(records: records)
     return record unless record.nil?
+
+    source_lineage = importer.get_source_lineage(first_specimen_info)
+    source_lineage.combined.reverse.each do |source_lineage_taxon_name|
+      records = _get_gbif_records(current_name: source_lineage_taxon_name, importer: importer, first_specimen_info: first_specimen_info)
+      record  = _gbif_taxonomy_object(records: records)
+      return record unless record.nil?
+    end
   end
 
   def ncbi_taxonomy(first_specimen_info:, importer:)
@@ -143,6 +157,55 @@ class Monomial
       nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
       nomial.ncbi_taxonomy(first_specimen_info: first_specimen_info, importer: importer)
     end
+
+    ## if there were no results it should go through the lineage from the source db entry
+    ## and check if it can find an entry in the taxonomy db
+    source_lineage = importer.get_source_lineage(first_specimen_info)
+    source_lineage.combined.reverse.each do |source_lineage_taxon_name|
+      records = _get_ncbi_records(current_name: source_lineage_taxon_name, importer: importer, first_specimen_info: first_specimen_info)
+      record  = _ncbi_taxonomy_object(records: records)
+      return record unless record.nil?
+    end
+  end
+
+  def unmapped_taxonomy(first_specimen_info:, importer:)
+    # TODO: just exclude unmapped and retain? seems no direct value and every sequence gets catched atm 
+    ## just exclude?
+    byebug
+    ncbi_name_record = NcbiName.find_by(name: name)
+    tax_id = ncbi_name_record.tax_id if ncbi_name_record
+    ncbi_node_record = NcbiNode.find_by(tax_id: tax_id) if ncbi_name_record
+    ncbi_ranked_lineage_record = NcbiRankedLineage.find_by(tax_id: tax_id) if ncbi_name_record
+    gbif_record = GbifTaxonomy.find_by(canonical_name: name)
+
+    regnum = ncbi_name_record.nil? ? (gbif_record ? gbif_record.regnum : nil) : (ncbi_node_record.rank == 'kingdom' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.regnum)
+    phylum = ncbi_name_record.nil? ? (gbif_record ? gbif_record.phylum : nil) : (ncbi_node_record.rank == 'phylum' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.phylum)
+    classis = ncbi_name_record.nil? ? (gbif_record ? gbif_record.classis : nil) : (ncbi_node_record.rank == 'class' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.classis)
+    ordo = ncbi_name_record.nil? ? (gbif_record ? gbif_record.ordo : nil) : (ncbi_node_record.rank == 'order' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.ordo)
+    familia = ncbi_name_record.nil? ? (gbif_record ? gbif_record.familia : nil) : (ncbi_node_record.rank == 'family' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.familia)
+    genus = ncbi_name_record.nil? ? (gbif_record ? gbif_record.genus : nil) : (ncbi_node_record.rank == 'genus' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.genus)
+    canonical_name = ncbi_name_record.nil? ? (gbif_record ? gbif_record.canonical_name : nil) : (ncbi_node_record.rank == 'species' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.species)
+
+    rank = ncbi_node_record.nil? ? (gbif_record ? gbif_record.taxon_rank : nil) : ncbi_node_record.rank
+    source_lineage = importer.get_source_lineage(first_specimen_info)
+
+    obj = OpenStruct.new(
+      taxon_id:               tax_id,
+      regnum:                 regnum,
+      phylum:                 phylum,
+      classis:                classis,
+      ordo:                   ordo,
+      familia:                familia,
+      genus:                  genus,
+      canonical_name:         canonical_name,
+      scientific_name:        'no_info',
+      taxonomic_status:       'no_info',
+      taxon_rank:             rank,
+      combined:               source_lineage.combined,
+      comment:                ''
+    )
+
+    return obj
   end
 
   private
@@ -302,7 +365,7 @@ class Monomial
   def _belongs_to_correct_query_taxon_rank?(record)
     if taxonomy_params[:gbif] || taxonomy_params[:gbif_backbone]
       record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
-    elsif taxonomy_params[:unharmonized]
+    elsif taxonomy_params[:unmapped]
       ## TODO:
     else
       # ncbi
@@ -407,8 +470,8 @@ class Polynomial < Monomial
       record = ncbi_taxonomy(first_specimen_info: first_specimen_info, importer: importer)
       return record
 
-    elsif taxonomy_params[:unharmonized]
-      ## TODO
+    elsif taxonomy_params[:unmapped]
+      unmapped_taxonomy(first_specimen_info: first_specimen_info, importer: importer)
     else 
       ## default is ncbi_taxonomy
       record = ncbi_taxonomy(first_specimen_info: first_specimen_info, importer: importer)
@@ -446,6 +509,13 @@ class Polynomial < Monomial
     return nil if cutted_name.blank?
     nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
     nomial.gbif_taxonomy(first_specimen_info: first_specimen_info, importer: importer)
+
+    source_lineage = importer.get_source_lineage(first_specimen_info)
+    source_lineage.combined.reverse.each do |source_lineage_taxon_name|
+      records = _get_gbif_records(current_name: source_lineage_taxon_name, importer: importer, first_specimen_info: first_specimen_info)
+      record  = _gbif_taxonomy_object(records: records)
+      return record unless record.nil?
+    end
   end
 
 
@@ -471,6 +541,13 @@ class Polynomial < Monomial
     return nil if cutted_name.blank?
     nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
     nomial.gbif_taxonomy_backbone(first_specimen_info: first_specimen_info, importer: importer)
+
+    source_lineage = importer.get_source_lineage(first_specimen_info)
+    source_lineage.combined.reverse.each do |source_lineage_taxon_name|
+      records = _get_gbif_records(current_name: source_lineage_taxon_name, importer: importer, first_specimen_info: first_specimen_info)
+      record  = _gbif_taxonomy_object(records: records)
+      return record unless record.nil?
+    end
   end
 
   private
