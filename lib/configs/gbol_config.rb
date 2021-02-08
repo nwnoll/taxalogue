@@ -21,8 +21,6 @@ class GbolConfig
 
     def file_type
         'zip'
-        # ## TODO: change back to zip
-        # 'csv'
     end
 
     def file_manager

@@ -25,7 +25,8 @@ class NcbiGenbankJob
   end
 
   def download_files
-     ## maybe switch NcbiApi if taxon is of rank family?
+    ## TODO:
+    ## maybe switch NcbiApi if taxon is of rank family?
     ## highert taxa might give an incomplete download
     ## it might be annoying if there will be searches
     ## for quite small taxa and the prog tries to download
