@@ -10,6 +10,8 @@ require 'tree'
 require 'parallel'
 require 'pastel'
 require 'countries'
+require 'rgeo/shapefile'
+require 'shp'
 
 require "yaml"
 require 'optparse'

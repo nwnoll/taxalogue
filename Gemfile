@@ -18,3 +18,8 @@ gem 'test-unit'
 gem 'rexml', '~> 3.2', '>= 3.2.4'
 gem 'biodiversity', '~> 5.1', '>= 5.1.2'
 gem 'countries', '~> 1.2', '>= 1.2.5'
+gem 'rgeo', git: "git://github.com/Kdoggett887/rgeo.git", branch: "fix-212"
+# gem 'rgeo'
+gem 'rgeo-shapefile'
+gem 'geokit', '~> 1.13', '>= 1.13.1'
+gem 'shp'

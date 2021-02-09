@@ -127,7 +127,259 @@ loop do
 end
 
 
-byebug
+
+shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', 'rb')
+dbf = SHP::DBF.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.dbf', 'rb')
+
+puts dbf.read_string_attribute(7520,3)
+
+# 50.7374, 7.0982
+
+
+shp.get_info[:number_of_entities].times do |i|
+	next unless i == 7520
+	obj = shp.read_object(i)
+	x_ary = obj.get_x
+	y_ary = obj.get_y
+	byebug unless x_ary.size == y_ary.size 
+	# byebug unless x_ary.first == x_ary.last && y_ary.first == y_ary.last
+	points = []
+	x_ary.each_with_index { |e, i| points << Geokit::LatLng.new(y_ary[i], e) }
+	byebug
+end
+
+
+
+# (byebug) dbf.get_field_count
+# 21
+# (byebug) shp.read_object(0)
+# #<SHP::ShapeObject:0x000055d274499728>
+# (byebug) obj1 = shp.read_object(0)
+# #<SHP::ShapeObject:0x000055d2744769a8>
+# (byebug) obj1.get_x
+# [-112.26972153261728, -112.28808561193952, -112.30207064976271, -112.31364454931621, -112.32077754892515, -112.3249896229128, -112.32949053728414, -112.33276367047719, -112.33673065761576, -112.34364354844712, -112.34729755532082, -112.34953267362367, -112.3503495739079, -112.35034152728085, -112.34899857875283, -112.3463435271005, -112.34335353459697, -112.33705168450768, -112.33472453290788, -112.33207652205424, -112.32678267964175, -112.32314258672734, -112.31819156415506, -112.31060057735618, -112.30532852789197, -112.30072066043601, -112.28854359912945, -112.28163154648843, -112.27669561134188, -112.27407056690295, -112.27078955472089, -112.2681656837484, -112.26747166216484, -112.26972153261728]
+# (byebug) obj1.get_y
+# [29.32647767382656, 29.326271814284382, 29.321869806370614, 29.320189905334644, 29.31684116737489, 29.315979172451478, 29.317375094607655, 29.320391909201362, 29.32004104273409, 29.31439214290276, 29.315589078677363, 29.318044138119717, 29.32027204798584, 29.32291385623114, 29.328520511270426, 29.33346231374918, 29.34005401005055, 29.349275779932782, 29.35355960301166, 29.357179579358444, 29.362443414557504, 29.365402226381207, 29.367363927002202, 29.367335931445552, 29.36632708557846, 29.364000269254745, 29.356033437917176, 29.352044657830334, 29.34740695079904, 29.344095931403558, 29.33880309481947, 29.335492243062106, 29.331038434986624, 29.32647767382656]
+# (byebug) dbf.get_field_count
+# 21
+# (byebug) dbf.get_field_info(1)
+# {:name=>"AREA", :type=>2, :width=>19, :decimals=>11}
+# (byebug) dbf.get_field_info(0)
+# {:name=>"OBJECTID", :type=>1, :width=>9, :decimals=>0}
+# (byebug) dbf.get_field_info(3)
+# {:name=>"ECO_NAME", :type=>0, :width=>99, :decimals=>0}
+# (byebug) dbf.read_string_attribute(0,3)
+# "Northern Mesoamerican Pacific mangroves"
+# (byebug) 
+
+
+# Shape:2 (Polygon)  nVertices=11940, nParts=10
+#   Bounds:(-109.311660559818,20.4101455170804, 0)
+#       to (-102.913947649646,28.2948610255889, 0)
+# 	 (-109.117004604708,27.741424913157, 0) Ring
+
+# 	 + (-108.67435462122,26.9762998125186, 0) Ring
+#        (-108.67435462122,26.9762998125186, 0)  
+
+
+
+
+
+
+
+
+
+module RGeo
+	module ImplHelper # :nodoc:
+		module BasicLinearRingMethods # :nodoc:
+			def validate_geometry
+				super
+				if @points.size > 0
+					pp @points
+					@points << @points.first if @points.first != @points.last
+					@points = @points.chunk { |x| x }.map(&:first)
+				  if !@factory.property(:uses_lenient_assertions) && !is_ring?
+					raise Error::InvalidGeometry, "LinearRing failed ring test"
+				  end
+				end
+			end
+		end
+	end
+end
+
+
+
+# module Geokit
+# 	class LatLng
+# 		def initialize(lng, lat)
+# 			puts "#{lng} #{lat}"
+# 			# p lat
+# 			# lng = lng.to_f if lng && !lng.is_a?(Numeric)
+# 			# lat = lat.to_f if lat && !lat.is_a?(Numeric)
+# 			@lng = lng
+# 			@lat = lat
+# 		end
+# 	end
+# end
+
+
+points = []
+points << Geokit::LatLng.new(-15.7535398925005, -144.636321651707)
+points << Geokit::LatLng.new(-15.7474843027267, -144.650146595179)  
+points << Geokit::LatLng.new(-15.7367370264651, -144.655242624677)  
+points << Geokit::LatLng.new(-15.7286895612189, -144.65484666357 )
+points << Geokit::LatLng.new(-15.7224368290823, -144.650405595988)  
+points << Geokit::LatLng.new(-15.7189212912491, -144.644042558005)  
+points << Geokit::LatLng.new(-15.7181682610671, -144.638137674851)  
+points << Geokit::LatLng.new(-15.7201619805583, -144.631240709635)  
+points << Geokit::LatLng.new(-15.7235600041088, -144.626693694796)  
+points << Geokit::LatLng.new(-15.7352302955489, -144.622054646661)  
+points << Geokit::LatLng.new(-15.7414375977703, -144.62222262    )
+points << Geokit::LatLng.new(-15.7498000549382, -144.63043168834 )
+points << Geokit::LatLng.new(-15.7535398925005, -144.636321651707)
+# polygon = Geokit::Polygon.new(points)
+# p polygon.contains? polygon.centroid 
+
+points << Geokit::LatLng.new(-15.7216299870818, -144.639510630592)
+points << Geokit::LatLng.new(-15.7237519496917, -144.64447070562 )
+points << Geokit::LatLng.new(-15.734393278697,  -144.651000711114) 
+points << Geokit::LatLng.new(-15.7423906201622, -144.646636589402)  
+points << Geokit::LatLng.new(-15.7464863533337, -144.642806562562)  
+points << Geokit::LatLng.new(-15.7476023199235, -144.639709616974)  
+points << Geokit::LatLng.new(-15.7442644784379, -144.628600577771)  
+points << Geokit::LatLng.new(-15.7391659343696, -144.624618670844)  
+points << Geokit::LatLng.new(-15.7348031537627, -144.625152598077)  
+points << Geokit::LatLng.new(-15.7263426283276, -144.629028557747)  
+points << Geokit::LatLng.new(-15.7218009779068, -144.634063566989)  
+points << Geokit::LatLng.new(-15.7216299870818, -144.639510630592)
+
+
+points2 = []
+points2 << Geokit::LatLng.new(-15.7216299870818, -144.639510630592)
+points2 << Geokit::LatLng.new(-15.7237519496917, -144.64447070562)
+points2 << Geokit::LatLng.new(-15.734393278697, -144.651000711114) 
+points2 << Geokit::LatLng.new(-15.7423906201622, -144.646636589402)  
+points2 << Geokit::LatLng.new(-15.7464863533337, -144.642806562562)  
+points2 << Geokit::LatLng.new(-15.7476023199235, -144.639709616974)  
+points2 << Geokit::LatLng.new(-15.7442644784379, -144.628600577771)  
+points2 << Geokit::LatLng.new(-15.7391659343696, -144.624618670844)  
+points2 << Geokit::LatLng.new(-15.7348031537627, -144.625152598077)  
+points2 << Geokit::LatLng.new(-15.7263426283276, -144.629028557747)  
+points2 << Geokit::LatLng.new(-15.7218009779068, -144.634063566989)  
+points2 << Geokit::LatLng.new(-15.7216299870818, -144.639510630592)
+
+polygon = Geokit::Polygon.new(points)
+polygon2 = Geokit::Polygon.new(points2)
+
+p polygon.contains? polygon.centroid
+p polygon2.contains? polygon2.centroid 
+
+
+
+
+points3 = []
+points3 << Geokit::LatLng.new(-15.7535398925005, -144.636321651707)
+points3 << Geokit::LatLng.new(-15.7474843027267, -144.650146595179)  
+points3 << Geokit::LatLng.new(-15.7367370264651, -144.655242624677)  
+points3 << Geokit::LatLng.new(-15.7286895612189, -144.65484666357 )
+points3 << Geokit::LatLng.new(-15.7224368290823, -144.650405595988)  
+points3 << Geokit::LatLng.new(-15.7189212912491, -144.644042558005)  
+points3 << Geokit::LatLng.new(-15.7181682610671, -144.638137674851)  
+points3 << Geokit::LatLng.new(-15.7201619805583, -144.631240709635)  
+points3 << Geokit::LatLng.new(-15.7235600041088, -144.626693694796)  
+points3 << Geokit::LatLng.new(-15.7352302955489, -144.622054646661)  
+points3 << Geokit::LatLng.new(-15.7414375977703, -144.62222262    )
+points3 << Geokit::LatLng.new(-15.7498000549382, -144.63043168834 )
+points3 << Geokit::LatLng.new(-15.7535398925005, -144.636321651707)
+
+
+puts
+puts
+puts
+polygon3 = Geokit::Polygon.new(points3)
+p polygon3.centroid
+p polygon3.contains? polygon3.centroid
+
+
+
+
+exit
+
+
+points = []
+points << Geokit::LatLng.new("-34.8922513", "-56.1468951")
+points << Geokit::LatLng.new("-34.905204", "-56.1848322")
+points << Geokit::LatLng.new("-34.9091105", "-56.170756")
+polygon = Geokit::Polygon.new(points)
+p polygon.contains? polygon.centroid #this should return true
+		
+RGeo::Shapefile::Reader.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', assume_inner_follows_outer: true) do |file|
+	puts "File contains #{file.num_records} records."
+	file.each do |record|
+	  puts "Record number #{record.index}:"
+	  puts "  Geometry: #{record.geometry.as_text}"
+	  puts "  eco: #{record.attributes['ECO_NAME']}"
+	end
+end
+
+exit
+
+
+RGeo::Shapefile::Reader.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', assume_inner_follows_outer: true) do |file|
+	puts "File contains #{file.num_records} records."
+	file.each do |record|
+	  puts "Record number #{record.index}:"
+	  puts "  Geometry: #{record.geometry.as_text}"
+	  puts "  eco: #{record.attributes['ECO_NAME']}"
+	  
+	 
+		# polygons = record.geometry.as_text.tr('()MULTIPOLYGON', '').lstrip.split(', ')
+		pp polygons
+		exit
+
+		points = []
+		polygons.each do |polygon|
+			x, y = polygon.split(' ')
+			points.push(Geokit::LatLng.new(x, y))
+
+		#   factory = RGeo::Cartesian::Factory
+		#   point1 = factory.new().parse_wkt("POINT (0 0)")
+		#   point1.within?(record.geometry)
+		#   record.geometry
+		end
+		multipolygon = Geokit::Polygon.new(points)
+		# puts multipolygon.contains? multipolygon.centroid
+		puts multipolygon.centroid
+
+		# exit
+	end
+
+		#   factory = RGeo::Cartesian::Factory
+	#   point1 = factory.new().parse_wkt("POINT (0 0)")
+	#   point1.within?(record.geometry)
+	#   record.geometry
+	# If using version 3.0.0 or earlier, rewind is necessary to return to the beginning of the file.
+	file.rewind
+	record = file.next
+
+	points = []
+	points << Geokit::LatLng.new("-34.8922513", "-56.1468951")
+	points << Geokit::LatLng.new("-34.905204", "-56.1848322")
+	points << Geokit::LatLng.new("-34.9091105", "-56.170756")
+	polygon = Geokit::Polygon.new(points)
+	polygon.contains? polygon.centroid #this should return true
+
+	# poly_text = record.geometry.as_text #(a lot of points, I'm aware that the first point and the last one are the same, otherwise I think this wount work because needs to be a closed polygon)
+	# factory = RGeo::Cartesian::Factory# (I'm using a cartesian factory because acording to my investigation, if I use a spheric one, this wount work)
+	# poly = factory.new().parse_wkt(poly_text)
+	# point1 = factory.new().parse_wkt("POINT (0 0)")# (this point does not belong to the polygon)
+	# puts poly.within?(point1)
+	# puts "First record geometry was: #{record.geometry.as_text}"
+end
+
+exit
+
+
 
 abort 'Please use only one Taxonomy mapping strategy e.g. bundle exec ruby main.rb taxonomy -B' if (params[:taxonomy].keys.reject { |o| o == :retain || o == :synonyms_allowed }.size) > 1
 ## TODO: same for other options...

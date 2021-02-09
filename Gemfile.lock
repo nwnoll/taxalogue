@@ -1,4 +1,11 @@
 GIT
+  remote: git://github.com/Kdoggett887/rgeo.git
+  revision: 7f572be79eed565827fe74eac502a99cfc1a9057
+  branch: fix-212
+  specs:
+    rgeo (2.1.1)
+
+GIT
   remote: https://github.com/nwnoll/RubyTree.git
   revision: 745fe05a511fda3d8785c10f5a032684f228191f
   branch: fix-syntax-warning
@@ -35,9 +42,11 @@ GEM
       currencies (~> 0.4.2)
       i18n_data (~> 0.7.0)
     currencies (0.4.2)
+    dbf (4.1.3)
     ffi (1.14.2)
     fuzzy-string-match (0.9.9)
       RubyInline (>= 3.8.6)
+    geokit (1.13.1)
     i18n (1.8.5)
       concurrent-ruby (~> 1.0)
     i18n_data (0.7.0)
@@ -48,7 +57,11 @@ GEM
       tty-color (~> 0.5)
     power_assert (1.2.0)
     rexml (3.2.4)
+    rgeo-shapefile (3.0.0)
+      dbf (~> 4.0)
+      rgeo (>= 1.0)
     rubyzip (2.3.0)
+    shp (0.1.0)
     sqlite3 (1.4.2)
     structured_warnings (0.4.0)
     test-unit (3.3.6)
@@ -70,11 +83,15 @@ DEPENDENCIES
   byebug
   countries (~> 1.2, >= 1.2.5)
   fuzzy-string-match (~> 0.9.7)
+  geokit (~> 1.13, >= 1.13.1)
   parallel (~> 1.19, >= 1.19.2)
   pastel (~> 0.8.0)
   rexml (~> 3.2, >= 3.2.4)
+  rgeo!
+  rgeo-shapefile
   rubytree!
   rubyzip (~> 2.3)
+  shp
   sqlite3
   test-unit
 

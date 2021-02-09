@@ -49,12 +49,13 @@ class GbolImporter
       first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
       specimen = specimens_of_taxon[taxon_name][:obj]
       
-
+      ## NEXT implement location and region specific databases
       p specimen.location
       locations = specimen.location.split(', ')
       locations.each do |loc|
         c = LocationSearch.by_name(loc)
         p c.nil? ? next : c
+        sleep 1
       end
       puts
       ## europe LocationSearch.by_region('Europe')
