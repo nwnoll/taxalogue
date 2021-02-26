@@ -128,19 +128,41 @@ end
 
 
 
-shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', 'rb')
-dbf = SHP::DBF.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.dbf', 'rb')
+# shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', 'rb')
+# shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/europe_biogeo/BiogeoRegions2016.shp', 'rb')
+# dbf = SHP::DBF.open('/home/nnoll/bioinformatics/europe_biogeo/BiogeoRegions2016.dbf', 'rb')
+# dbf = SHP::DBF.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.dbf', 'rb')
 
-puts dbf.read_string_attribute(7520,3)
+
+## https://science.sciencemag.org/content/339/6115/74.full?ijkey=aasSpkcHziAV.&keytype=ref&siteid=sci
+## An Update of Wallace’s Zoogeographic Regions of the World
+
+# a litle bit like countries
+# shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/CMEC_updated_wallace_regions/Regions.shp', 'rb')
+# dbf = SHP::DBF.open('/home/nnoll/bioinformatics/CMEC_updated_wallace_regions/Regions.dbf', 'rb')
+
+# i think these are the old wallace realms, but here is no name
+# shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/CMEC_updated_wallace_regions/realms.shp', 'rb')
+# dbf = SHP::DBF.open('/home/nnoll/bioinformatics/CMEC_updated_wallace_regions/realms.dbf', 'rb')
+
+# new realms from paper
+shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/CMEC_updated_wallace_regions/newRealms.shp', 'rb')
+dbf = SHP::DBF.open('/home/nnoll/bioinformatics/CMEC_updated_wallace_regions/newRealms.dbf', 'rb')
 
 # 50.7374, 7.0982
 
+
+
+## shape files biogegraphic freshwater and other
+# https://data.freshwaterbiodiversity.eu/shapefiles
 
 field_num_of = Hash.new
 dbf.get_field_count.times do |field_num|
 	field_num_of[dbf.get_field_info(field_num)[:name]] = field_num
 end
 
+pp field_num_of
+# exit
 areas_of = Hash.new { |h, k| h[k] = [] }
 
 shp.get_info[:number_of_entities].times do |i|
@@ -159,11 +181,18 @@ shp.get_info[:number_of_entities].times do |i|
 
 
 	polygon = Geokit::Polygon.new(points)
-	eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['ECO_NAME'])
+	# eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['ECO_NAME'])
+	# eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['name'])
+	# eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['Regions']) 
+	# eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['fullupgmar'])
+	eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['Realm'])
 	# p eco_name
 	areas_of[eco_name].push(polygon)
 
 end
+
+pp areas_of.keys
+exit
 
 # lat_lng = Geokit::LatLng.new(39.848198, 9.253313)
 
