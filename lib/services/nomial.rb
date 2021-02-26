@@ -176,7 +176,7 @@ class Monomial
     tax_id = ncbi_name_record.tax_id if ncbi_name_record
     ncbi_node_record = NcbiNode.find_by(tax_id: tax_id) if ncbi_name_record
     ncbi_ranked_lineage_record = NcbiRankedLineage.find_by(tax_id: tax_id) if ncbi_name_record
-    gbif_record = GbifTaxonomy.find_by(canonical_name: name)
+    gbif_record = GbifTaxonomy.where(canonical_name: name)
 
     regnum = ncbi_name_record.nil? ? (gbif_record ? gbif_record.regnum : nil) : (ncbi_node_record.rank == 'kingdom' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.regnum)
     phylum = ncbi_name_record.nil? ? (gbif_record ? gbif_record.phylum : nil) : (ncbi_node_record.rank == 'phylum' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.phylum)
@@ -294,8 +294,12 @@ class Monomial
       regnum            = ncbi_node_record.rank == 'kingdom'  ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.regnum
 
       if are_synonyms_allowed
-        canonical_name = usable_ncbi_name_record.name
-        authority = canonical_name
+        scientifc_name_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'scientific name' }.first
+        canonical_name = scientifc_name_record.nil? ? usable_ncbi_name_record.name : scientifc_name_record.name 
+
+        authority_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'authority' }.first
+        authority = authority_record.nil? ? canonical_name : authority_record.name
+
         taxonomic_status = _taxonomic_name(usable_ncbi_name_record)
 
         if ncbi_node_record.rank == 'species' || ncbi_node_record.rank == 'subspecies' || ncbi_node_record.rank == 'genus' 
