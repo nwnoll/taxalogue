@@ -136,16 +136,41 @@ puts dbf.read_string_attribute(7520,3)
 # 50.7374, 7.0982
 
 
+field_num_of = Hash.new
+dbf.get_field_count.times do |field_num|
+	field_num_of[dbf.get_field_info(field_num)[:name]] = field_num
+end
+
+areas_of = Hash.new { |h, k| h[k] = [] }
+
 shp.get_info[:number_of_entities].times do |i|
-	next unless i == 7520
-	obj = shp.read_object(i)
-	x_ary = obj.get_x
-	y_ary = obj.get_y
-	byebug unless x_ary.size == y_ary.size 
-	# byebug unless x_ary.first == x_ary.last && y_ary.first == y_ary.last
+	# next unless i == 7520
+	shp_obj = shp.read_object(i)
+	x_ary = shp_obj.get_x
+	y_ary = shp_obj.get_y
 	points = []
-	x_ary.each_with_index { |e, i| points << Geokit::LatLng.new(y_ary[i], e) }
-	byebug
+	# byebug unless x_ary.size == y_ary.size
+	points = []
+
+	x_ary.each_with_index do |longitude, index|
+		latitude = y_ary[index]
+		points.push(Geokit::LatLng.new(latitude, longitude))
+	end
+
+
+	polygon = Geokit::Polygon.new(points)
+	eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['ECO_NAME'])
+	# p eco_name
+	areas_of[eco_name].push(polygon)
+
+end
+
+# lat_lng = Geokit::LatLng.new(39.848198, 9.253313)
+
+areas_of.each do |eco_name, area_polygons|
+	area_polygons.each do |polygon|
+		# puts eco_name if polygon.contains?(lat_lng)
+	end
 end
 
 
@@ -173,6 +198,9 @@ end
 # (byebug) 
 
 
+
+
+
 # Shape:2 (Polygon)  nVertices=11940, nParts=10
 #   Bounds:(-109.311660559818,20.4101455170804, 0)
 #       to (-102.913947649646,28.2948610255889, 0)
@@ -189,23 +217,23 @@ end
 
 
 
-module RGeo
-	module ImplHelper # :nodoc:
-		module BasicLinearRingMethods # :nodoc:
-			def validate_geometry
-				super
-				if @points.size > 0
-					pp @points
-					@points << @points.first if @points.first != @points.last
-					@points = @points.chunk { |x| x }.map(&:first)
-				  if !@factory.property(:uses_lenient_assertions) && !is_ring?
-					raise Error::InvalidGeometry, "LinearRing failed ring test"
-				  end
-				end
-			end
-		end
-	end
-end
+# module RGeo
+# 	module ImplHelper # :nodoc:
+# 		module BasicLinearRingMethods # :nodoc:
+# 			def validate_geometry
+# 				super
+# 				if @points.size > 0
+# 					pp @points
+# 					@points << @points.first if @points.first != @points.last
+# 					@points = @points.chunk { |x| x }.map(&:first)
+# 				  if !@factory.property(:uses_lenient_assertions) && !is_ring?
+# 					raise Error::InvalidGeometry, "LinearRing failed ring test"
+# 				  end
+# 				end
+# 			end
+# 		end
+# 	end
+# end
 
 
 
