@@ -50,13 +50,29 @@ class GbolImporter
       specimen = specimens_of_taxon[taxon_name][:obj]
       
       ## NEXT implement location and region specific databases
-      p specimen.location
-      locations = specimen.location.split(', ')
-      locations.each do |loc|
-        c = LocationSearch.by_name(loc)
-        p c.nil? ? next : c
-        sleep 1
+      puts "loc: #{specimen.location}"
+      # puts "lat: #{specimen.lat}"
+      # puts "long: #{specimen.long}"
+
+      if specimen.lat && specimen.long
+        $areas_of.each do |region_name, areas|
+          is_in_area = false
+          areas.each do |area|
+            is_in_area = area.contains?(Geokit::LatLng.new(specimen.lat, specimen.long))
+            break if is_in_area
+          end
+          puts "region: #{region_name}" and break if is_in_area
+        end
       end
+
+      if specimen.location
+        locations = specimen.location.split(', ')
+        locations.each do |loc|
+          c = LocationSearch.by_name(loc)
+          # p c.nil? ? next : c
+        end
+      end
+      # puts
       puts
       ## europe LocationSearch.by_region('Europe')
       ## europe.each { |o| p o.name }
