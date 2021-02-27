@@ -165,10 +165,12 @@ pp field_num_of
 $areas_of = Hash.new { |h, k| h[k] = [] }
 shape_objects_of = Hash.new { |h, k| h[k] = [] }
 
-splitted_areas_of = Hash.new { |h1, k1| h1[k1] = Hash.new { |h2, k2| h2[k2] = Hash.new { |h3, k3| h3[k3] = [] } } }
+$splitted_areas_of = Hash.new { |h1, k1| h1[k1] = Hash.new { |h2, k2| h2[k2] = Hash.new { |h3, k3| h3[k3] = [] } } }
 positive_y = 0
 total = 0
 positive_x = 0
+
+$geo_hashes_of = Hash.new
 shp.get_info[:number_of_entities].times do |i|
 	# next unless i == 7520
 	shp_obj = shp.read_object(i)
@@ -189,6 +191,7 @@ shp.get_info[:number_of_entities].times do |i|
 	x_ary.each_with_index do |longitude, index|
 		latitude = y_ary[index]
 		points.push(Geokit::LatLng.new(latitude, longitude))
+		encoded_lat_long = GeoHash.encode(latitude, longitude)
 	end
 
 
@@ -199,9 +202,9 @@ shp.get_info[:number_of_entities].times do |i|
 	eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['ECO_NAME'])
 	# puts eco_name
 
-	if shp_obj.get_x_min.positive? && shp_obj.get_y_min.positive?
-		splitted_areas_of[:positive_x][:positive_y][eco_name]
-	end
+	# if shp_obj.get_x_min.positive? && shp_obj.get_y_min.positive?
+	# 	$splitted_areas_of[:positive_x][:positive_y][eco_name]
+	# end
 
 	field_num_of.each do |field, num|
 		# puts "#{field}: #{dbf.read_string_attribute(shp_obj.get_shape_id, num)}"
@@ -218,12 +221,28 @@ shp.get_info[:number_of_entities].times do |i|
 
 end
 
-min_max_coords_of = Hash.new { |h, k| h[k] = Hash.new }
+
+$polygons_of = Hash.new { |h, k| h[k] = [] }
 shape_objects_of.each do |name, shape_objects|
 	max_x = shape_objects.inject { |n1, n2| n2.get_x_max > n1.get_x_max ? n2 : n1 }.get_x_max
 	max_y = shape_objects.inject { |n1, n2| n2.get_y_max > n1.get_y_max ? n2 : n1 }.get_y_max
 	min_x = shape_objects.inject { |n1, n2| n2.get_x_min < n1.get_x_min ? n2 : n1 }.get_x_min
 	min_y = shape_objects.inject { |n1, n2| n2.get_y_min < n1.get_y_min ? n2 : n1 }.get_y_min
+
+	polygons = []
+	shape_objects.each do |shp_obj|
+		x_ary = shp_obj.get_x
+		y_ary = shp_obj.get_y
+		points = []
+
+		x_ary.each_with_index do |longitude, index|
+			latitude = y_ary[index]
+			points.push(Geokit::LatLng.new(latitude, longitude))
+		end
+
+		polygon = Geokit::Polygon.new(points)
+		polygons.push(polygon)
+	end
 
 	point_lower_left = Geokit::LatLng.new(min_y, min_x)
 	point_upper_left = Geokit::LatLng.new(max_y, min_x)
@@ -231,17 +250,59 @@ shape_objects_of.each do |name, shape_objects|
 	point_lower_right = Geokit::LatLng.new(min_y, max_x)
 
 	rect_polygon = Geokit::Polygon.new([point_lower_left, point_upper_left, point_upper_right, point_lower_right, point_lower_left])
+	# p rect_polygon
+	$polygons_of[name] = [rect_polygon, polygons].flatten
+
+	# if min_x.positive?
+	# 	if min_y.positive?
+	# 		$splitted_areas_of[:east][:north][name] = [rect_polygon, polygons].flatten
+	# 	elsif min_y.negative? && max_y.positive? # put it in north and south since the shape is across the equatorial border
+	# 		$splitted_areas_of[:east][:north][name] = [rect_polygon, polygons].flatten
+	# 		$splitted_areas_of[:east][:south][name] = [rect_polygon, polygons].flatten
+	# 	elsif min_y.negative? && max_y.negative?
+	# 		$splitted_areas_of[:east][:south][name] = [rect_polygon, polygons].flatten
+	# 	end
+	# elsif min_x.negative? && max_x.positive? # put it in west and east since it the shape files corss the meridian
+	# 	if min_y.positive?
+	# 		$splitted_areas_of[:west][:north][name] = [rect_polygon, polygons].flatten
+	# 		$splitted_areas_of[:east][:north][name] = [rect_polygon, polygons].flatten
+	# 	elsif min_y.negative? && max_y.positive? # put it in north and south since the shape is across the equatorial border
+	# 		$splitted_areas_of[:west][:north][name] = [rect_polygon, polygons].flatten
+	# 		$splitted_areas_of[:west][:south][name] = [rect_polygon, polygons].flatten
+
+	# 		$splitted_areas_of[:east][:north][name] = [rect_polygon, polygons].flatten
+	# 		$splitted_areas_of[:east][:south][name] = [rect_polygon, polygons].flatten
+	# 	elsif min_y.negative? && max_y.negative?
+	# 		$splitted_areas_of[:west][:south][name] = [rect_polygon, polygons].flatten
+	# 		$splitted_areas_of[:east][:south][name] = [rect_polygon, polygons].flatten
+	# 	end
+	# elsif min_x.negative? && max_x.negative?
+	# 	if min_y.positive?
+	# 		$splitted_areas_of[:west][:north][name] = [rect_polygon, polygons].flatten
+	# 	elsif min_y.negative? && max_y.positive? # put it in north and south since the shape is across the equatorial border
+	# 		$splitted_areas_of[:west][:north][name] = [rect_polygon, polygons].flatten
+	# 		$splitted_areas_of[:west][:south][name] = [rect_polygon, polygons].flatten
+	# 	elsif min_y.negative? && max_y.negative?
+	# 		$splitted_areas_of[:west][:south][name] = [rect_polygon, polygons].flatten
+	# 	end
+	# else
+	# 	byebug
+	# end
+
+end
+
+
 
 	# byebug if name == 'Western European broadleaf forests'
-	if rect_polygon.contains?(Geokit::LatLng.new(47.997791, 7.842609))
-		puts name
-		$areas_of[name].each do |area|
-			if area.contains?(Geokit::LatLng.new(47.997791, 7.842609))
-				print '  '
-				puts name
-			end
-		end
-	end
+	# if rect_polygon.contains?(Geokit::LatLng.new(47.997791, 7.842609))
+	# 	puts name
+	# 	$areas_of[name].each do |area|
+	# 		if area.contains?(Geokit::LatLng.new(47.997791, 7.842609))
+	# 			print '  '
+	# 			puts name
+	# 		end
+	# 	end
+	# end
 
 	# shape_objects.each do |o| 
 	# 	o.get_x.size.times do |i|
@@ -250,24 +311,39 @@ shape_objects_of.each do |name, shape_objects|
 	# 	end
 	# end
 	# puts
-	
-	
-	min_max_coords_of[name][:max_x]
-	min_max_coords_of[name][:max_y]
-	min_max_coords_of[name][:min_x]
-	min_max_coords_of[name][:min_y]
-end
+# end
 
-exit
-pp $areas_of.keys
+
+# require 'set'
+# key_set = Set.new
+
+# $splitted_areas_of[:west][:south].keys.each { |key| key_set.add(key) }
+# $splitted_areas_of[:west][:north].keys.each { |key| key_set.add(key) }
+# $splitted_areas_of[:east][:south].keys.each { |key| key_set.add(key) }
+# $splitted_areas_of[:east][:north].keys.each { |key| key_set.add(key) }
+
+
+
+# key_set.add(ws)
+# key_set.add(wn)
+# key_set.add(es)
+# key_set.add(en)
+
+# key_set.flatten!
+
+
+# byebug
+
+# exit
+# pp $areas_of.keys
 
 # lat_lng = Geokit::LatLng.new(39.848198, 9.253313)
 
-$areas_of.each do |eco_name, area_polygons|
-	area_polygons.each do |polygon|
-		# puts eco_name if polygon.contains?(lat_lng)
-	end
-end
+# $areas_of.each do |eco_name, area_polygons|
+# 	area_polygons.each do |polygon|
+# 		# puts eco_name if polygon.contains?(lat_lng)
+# 	end
+# end
 
 
 # (byebug) dbf.get_field_count
