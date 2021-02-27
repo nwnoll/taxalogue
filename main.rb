@@ -163,8 +163,9 @@ end
 
 pp field_num_of
 $areas_of = Hash.new { |h, k| h[k] = [] }
+shape_objects_of = Hash.new { |h, k| h[k] = [] }
 
-
+splitted_areas_of = Hash.new { |h1, k1| h1[k1] = Hash.new { |h2, k2| h2[k2] = Hash.new { |h3, k3| h3[k3] = [] } } }
 positive_y = 0
 total = 0
 positive_x = 0
@@ -175,6 +176,8 @@ shp.get_info[:number_of_entities].times do |i|
 	total += 1
 	positive_y += 1 if shp_obj.get_y_min.positive?
 	positive_x += 1 if shp_obj.get_x_min.positive?
+
+
 
 	x_ary = shp_obj.get_x
 	y_ary = shp_obj.get_y
@@ -190,25 +193,70 @@ shp.get_info[:number_of_entities].times do |i|
 
 
 	polygon = Geokit::Polygon.new(points)
+	whole_area_polygon = nil
+
+	
 	eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['ECO_NAME'])
-	puts eco_name
-	field_num_of.each do |field, num|
-		puts "#{field}: #{dbf.read_string_attribute(shp_obj.get_shape_id, num)}"
+	# puts eco_name
+
+	if shp_obj.get_x_min.positive? && shp_obj.get_y_min.positive?
+		splitted_areas_of[:positive_x][:positive_y][eco_name]
 	end
-	puts
-	puts
+
+	field_num_of.each do |field, num|
+		# puts "#{field}: #{dbf.read_string_attribute(shp_obj.get_shape_id, num)}"
+	end
+	# puts
+	# puts
 	# eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['name'])
 	# eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['Regions']) 
 	# eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['fullupgmar'])
 	# eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['Realm'])
 	# p eco_name
 	$areas_of[eco_name].push(polygon)
+	shape_objects_of[eco_name].push(shp_obj)
 
 end
 
-puts "total: #{total}"
-puts "positive_y: #{positive_y}"
-puts "positive_x: #{positive_x}"
+min_max_coords_of = Hash.new { |h, k| h[k] = Hash.new }
+shape_objects_of.each do |name, shape_objects|
+	max_x = shape_objects.inject { |n1, n2| n2.get_x_max > n1.get_x_max ? n2 : n1 }.get_x_max
+	max_y = shape_objects.inject { |n1, n2| n2.get_y_max > n1.get_y_max ? n2 : n1 }.get_y_max
+	min_x = shape_objects.inject { |n1, n2| n2.get_x_min < n1.get_x_min ? n2 : n1 }.get_x_min
+	min_y = shape_objects.inject { |n1, n2| n2.get_y_min < n1.get_y_min ? n2 : n1 }.get_y_min
+
+	point_lower_left = Geokit::LatLng.new(min_y, min_x)
+	point_upper_left = Geokit::LatLng.new(max_y, min_x)
+	point_upper_right = Geokit::LatLng.new(max_y, max_x)
+	point_lower_right = Geokit::LatLng.new(min_y, max_x)
+
+	rect_polygon = Geokit::Polygon.new([point_lower_left, point_upper_left, point_upper_right, point_lower_right, point_lower_left])
+
+	# byebug if name == 'Western European broadleaf forests'
+	if rect_polygon.contains?(Geokit::LatLng.new(47.997791, 7.842609))
+		puts name
+		$areas_of[name].each do |area|
+			if area.contains?(Geokit::LatLng.new(47.997791, 7.842609))
+				print '  '
+				puts name
+			end
+		end
+	end
+
+	# shape_objects.each do |o| 
+	# 	o.get_x.size.times do |i|
+	# 		is_in_polygon = rect_polygon.contains?(Geokit::LatLng.new(o.get_x[i], o.get_y[i]))
+	# 		puts name if
+	# 	end
+	# end
+	# puts
+	
+	
+	min_max_coords_of[name][:max_x]
+	min_max_coords_of[name][:max_y]
+	min_max_coords_of[name][:min_x]
+	min_max_coords_of[name][:min_y]
+end
 
 exit
 pp $areas_of.keys
