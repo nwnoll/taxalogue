@@ -48,6 +48,8 @@ module GeoUtils
 
             x_ary.each_with_index do |longitude, index|
                 latitude = y_ary[index]
+                p longitude
+                p latitude
                 points.push(Geokit::LatLng.new(latitude, longitude))
             end
             puts

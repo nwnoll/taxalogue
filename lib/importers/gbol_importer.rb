@@ -69,12 +69,20 @@ class GbolImporter
         polly = $polygons_of['Western European broadleaf forests'].first
         pollies = $areas_of['Western European broadleaf forests']
         pollies = $areas_of['PA']
-        puts pollies.size
-        pollies.each do |polygon|
-          if polygon.contains?(specimen_locality)
-            puts "region: Western European broadleaf forests"
-            puts "region: Palearctic"
-            next 
+        # puts pollies.size
+        # pollies.each do |polygon|
+        #   if polygon.contains?(specimen_locality)
+        #     puts "region: Western European broadleaf forests"
+        #     puts "region: Palearctic"
+        #     next 
+        #   end
+        # end
+
+        $areas_of.each do |region, areas|
+          areas.each do |area|
+            if area.contains?(specimen_locality)
+              puts region
+            end
           end
         end
         # if polly.contains?(specimen_locality)
