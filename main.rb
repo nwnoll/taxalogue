@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require './requirements'
+include GeoUtils
 
 params = {
 	import: Hash.new,
@@ -128,6 +129,16 @@ end
 
 
 
+# file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+
+# genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy])
+# file_manager.create_dir
+
+# genbank_job.run
+
+# exit
+
+
 shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', 'rb')
 # shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/europe_biogeo/BiogeoRegions2016.shp', 'rb')
 # dbf = SHP::DBF.open('/home/nnoll/bioinformatics/europe_biogeo/BiogeoRegions2016.dbf', 'rb')
@@ -161,7 +172,6 @@ dbf.get_field_count.times do |field_num|
 	field_num_of[dbf.get_field_info(field_num)[:name]] = field_num
 end
 
-pp field_num_of
 $areas_of = Hash.new { |h, k| h[k] = [] }
 shape_objects_of = Hash.new { |h, k| h[k] = [] }
 
@@ -191,7 +201,7 @@ shp.get_info[:number_of_entities].times do |i|
 	x_ary.each_with_index do |longitude, index|
 		latitude = y_ary[index]
 		points.push(Geokit::LatLng.new(latitude, longitude))
-		encoded_lat_long = GeoHash.encode(latitude, longitude)
+		# encoded_lat_long = GeoHash.encode(latitude, longitude)
 	end
 
 
@@ -592,6 +602,11 @@ abort 'Please use only one Taxonomy mapping strategy e.g. bundle exec ruby main.
 # ###
 # exit
 
+
+$areas_of, $realms_of = get_areas_of_eco_zones_and_realms
+
+
+p 'woot'
 fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 fm.create_dir
 # BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy]).run

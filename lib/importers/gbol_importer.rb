@@ -26,6 +26,11 @@ class GbolImporter
     specimens_of_taxon  = Hash.new { |hash, key| hash[key] = {} }
 
     Helper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: [file_name.basename, 'metadata.xml'])
+    ## TODO:
+    ## NEXT:
+    ## whats correct?
+    # Helper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: [file_name.basename.sub_ext('.csv').to_s, 'metadata.xml'])
+    
     csv_file_name = file_name.sub_ext('.csv')
     csv_file = File.open(csv_file_name, 'r')
     csv_object = CSV.new(csv_file, headers: true, col_sep: "\t", liberal_parsing: true)
@@ -62,11 +67,20 @@ class GbolImporter
       if specimen.lat && specimen.long
         specimen_locality = Geokit::LatLng.new(specimen.lat, specimen.long)
         polly = $polygons_of['Western European broadleaf forests'].first
-        
-        if polly.contains?(specimen_locality)
-          puts "region: Western European broadleaf forests"
-          next
+        pollies = $areas_of['Western European broadleaf forests']
+        pollies = $areas_of['PA']
+        puts pollies.size
+        pollies.each do |polygon|
+          if polygon.contains?(specimen_locality)
+            puts "region: Western European broadleaf forests"
+            puts "region: Palearctic"
+            next 
+          end
         end
+        # if polly.contains?(specimen_locality)
+        #   puts "region: Western European broadleaf forests"
+        #   next
+        # end
         next
         # next unless specimen.lat.to_f.positive? && specimen.long.to_f.positive?
         # $splitted_areas_of[:east][:north].each do |region_name, areas|

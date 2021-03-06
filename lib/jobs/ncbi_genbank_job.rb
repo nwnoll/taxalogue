@@ -18,6 +18,7 @@ class NcbiGenbankJob
   def run
     # _write_result_files(fmanagers: fmanagers)
     download_file_managers = download_files
+    exit
     _classify_downloads(download_file_managers: download_file_managers)
 
     return result_file_manager
