@@ -2,6 +2,7 @@
 
 module GeoUtils
 
+    require 'active_support/core_ext/string/output_safety'
     # NT
     # PA
     # NA
@@ -72,4 +73,67 @@ module GeoUtils
 
         return [eco_zones_of, realms_of]
     end
+
+    def country_by_name(name)
+        ISO3166::Country.find_country_by_name(name)
+    end
+
+    def countries_by_region(region)
+        countries = ISO3166::Country.find_all_countries_by_region(region)
+        country_names = []
+        countries.each { |country| country_names.push(country.data['name']) }
+
+        return country_names.sort
+    end
+
+    def all_countries
+        # ISO3166::Country.all_names_with_codes
+        ISO3166::Country.all
+    end
+
+    def all_country_names_by_continent(continent)
+        country_names = []
+        ISO3166::Country.find_all_by(:continent, continent).each { |c| country_names.push(c[1]['name']) }
+
+        return country_names.sort
+    end
+
+    def australian_countries
+        all_country_names_by_continent('Australia')
+    end
+
+    def antarctic_countries
+        all_country_names_by_continent('Antarctica')
+    end
+
+    def asian_countries
+        all_country_names_by_continent('Asia')
+    end
+
+    def european_countries
+        all_country_names_by_continent('Europe')
+    end
+
+    def north_american_countries
+        all_country_names_by_continent('North America')
+    end
+
+    def south_american_countries
+        all_country_names_by_continent('South America')
+    end
+
+    def american_countries
+        sac = south_american_countries
+        nac = north_american_countries
+
+        (sac + nac).sort
+    end
+
+    def eurasian_countries
+        ac = asian_countries
+        ec = european_countries
+
+        (ac + ec).sort
+    end
+
 end

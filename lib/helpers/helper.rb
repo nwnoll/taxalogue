@@ -213,4 +213,57 @@ class Helper
         return NcbiTaxonomy
       end
     end
+
+    def self.print_all_countries
+			print 'Antarctica: '
+			p antarctic_countries
+			puts
+			puts
+
+			print 'Asia: '
+			p asian_countries
+			puts
+			puts
+
+			print 'Australia: '
+			p australian_countries
+			puts
+			puts
+
+			print 'Europe: '
+			p european_countries
+			puts
+			puts
+
+			print 'North America: '
+			p north_american_countries
+			puts
+			puts
+
+			print 'South America: '
+			p south_american_countries
+			puts
+			puts '---------'
+			puts
+
+			print 'America: '
+			p american_countries
+			puts
+			puts
+
+			print 'Eurasia: '
+			p eurasian_countries
+    end
+
+    def self.print_all_continents
+			puts 'Antarctica'
+			puts 'Asia'
+			puts 'Australia'
+			puts 'Europe'
+			puts 'North America'
+			puts 'South America'
+			puts '---------'
+			puts 'America'
+			puts 'Eurasia'
+    end
 end

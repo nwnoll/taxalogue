@@ -9,7 +9,8 @@ params = {
 	setup: Hash.new,
 	update: Hash.new,
 	filter: Hash.new,
-	taxonomy: Hash.new
+	taxonomy: Hash.new,
+	region: Hash.new
 }
 CONFIG_FILE = 'default_config.yaml'
 
@@ -35,6 +36,7 @@ Commonly used commands are:
    update   :  update taxonomies or sequences
    filter   :  filter sequences
    taxonomy :  different options regarding the used taxonomy
+   region   :  filter by country, continent, biogeographic regions etc.
 
 See 'bundle exec ruby main.rb COMMAND --help' for more information on a specific command.
 HELP
@@ -117,6 +119,19 @@ subcommands = {
 		opts.on('-u', '--unmapped', 'No mapping takes place, original specimen information is used but only standard ranks are used (e.g. no subfamilies)')
 		opts.on('-s', '--synonyms_allowed', 'Allows Taxon information of synonyms to be set to sequences')
 		opts.on('-r', '--retain', 'retains sequences for taxa that are not present in chosen taxonomy')
+	end,
+	region: OptionParser.new do |opts|
+		opts.set_summary_width 80
+
+		opts.banner = "Usage: region [options]"
+		opts.on('-c COUNTRY', String, '--country')
+		opts.on('-C', '--country_list') { Helper.print_all_countries; exit }
+		opts.on('-k CONTINENT', String,'--continent')
+		opts.on('-K', '--continent_list') { Helper.print_all_continents; exit }
+		opts.on('-b BIOGEOGRAPHIC_REALM', String,'--biogeographic_realm')
+		opts.on('-B', '--biogeographic_realm_list')
+		opts.on('-t TERRESTRIAL_ECOREGION', String,'--terrestrial_ecoregion')
+		opts.on('-T ', '--terrestrial_ecoregion_list')
 	end
  }
 
@@ -128,6 +143,7 @@ loop do
 end
 
 
+exit
 
 # file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 
