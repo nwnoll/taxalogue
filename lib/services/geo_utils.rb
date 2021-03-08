@@ -13,13 +13,18 @@ module GeoUtils
     # AA
     # AN
 
-    def get_areas_of_eco_zones_and_realms
+    def get_areas_of_shapefiles(file_name:, attr_name:)
+
         # shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', 'rb')
         # dbf = SHP::DBF.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.dbf', 'rb')
         # shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/CMEC_updated_wallace_regions/realms.shp', 'rb')
         # dbf = SHP::DBF.open('/home/nnoll/bioinformatics/CMEC_updated_wallace_regions/realms.dbf', 'rb')   
         shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/fadaregions/fadaregions.shp', 'rb')
         dbf = SHP::DBF.open('/home/nnoll/bioinformatics/fadaregions/fadaregions.dbf', 'rb')   
+
+        pathname = Pathname.new(file_name)
+        shp = SHP::Shapefile.open(pathname.to_s, 'rb')
+        dbf = SHP::DBF.open(pathname.sub_ext('.dbf').to_s, 'rb')
 
         field_num_of = Hash.new
         dbf.get_field_count.times do |field_num|
@@ -33,15 +38,15 @@ module GeoUtils
 
         eco_zones_of = Hash.new { |h, k| h[k] = [] }
         realms_of = Hash.new { |h, k| h[k] = [] }
+        
+        areas_of = Hash.new { |h, k| h[k] = [] }
 
         shp.get_info[:number_of_entities].times do |i|
             # next unless i == 7520
             shp_obj = shp.read_object(i)
-            p i
-
-            field_num_of.each do |field, num|
-                puts "#{field}: #{dbf.read_string_attribute(shp_obj.get_shape_id, num)}"
-            end
+            # field_num_of.each do |field, num|
+            #     puts "#{field}: #{dbf.read_string_attribute(shp_obj.get_shape_id, num)}"
+            # end
 
             x_ary = shp_obj.get_x
             y_ary = shp_obj.get_y
@@ -49,12 +54,8 @@ module GeoUtils
 
             x_ary.each_with_index do |longitude, index|
                 latitude = y_ary[index]
-                p longitude
-                p latitude
                 points.push(Geokit::LatLng.new(latitude, longitude))
             end
-            puts
-
             # exit
             # polygon = Geokit::Polygon.new(points)
             # eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['ECO_NAME'])
@@ -64,14 +65,15 @@ module GeoUtils
             # realms_of[realm_name].push(polygon)
 
             polygon = Geokit::Polygon.new(points)
-            eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['fadaregion'])
-            realm_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['name'])
-            
-            eco_zones_of[eco_name].push(polygon)
-            realms_of[realm_name].push(polygon)
+            # eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['fadaregion'])
+            # realm_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['name'])
+            area_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of[attr_name])
+            # eco_zones_of[eco_name].push(polygon)
+            # realms_of[realm_name].push(polygon)
+            areas_of[area_name].push(polygon)
         end
 
-        return [eco_zones_of, realms_of]
+        return areas_of
     end
 
     def country_by_name(name)
@@ -89,6 +91,18 @@ module GeoUtils
     def all_countries
         # ISO3166::Country.all_names_with_codes
         ISO3166::Country.all
+    end
+
+    def all_country_names
+        countries = ISO3166::Country.all
+        country_names = []
+        countries.each { |country| country_names.push(country.data['name']) }
+
+        return country_names.sort
+    end
+
+    def all_continent_names
+        ['Antarctica', 'Asia', 'Australia', 'Europe', 'North America', 'South America', 'America', 'Eurasia']
     end
 
     def all_country_names_by_continent(continent)
@@ -136,4 +150,10 @@ module GeoUtils
         (ac + ec).sort
     end
 
+    def specimen_is_from_area(specimen_locality:, region_params:)
+      ## TODO:
+      ## NEXT implement a function that works for all importer/classifiers that uses location info of specimen
+      ## object and gives true or false if its in area
+      ## should handle shapefiles and country strings, maybe even states and continent specimen info?
+    end
 end

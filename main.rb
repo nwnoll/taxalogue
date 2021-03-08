@@ -12,6 +12,9 @@ params = {
 	taxonomy: Hash.new,
 	region: Hash.new
 }
+
+fada_regions_of = nil
+eco_zones_of = nil
 CONFIG_FILE = 'default_config.yaml'
 
 if File.exists? CONFIG_FILE
@@ -36,14 +39,14 @@ Commonly used commands are:
    update   :  update taxonomies or sequences
    filter   :  filter sequences
    taxonomy :  different options regarding the used taxonomy
-   region   :  filter by country, continent, biogeographic regions etc.
+   region   :  select sequences by country, continent, biogeographic regions etc.
 
 See 'bundle exec ruby main.rb COMMAND --help' for more information on a specific command.
 HELP
 
 global = OptionParser.new do |opts|
 	opts.banner = "Usage: bundle exec ruby main.rb [params] [subcommand [params]]"
-	opts.on('-t TAXON', 	String, '--taxon', 'Choose a taxon to build your database, if you want a database for a species, put "" around the option: e.g.: -t "Apis mellifera". default: Arthropoda') do |taxon_name|
+	opts.on('-t TAXON', String, '--taxon', 'Choose a taxon to build your database, if you want a database for a species, put "" around the option: e.g.: -t "Apis mellifera". default: Arthropoda') do |taxon_name|
 		abort 'Taxon is extinct, please choose another Taxon' if Helper.is_extinct?(taxon_name)
 
 		## TODO: should be changed
@@ -61,7 +64,7 @@ global = OptionParser.new do |opts|
 		taxon_name
 	end
 	
-	opts.on('-m MARKERS', 	String, '--markers') do |markers|
+	opts.on('-m MARKERS', String, '--markers') do |markers|
 		params[:marker_objects] = Helper.create_marker_objects(query_marker_names: markers)
 	end
   
@@ -78,7 +81,7 @@ subcommands = {
 		opts.on('-k GENBANK', String, '--genbank')
 		opts.on('-b GBIF', String, '--gbif')
 		opts.on('-n NODES', String, '--nodes')
-		opts.on('-m NAMES', String, '--names')
+		opts.on('-s NAMES', String, '--names')
 		opts.on('-l LINEAGE', String, '--lineage')
 		opts.on('-a', '--all_seqs') 
    end,
@@ -121,17 +124,49 @@ subcommands = {
 		opts.on('-r', '--retain', 'retains sequences for taxa that are not present in chosen taxonomy')
 	end,
 	region: OptionParser.new do |opts|
-		opts.set_summary_width 80
+		opts.set_summary_width 50
+
+		if File.file?('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp')
+			eco_zones_of = get_areas_of_shapefiles(file_name: '/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', attr_name: 'ECO_NAME')
+		end
+
+		if File.file?('/home/nnoll/bioinformatics/fadaregions/fadaregions.shp')
+			fada_regions_of = get_areas_of_shapefiles(file_name: '/home/nnoll/bioinformatics/fadaregions/fadaregions.shp', attr_name: 'name')
+		end
 
 		opts.banner = "Usage: region [options]"
-		opts.on('-c COUNTRY', String, '--country')
-		opts.on('-C', '--country_list') { Helper.print_all_countries; exit }
-		opts.on('-k CONTINENT', String,'--continent')
-		opts.on('-K', '--continent_list') { Helper.print_all_continents; exit }
-		opts.on('-b BIOGEOGRAPHIC_REALM', String,'--biogeographic_realm')
-		opts.on('-B', '--biogeographic_realm_list')
-		opts.on('-t TERRESTRIAL_ECOREGION', String,'--terrestrial_ecoregion')
-		opts.on('-T ', '--terrestrial_ecoregion_list')
+		opts.on('-c COUNTRY', String, '--country', 'create a database consisting of sequences only from this country or a set of countries: if you want to specifiy multiple countries please use commas without spaces e.g. Germany,France,Belgium') do |opt|
+			valid_names = all_country_names 
+			opt_ary = opt.split(';')
+			Helper.check_valid_names(valid_names, opt_ary)
+			params[:region][:country_ary] = opt_ary
+			opt
+		end
+		opts.on('-C', '--available_countries', 'lists all available countries') { Helper.print_all_countries; exit }
+		opts.on('-k CONTINENT', String,'--continent', 'create a database consisting of sequences only from this continent or a set of continents: if you want to specifiy a continent please use quotes e.g. "North America". For multiple continents please use semicolons without spaces e.g. "Europe;Asia"') do |opt|
+			valid_names = all_continent_names
+			opt_ary = opt.split(';')
+			Helper.check_valid_names(valid_names, opt_ary)
+			params[:region][:continent_ary] = opt_ary
+			opt
+		end
+		opts.on('-K', '--available_continents', 'lists all available continents') { Helper.print_all_continents; exit }
+		opts.on('-b BIOGEOGRAPHIC_REALM', String,'--biogeographic_realm', 'create a database consisting of sequences only from this biogegraphic realm or a set of realms: if you want to specifiy a realm please use quotes e.g. "Oriental (Indomalaya)". For multiple realms pleas use quotes and semicolons without spaces e.g."Oriental (Indomalaya);Afrotropical"') do |opt|
+			valid_names = fada_regions_of.keys.sort
+			opt_ary = opt.split(';')
+			Helper.check_valid_names(valid_names, opt_ary)
+			params[:region][:biogeo_ary] = opt_ary
+			opt
+		end
+		opts.on('-B', '--available_biogeographic_realms', 'lists all available biogeographic realms') { Helper.print_all_regions(fada_regions_of.keys.sort); exit }
+		opts.on('-e TERRESTRIAL_ECOREGION', String,'--terrestrial_ecoregion', 'create a database consisting of sequences only from this terrestrial ecoregion or a set of regions: if you want to specifiy a region please use quotes e.g. "North Atlantic moist mixed forests". For multiple realms pleas use quotes and semicolons without spaces e.g."North Atlantic moist mixed forests;Highveld grasslands"') do |opt|
+			valid_names = eco_zones_of.keys.sort
+			opt_ary = opt.split(';')
+			Helper.check_valid_names(valid_names, opt_ary)
+			params[:region][:terreco_ary] = opt_ary
+			opt
+		end
+		opts.on('-E', '--available_terrestrial_ecoregion', 'lists all available terrestrial ecoregions') { Helper.print_all_regions(eco_zones_of.keys.sort); exit }
 	end
  }
 
@@ -143,6 +178,8 @@ loop do
 end
 
 
+
+byebug
 exit
 
 # file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
