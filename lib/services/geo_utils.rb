@@ -177,8 +177,6 @@ module GeoUtils
     end
 
     def specimen_is_from_area(specimen:, region_params:)
-        pp specimen
-
         if region_params[:country_ary] && !specimen.location.nil?
             country_ary = region_params[:country_ary]
             country_ary.each do |country|
@@ -195,8 +193,15 @@ module GeoUtils
 
             locations = specimen.location.split(', ')
             locations.each do |loc|
-                return true if continent_of[loc] == continent
+                continent_ary.each do |continent|
+                    return true if continent_of[loc] == continent
+                end
             end
+
+            ## TODO:
+            ## NEXT:
+            ## add option to specify a country and a continent they are additive e.g 
+            ## Europe AND Georgia or Russia etc...
 
             # continent_ary.each do |continent|
             #     countries_by_continent = all_country_names_by_continent(continent)
@@ -207,12 +212,13 @@ module GeoUtils
             # end
 
 
-            all_country_names_by_continent
+            # all_country_names_by_continent
 
         end
 
+        return false
 
-        byebug
+
 
         #     if specimen.location  
         # region_params[:continent_ary] 

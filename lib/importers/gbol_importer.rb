@@ -60,8 +60,9 @@ class GbolImporter
       first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
       specimen = specimens_of_taxon[taxon_name][:obj]
       
-
-      specimen_is_from_area(specimen: specimen, region_params: region_params) if region_params
+      puts specimen.location
+      puts specimen_is_from_area(specimen: specimen, region_params: region_params) if region_params
+      puts
       next
 
       ## NEXT implement location and region specific databases
