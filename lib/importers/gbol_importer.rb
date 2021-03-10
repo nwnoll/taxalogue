@@ -2,7 +2,8 @@
 
 class GbolImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :taxonomy_params
+  include GeoUtils
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :taxonomy_params, :region_params
 
   def self.get_source_lineage(row)
     OpenStruct.new(
@@ -11,7 +12,7 @@ class GbolImporter
     )
   end
 
-  def initialize(file_name:, query_taxon_object:, fast_run: false, file_manager:, filter_params: nil, taxonomy_params:)
+  def initialize(file_name:, query_taxon_object:, fast_run: false, file_manager:, filter_params: nil, taxonomy_params:, region_params: nil)
     @file_name                = file_name
     @query_taxon_object       = query_taxon_object
     @query_taxon_name         = query_taxon_object.canonical_name
@@ -20,6 +21,7 @@ class GbolImporter
     @file_manager             = file_manager
     @filter_params            = filter_params
     @taxonomy_params          = taxonomy_params
+    @region_params            = region_params
   end
 
   def run
@@ -58,6 +60,10 @@ class GbolImporter
       first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
       specimen = specimens_of_taxon[taxon_name][:obj]
       
+
+      specimen_is_from_area(specimen: specimen, region_params: region_params) if region_params
+      next
+
       ## NEXT implement location and region specific databases
       puts "loc: #{specimen.location}"
       # puts "lat: #{specimen.lat}"

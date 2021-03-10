@@ -112,6 +112,32 @@ module GeoUtils
         return country_names.sort
     end
 
+    def get_continent_of_country_hash
+        hash = Hash.new
+
+        australian_countries.each do |c|
+            hash[c] = 'Australia'
+        end
+        antarctic_countries.each do |c|
+            hash[c] = 'Antarctica'
+        end
+        asian_countries.each do |c|
+            hash[c] = 'Asia'
+        end
+        european_countries.each do |c|
+            hash[c] = 'Europe'
+        end
+        north_american_countries.each do |c|
+            hash[c] = 'North America'
+        end
+        south_american_countries.each do |c|
+            hash[c] = 'South America'
+        end
+
+        return hash
+
+    end
+
     def australian_countries
         all_country_names_by_continent('Australia')
     end
@@ -150,7 +176,52 @@ module GeoUtils
         (ac + ec).sort
     end
 
-    def specimen_is_from_area(specimen_locality:, region_params:)
+    def specimen_is_from_area(specimen:, region_params:)
+        pp specimen
+
+        if region_params[:country_ary] && !specimen.location.nil?
+            country_ary = region_params[:country_ary]
+            country_ary.each do |country|
+                return true if specimen.location.match?(country)
+            end
+
+        elsif region_params[:continent_ary] && !specimen.location.nil?
+            continent_of = get_continent_of_country_hash
+
+            continent_ary = region_params[:continent_ary]
+            continent_ary.each do |continent|
+                return true if continent_of[specimen.location] == continent
+            end
+
+            locations = specimen.location.split(', ')
+            locations.each do |loc|
+                return true if continent_of[loc] == continent
+            end
+
+            # continent_ary.each do |continent|
+            #     countries_by_continent = all_country_names_by_continent(continent)
+                
+            #     countries_by_continent.bsearch {|country| x <=>  4 }
+            #     continent_of
+            #     return true if specimen.location.match?(continent)
+            # end
+
+
+            all_country_names_by_continent
+
+        end
+
+
+        byebug
+
+        #     if specimen.location  
+        # region_params[:continent_ary] 
+        # region_params[:biogeo_ary] 
+        # region_params[:terreco_ary] 
+        # specimen.lat
+        # specimen.long
+        # specimen.location
+        # if 
       ## TODO:
       ## NEXT implement a function that works for all importer/classifiers that uses location info of specimen
       ## object and gives true or false if its in area
