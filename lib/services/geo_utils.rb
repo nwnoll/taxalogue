@@ -176,43 +176,49 @@ module GeoUtils
         (ac + ec).sort
     end
 
-    def specimen_is_from_area(specimen:, region_params:)
-        if region_params[:country_ary] && !specimen.location.nil?
-            country_ary = region_params[:country_ary]
-            country_ary.each do |country|
-                return true if specimen.location.match?(country)
+    def _locality_matches_user_countries_or_continents(user_areas_ary:, specimen_location:)
+        user_areas_ary.each do |area|
+            return true if specimen_location.match?(area)
+        end
+
+        continent_of = get_continent_of_country_hash
+        user_areas_ary.each do |area|
+            return true if continent_of[specimen_location] == area
+        end
+
+        locations = specimen_location.split(', ') # GBOL separates locations with a comma e.g Germany, Hesse, Europe
+        locations.each do |location|
+            user_areas_ary.each do |area|
+                return true if continent_of[location] == area
             end
+        end
+
+        return false
+    end
+
+    def _coords_match_user_shapefiles(user_areas_ary:, lat:, long:)
+        ## TODO: 
+        ## NEXT
+        ## integrate shapefile lookup, hash with polygons should only created once
+        ## maybe change this also for the countries and continent lookup although it seems to be fast enough
+    end
+
+    def specimen_is_from_area(specimen:, region_params:)
+        if region_params[:country_ary] && region_params[:continent_ary] && !specimen.location.nil?
+            matches_country = _locality_matches_user_countries_or_continents(user_areas_ary: region_params[:country_ary], specimen_location: specimen.location)
+            matches_continent = _locality_matches_user_countries_or_continents(user_areas_ary: region_params[:continent_ary], specimen_location: specimen.location)
+            
+            return true if matches_country || matches_continent
+
+        elsif region_params[:country_ary] && !specimen.location.nil?
+            matches_country = _locality_matches_user_countries_or_continents(user_areas_ary: region_params[:country_ary], specimen_location: specimen.location)
+            return true if matches_country
 
         elsif region_params[:continent_ary] && !specimen.location.nil?
-            continent_of = get_continent_of_country_hash
-
-            continent_ary = region_params[:continent_ary]
-            continent_ary.each do |continent|
-                return true if continent_of[specimen.location] == continent
-            end
-
-            locations = specimen.location.split(', ')
-            locations.each do |loc|
-                continent_ary.each do |continent|
-                    return true if continent_of[loc] == continent
-                end
-            end
-
-            ## TODO:
-            ## NEXT:
-            ## add option to specify a country and a continent they are additive e.g 
-            ## Europe AND Georgia or Russia etc...
-
-            # continent_ary.each do |continent|
-            #     countries_by_continent = all_country_names_by_continent(continent)
-                
-            #     countries_by_continent.bsearch {|country| x <=>  4 }
-            #     continent_of
-            #     return true if specimen.location.match?(continent)
-            # end
-
-
-            # all_country_names_by_continent
+            matches_continent = _locality_matches_user_countries_or_continents(user_areas_ary: region_params[:continent_ary], specimen_location: specimen.location)
+            return true if matches_continent
+        
+        elsif region_params[:biogeo_ary] && !specimen.lat.nil? && !specimen.long.nil?
 
         end
 

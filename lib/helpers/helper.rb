@@ -278,8 +278,8 @@ class Helper
 
     def self.check_valid_names(valid_names, names)
 			invalid_names = []
-			names.each { |e| valid_names.include?(e) ? nil : invalid_names.push(e) }
-
+			# names.each { |e| valid_names.include?(e) ? nil : invalid_names.push(e) }
+      names.each { |e| valid_names.find { |v| /#{e}/ =~ v } ? nil : invalid_names.push(e) } 
 			if invalid_names.any?
 				joined_invalid_names = invalid_names.join(' ')
 				abort "Please only use valid names. The following names are invalid: #{joined_invalid_names}, use region -h to see available options"

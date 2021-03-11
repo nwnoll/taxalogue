@@ -177,7 +177,6 @@ loop do
 	subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
 end
 
-
 fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 fm.create_dir
 # BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy]).run
