@@ -9,7 +9,7 @@ class OutputFormat::Tsv
         @@count += 1
         
         tsv.puts _tsv_header if @@count ==  1
-        tsv.puts _tsv_row(identifier: data[:identifier], lineage_data: taxonomic_info, sequence: data[:sequence])
+        tsv.puts _tsv_row(identifier: data[:identifier], lineage_data: taxonomic_info, sequence: data[:sequence], loc: data[:location], lat: data[:latitude], long: data[:longitude])
     end
 
     def self.rewind

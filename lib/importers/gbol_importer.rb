@@ -43,6 +43,8 @@ class GbolImporter
 
       specimen = _get_specimen(row: row)
       next if specimen.nil? || specimen.sequence.nil? || specimen.sequence.empty?
+      
+      next unless specimen_is_from_area(specimen: specimen, region_params: region_params) if region_params.any?
 
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
@@ -51,92 +53,10 @@ class GbolImporter
     fasta           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_fast_#{fast_run}_output.fas", OutputFormat::Fasta)
     comparison_file = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_fast_#{fast_run}_comparison.tsv",   OutputFormat::Comparison)
     
-
-    count = 0
     specimens_of_taxon.keys.each do |taxon_name|
-      count += 1
-      # break if count == 250
       nomial              = specimens_of_taxon[taxon_name][:nomial]
       first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
       specimen = specimens_of_taxon[taxon_name][:obj]
-      
-      puts specimen.location
-      puts specimen_is_from_area(specimen: specimen, region_params: region_params) if region_params
-      puts
-      next
-
-      ## NEXT implement location and region specific databases
-      puts "loc: #{specimen.location}"
-      # puts "lat: #{specimen.lat}"
-      # puts "long: #{specimen.long}"
-
-
-      if specimen.lat && specimen.long
-        specimen_locality = Geokit::LatLng.new(specimen.lat, specimen.long)
-        polly = $polygons_of['Western European broadleaf forests'].first
-        pollies = $areas_of['Western European broadleaf forests']
-        pollies = $areas_of['PA']
-        # puts pollies.size
-        # pollies.each do |polygon|
-        #   if polygon.contains?(specimen_locality)
-        #     puts "region: Western European broadleaf forests"
-        #     puts "region: Palearctic"
-        #     next 
-        #   end
-        # end
-
-        $areas_of.each do |region, areas|
-          areas.each do |area|
-            if area.contains?(specimen_locality)
-              puts region
-            end
-          end
-        end
-        # if polly.contains?(specimen_locality)
-        #   puts "region: Western European broadleaf forests"
-        #   next
-        # end
-        next
-        # next unless specimen.lat.to_f.positive? && specimen.long.to_f.positive?
-        # $splitted_areas_of[:east][:north].each do |region_name, areas|
-        #   rect_polygon = areas.first
-        #   next unless rect_polygon.contains?(specimen_locality)
-        #   is_in_area = false
-        #   areas.drop(1).each do |area|
-        #     is_in_area = area.contains?(specimen_locality)
-        #     break if is_in_area
-        #   end
-
-        #   if is_in_area
-        #     # puts "region: #{region_name}"
-        #     break
-        #   end
-        # end
-      end
-
-      # if specimen.lat && specimen.long
-      #   $areas_of.each do |region_name, areas|
-      #     is_in_area = false
-      #     areas.each do |area|
-      #       is_in_area = area.contains?(Geokit::LatLng.new(specimen.lat, specimen.long))
-      #       break if is_in_area
-      #     end
-      #     puts "region: #{region_name}" and break if is_in_area
-      #   end
-      # end
-
-      # if specimen.location
-      #   locations = specimen.location.split(', ')
-      #   locations.each do |loc|
-      #     c = LocationSearch.by_name(loc)
-      #     # p c.nil? ? next : c
-      #   end
-      # end
-      # puts
-      # puts
-      ## europe LocationSearch.by_region('Europe')
-      ## europe.each { |o| p o.name }
-      next
 
       taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
       

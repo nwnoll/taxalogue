@@ -13,8 +13,10 @@ params = {
 	region: Hash.new
 }
 
-fada_regions_of = nil
-eco_zones_of = nil
+$fada_regions_of 	= nil
+$eco_zones_of 		= nil
+$continent_of 		= nil
+
 CONFIG_FILE = 'default_config.yaml'
 
 if File.exists? CONFIG_FILE
@@ -127,12 +129,15 @@ subcommands = {
 		opts.set_summary_width 50
 
 		if File.file?('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp')
-			eco_zones_of = get_areas_of_shapefiles(file_name: '/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', attr_name: 'ECO_NAME')
+			$eco_zones_of = get_areas_of_shapefiles(file_name: '/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', attr_name: 'ECO_NAME')
 		end
 
 		if File.file?('/home/nnoll/bioinformatics/fadaregions/fadaregions.shp')
-			fada_regions_of = get_areas_of_shapefiles(file_name: '/home/nnoll/bioinformatics/fadaregions/fadaregions.shp', attr_name: 'name')
+			$fada_regions_of = get_areas_of_shapefiles(file_name: '/home/nnoll/bioinformatics/fadaregions/fadaregions.shp', attr_name: 'name')
 		end
+
+        $continent_of = get_continent_of_country_hash
+
 
 		opts.banner = "Usage: region [options]"
 		opts.on('-c COUNTRY', String, '--country', 'create a database consisting of sequences only from this country or a set of countries: if you want to specifiy multiple countries please use semicolons without spaces and quotes e.g. "Germany;France;Belgium"') do |opt|
@@ -152,21 +157,21 @@ subcommands = {
 		end
 		opts.on('-K', '--available_continents', 'lists all available continents') { Helper.print_all_continents; exit }
 		opts.on('-b BIOGEOGRAPHIC_REALM', String,'--biogeographic_realm', 'create a database consisting of sequences only from this biogegraphic realm or a set of realms: if you want to specifiy a realm please use quotes e.g. "Oriental (Indomalaya)". For multiple realms pleas use quotes and semicolons without spaces e.g."Oriental (Indomalaya);Afrotropical"') do |opt|
-			valid_names = fada_regions_of.keys.sort
+			valid_names = $fada_regions_of.keys.sort
 			opt_ary = opt.split(';')
 			Helper.check_valid_names(valid_names, opt_ary)
 			params[:region][:biogeo_ary] = opt_ary
 			opt
 		end
-		opts.on('-B', '--available_biogeographic_realms', 'lists all available biogeographic realms') { Helper.print_all_regions(fada_regions_of.keys.sort); exit }
+		opts.on('-B', '--available_biogeographic_realms', 'lists all available biogeographic realms') { Helper.print_all_regions($fada_regions_of.keys.sort); exit }
 		opts.on('-e TERRESTRIAL_ECOREGION', String,'--terrestrial_ecoregion', 'create a database consisting of sequences only from this terrestrial ecoregion or a set of regions: if you want to specifiy a region please use quotes e.g. "North Atlantic moist mixed forests". For multiple realms pleas use quotes and semicolons without spaces e.g."North Atlantic moist mixed forests;Highveld grasslands"') do |opt|
-			valid_names = eco_zones_of.keys.sort
+			valid_names = $eco_zones_of.keys.sort
 			opt_ary = opt.split(';')
 			Helper.check_valid_names(valid_names, opt_ary)
 			params[:region][:terreco_ary] = opt_ary
 			opt
 		end
-		opts.on('-E', '--available_terrestrial_ecoregion', 'lists all available terrestrial ecoregions') { Helper.print_all_regions(eco_zones_of.keys.sort); exit }
+		opts.on('-E', '--available_terrestrial_ecoregion', 'lists all available terrestrial ecoregions') { Helper.print_all_regions($eco_zones_of.keys.sort); exit }
 	end
  }
 
