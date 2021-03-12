@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 class NcbiGenbankJob
-  attr_reader :taxon, :markers, :taxonomy, :result_file_manager, :use_http, :filter_params, :taxonomy_params
+  attr_reader :taxon, :markers, :taxonomy, :result_file_manager, :use_http, :filter_params, :taxonomy_params, :region_params
 
   FILE_DESCRIPTION_PART = 10
 
-  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, use_http: false, filter_params: nil, taxonomy_params:)
+  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, use_http: false, filter_params: nil, taxonomy_params:, region_params: nil)
     @taxon                = taxon
     @markers              = markers
     @taxonomy             = taxonomy
@@ -13,12 +13,13 @@ class NcbiGenbankJob
     @use_http             = use_http
     @filter_params        = filter_params
     @taxonomy_params      = taxonomy_params
+    @region_params        = region_params
   end
 
   def run
     # _write_result_files(fmanagers: fmanagers)
     download_file_managers = download_files
-    exit
+    # exit
     _classify_downloads(download_file_managers: download_file_managers)
 
     return result_file_manager
@@ -42,8 +43,8 @@ class NcbiGenbankJob
       ## This might be the case for other institutions too
       ## if ftp is used then I might catch that exception and try to download via http
       
-      downloader          = config.downloader.new(config: config)
-      downloader.run
+      # downloader          = config.downloader.new(config: config)
+      # downloader.run
 
       files               = file_manager.files_of(dir: file_manager.dir_path)
       did_download_fail   = false
@@ -110,7 +111,7 @@ class NcbiGenbankJob
       files.each do |file|
         next unless File.file?(file)
 
-	      classifier = NcbiGenbankImporter.new(fast_run: true, markers: markers, file_name: file, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, taxonomy_params: taxonomy_params)
+	      classifier = NcbiGenbankImporter.new(fast_run: true, markers: markers, file_name: file, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, taxonomy_params: taxonomy_params, region_params: region_params)
         classifier.run ## result_file_manager creates new files and will push those into internal array
       end
     end

@@ -204,8 +204,6 @@ module GeoUtils
                 polygons = $eco_zones_of[area]
                 polygons.each do |polygon|
                     if polygon.contains?(specimen_locality)
-                        puts area
-                        puts polygon
                         return true
                     end
                 end
@@ -213,8 +211,6 @@ module GeoUtils
                 polygons = $fada_regions_of[area]
                 polygons.each do |polygon|
                     if polygon.contains?(specimen_locality)
-                        puts area
-                        puts polygon
                         return true
                     end
                 end
