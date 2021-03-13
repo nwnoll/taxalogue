@@ -285,4 +285,26 @@ class Helper
 				abort "Please only use valid names. The following names are invalid: #{joined_invalid_names}, use region -h to see available options"
 			end
     end
+
+    def self.get_shape_fada_regions
+      address = 'http://geo.vliz.be/geoserver/wfs?request=getfeature&service=wfs&version=1.0.0&typename=MarineRegions:fadaregions&outputformat=SHAPE-ZIP'
+      destination_dir = Pathname.new('fm_data/SHAPEFILES/fada_regions/')
+      FileUtils.mkdir_p(destination_dir)
+      destination_file = destination_dir + Pathname.new('fada_regions.zip')
+      downloader = HttpDownloader2.new(address: address, destination: destination_file)
+      downloader.run
+
+      extract_zip(name: destination_file, destination: destination_dir, files_to_extract: ['fadaregions.shp', 'fadaregions.dbf'], retain_hierarchy: false)
+    end
+
+    def self.get_shape_terreco_regions
+      address = 'http://assets.worldwildlife.org/publications/15/files/original/official_teow.zip'
+      destination_dir = Pathname.new('fm_data/SHAPEFILES/terreco_regions/')
+      FileUtils.mkdir_p(destination_dir)
+      destination_file = destination_dir + Pathname.new('terreco_regions.zip')
+      downloader = HttpDownloader2.new(address: address, destination: destination_file)
+      downloader.run
+
+      extract_zip(name: destination_file, destination: destination_dir, files_to_extract: ['official/wwf_terr_ecos.shp', 'official/wwf_terr_ecos.dbf'], retain_hierarchy: false)
+    end
 end
