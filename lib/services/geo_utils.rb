@@ -19,8 +19,9 @@ module GeoUtils
         # dbf = SHP::DBF.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.dbf', 'rb')
         # shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/CMEC_updated_wallace_regions/realms.shp', 'rb')
         # dbf = SHP::DBF.open('/home/nnoll/bioinformatics/CMEC_updated_wallace_regions/realms.dbf', 'rb')   
-        shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/fadaregions/fadaregions.shp', 'rb')
-        dbf = SHP::DBF.open('/home/nnoll/bioinformatics/fadaregions/fadaregions.dbf', 'rb')   
+        # shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/fadaregions/fadaregions.shp', 'rb')
+        # dbf = SHP::DBF.open('/home/nnoll/bioinformatics/fadaregions/fadaregions.dbf', 'rb')   
+
 
         pathname = Pathname.new(file_name)
         shp = SHP::Shapefile.open(pathname.to_s, 'rb')
@@ -233,6 +234,21 @@ module GeoUtils
         elsif region_params[:continent_ary] && _location_is_present?(specimen.location)
             return _locality_matches_user_countries_or_continents(user_areas_ary: region_params[:continent_ary], specimen_location: specimen.location)
         
+        elsif region_params[:biogeo_ary] == :skip && region_params[:terreco_ary] == :skip
+            return true
+
+        elsif region_params[:biogeo_ary] == :skip && region_params[:terreco_ary].nil?
+            return true
+
+        elsif region_params[:terreco_ary] == :skip && region_params[:biogeo_ary].nil?
+            return true
+
+        elsif region_params[:biogeo_ary] == :skip && region_params[:terreco_ary] && _lat_is_present?(specimen.lat) && _long_is_present?(specimen.long)
+            return _coords_match_user_shapefiles(user_areas_ary: region_params[:terreco_ary], lat: specimen.lat, long: specimen.long)
+            
+        elsif region_params[:terreco_ary] == :skip && region_params[:biogeo_ary] && _lat_is_present?(specimen.lat) && _long_is_present?(specimen.long)
+            return _coords_match_user_shapefiles(user_areas_ary: region_params[:biogeo_ary], lat: specimen.lat, long: specimen.long)
+ 
         elsif region_params[:biogeo_ary] && region_params[:terreco_ary] && _lat_is_present?(specimen.lat) && _long_is_present?(specimen.long)
             matches_fada    =  _coords_match_user_shapefiles(user_areas_ary: region_params[:biogeo_ary], lat: specimen.lat, long: specimen.long)
             matches_terreco =  _coords_match_user_shapefiles(user_areas_ary: region_params[:terreco_ary], lat:specimen.lat, long: specimen.long)
@@ -240,8 +256,6 @@ module GeoUtils
             return matches_fada || matches_terreco
 
         elsif region_params[:biogeo_ary] && _lat_is_present?(specimen.lat) && _long_is_present?(specimen.long)
-            # byebug if specimen.lat == '9.84936'# 50.4513
-            
             return _coords_match_user_shapefiles(user_areas_ary: region_params[:biogeo_ary], lat: specimen.lat, long: specimen.long)
         
         elsif region_params[:terreco_ary] && _lat_is_present?(specimen.lat) && _long_is_present?(specimen.long)
