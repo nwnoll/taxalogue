@@ -2,10 +2,10 @@
 
 class BoldImporter
   include StringFormatting
-  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :markers, :regexes_for_markers, :taxonomy_params
+  attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :markers, :regexes_for_markers, :taxonomy_params, :region_params
 
   @@index_by_column_name = nil
-  def initialize(file_name:, query_taxon_object:, fast_run: true, file_manager:, filter_params: nil, markers:, taxonomy_params:)
+  def initialize(file_name:, query_taxon_object:, fast_run: true, file_manager:, filter_params: nil, markers:, taxonomy_params:, region_params: nil)
     @file_name            = file_name
     @query_taxon_object   = query_taxon_object
     @query_taxon_name     = query_taxon_object.canonical_name
@@ -16,12 +16,13 @@ class BoldImporter
     @file_manager         = file_manager
     @filter_params        = filter_params
     @taxonomy_params      = taxonomy_params
+    @region_params        = region_params
   end
 
   def run
-    specimens_of_taxon    = Hash.new { |hash, key| hash[key] = {} }
+    specimens_of_taxon = Hash.new { |hash, key| hash[key] = {} }
     
-    file                  = File.file?(file_name) ? File.open(file_name, 'r') : nil
+    file = File.file?(file_name) ? File.open(file_name, 'r') : nil
     abort "#{file_name} is not a valid file" if file.nil?
     
     @@index_by_column_name = Helper.generate_index_by_column_name(file: file, separator: "\t")
@@ -33,6 +34,7 @@ class BoldImporter
 
       specimen = _get_specimen(row: scrubbed_row)
       next if specimen.nil? || specimen.sequence.nil? || specimen.sequence.empty?
+      next unless specimen_is_from_area(specimen: specimen, region_params: region_params) if region_params.any?
 
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
@@ -43,6 +45,8 @@ class BoldImporter
 
     specimens_of_taxon.keys.each do |taxon_name|
       nomial              = specimens_of_taxon[taxon_name][:nomial]
+      next unless nomial
+
       first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
       taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
       
@@ -51,7 +55,6 @@ class BoldImporter
 
       # Synonym List
       syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [Helper.get_source_db(taxonomy_params)])
-      pp syn
       OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms[Helper.get_source_db(taxonomy_params)], used_taxonomy: Helper.get_source_db(taxonomy_params) )
       # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
       
@@ -72,8 +75,13 @@ class BoldImporter
     identifier                    = row[@@index_by_column_name["processid"]]
     source_taxon_name             = SpecimensOfTaxon.find_lowest_ranking_taxon(row, @@index_by_column_name)
     sequence                      = row[@@index_by_column_name['nucleotides']]
+    return nil if sequence.nil? || sequence.blank?
+    
     sequence                      = Helper.filter_seq(sequence, filter_params)
     marker                        = row[@@index_by_column_name["markercode"]]
+    location                      = row[@@index_by_column_name["country"]]
+    lat                           = row[@@index_by_column_name["lat"]]
+    long                          = row[@@index_by_column_name["lon"]]
     
     return nil unless _belongs_to_correct_marker?(marker)
     return nil if sequence.nil?
@@ -86,6 +94,9 @@ class BoldImporter
     specimen.source_taxon_name    = source_taxon_name
     specimen.taxon_name           = nomial.name
     specimen.nomial               = nomial
+    specimen.location             = location
+    specimen.lat                  = lat
+    specimen.long                 = long
     specimen.first_specimen_info  = row
     
     return specimen

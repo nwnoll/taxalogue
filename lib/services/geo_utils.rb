@@ -221,32 +221,46 @@ module GeoUtils
     end
 
     def specimen_is_from_area(specimen:, region_params:)
-        if region_params[:country_ary] && region_params[:continent_ary] && !specimen.location.nil?
+        if region_params[:country_ary] && region_params[:continent_ary] && _location_is_present?(specimen.location)
             matches_country = _locality_matches_user_countries_or_continents(user_areas_ary: region_params[:country_ary], specimen_location: specimen.location)
             matches_continent = _locality_matches_user_countries_or_continents(user_areas_ary: region_params[:continent_ary], specimen_location: specimen.location)
             
             return matches_country || matches_continent
 
-        elsif region_params[:country_ary] && !specimen.location.nil?
+        elsif region_params[:country_ary] && _location_is_present?(specimen.location)
             return _locality_matches_user_countries_or_continents(user_areas_ary: region_params[:country_ary], specimen_location: specimen.location)
 
-        elsif region_params[:continent_ary] && !specimen.location.nil?
+        elsif region_params[:continent_ary] && _location_is_present?(specimen.location)
             return _locality_matches_user_countries_or_continents(user_areas_ary: region_params[:continent_ary], specimen_location: specimen.location)
         
-        elsif region_params[:biogeo_ary] && region_params[:terreco_ary] && !specimen.lat.nil? && !specimen.long.nil?
+        elsif region_params[:biogeo_ary] && region_params[:terreco_ary] && _lat_is_present?(specimen.lat) && _long_is_present?(specimen.long)
             matches_fada    =  _coords_match_user_shapefiles(user_areas_ary: region_params[:biogeo_ary], lat: specimen.lat, long: specimen.long)
             matches_terreco =  _coords_match_user_shapefiles(user_areas_ary: region_params[:terreco_ary], lat:specimen.lat, long: specimen.long)
         
             return matches_fada || matches_terreco
 
-        elsif region_params[:biogeo_ary] && !specimen.lat.nil? && !specimen.long.nil?
+        elsif region_params[:biogeo_ary] && _lat_is_present?(specimen.lat) && _long_is_present?(specimen.long)
+            # byebug if specimen.lat == '9.84936'# 50.4513
+            
             return _coords_match_user_shapefiles(user_areas_ary: region_params[:biogeo_ary], lat: specimen.lat, long: specimen.long)
         
-        elsif region_params[:terreco_ary] && !specimen.lat.nil? && !specimen.long.nil?
+        elsif region_params[:terreco_ary] && _lat_is_present?(specimen.lat) && _long_is_present?(specimen.long)
             return _coords_match_user_shapefiles(user_areas_ary: region_params[:terreco_ary], lat: specimen.lat, long: specimen.long)
         
         end
 
         return false
+    end
+
+    def _lat_is_present?(lat)
+        !lat.nil? && !lat.blank?
+    end
+
+    def _long_is_present?(long)
+        !long.nil? && !long.blank?
+    end
+
+    def _location_is_present?(loc)
+        !loc.nil? && !loc.blank?
     end
 end

@@ -55,9 +55,9 @@ class GbolImporter
     
     specimens_of_taxon.keys.each do |taxon_name|
       nomial              = specimens_of_taxon[taxon_name][:nomial]
-      first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
-      specimen = specimens_of_taxon[taxon_name][:obj]
+      next unless nomial
 
+      first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
       taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
       
       next unless taxonomic_info

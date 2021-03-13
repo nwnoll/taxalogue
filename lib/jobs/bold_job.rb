@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 class BoldJob
-  attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params, :try_synonyms, :taxonomy_params
+  attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params, :try_synonyms, :taxonomy_params, :region_params
 
   HEADER_LENGTH = 1
 
-  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil, try_synonyms: false, taxonomy_params:)
+  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil, try_synonyms: false, taxonomy_params:, region_params: nil)
     @taxon                = taxon
     @taxon_name           = taxon.canonical_name
     @markers              = markers
@@ -14,6 +14,7 @@ class BoldJob
     @filter_params        = filter_params
     @try_synonyms         = try_synonyms
     @taxonomy_params      = taxonomy_params
+    @region_params        = region_params
 
     @pending = Pastel.new.white.on_yellow('pending')
     @failure = Pastel.new.white.on_red('failure')
@@ -24,9 +25,10 @@ class BoldJob
   end
 
   def run
-    download_file_managers = download_files
+    # download_file_managers = download_files
 
-    _classify_downloads(download_file_managers: download_file_managers)
+    # _classify_downloads(download_file_managers: download_file_managers)
+    _classify_downloads(download_file_managers: nil)
     
     return result_file_manager
     # _write_result_files(root_node: root_node, fmanagers: fmanagers)
@@ -232,13 +234,16 @@ class BoldJob
   end
 
   def _classify_downloads(download_file_managers:)
-    download_file_managers.each do |download_file_manager|
-      next unless download_file_manager.status == 'success'
-      next unless File.file?(download_file_manager.file_path)
+    bold_classifier   = BoldImporter.new(fast_run: false, file_name: Pathname.new('/home/nnoll/phd/trait_db/notes/insecta_germany_bold.txt'), query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, markers: markers, taxonomy_params: taxonomy_params, region_params: region_params)
+    bold_classifier.run ## result_file_manager creates new files and will push those into internal array
+    
+    # download_file_managers.each do |download_file_manager|
+    #   next unless download_file_manager.status == 'success'
+    #   next unless File.file?(download_file_manager.file_path)
 
-	    bold_classifier   = BoldImporter.new(fast_run: false, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, markers: markers, taxonomy_params: taxonomy_params)
-      bold_classifier.run ## result_file_manager creates new files and will push those into internal array
-    end
+	  #   bold_classifier   = BoldImporter.new(fast_run: false, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, markers: markers, taxonomy_params: taxonomy_params)
+    #   bold_classifier.run ## result_file_manager creates new files and will push those into internal array
+    # end
   end
 
   def _merge_results
