@@ -35,7 +35,6 @@ class BoldImporter
       specimen = _get_specimen(row: scrubbed_row)
       next if specimen.nil? || specimen.sequence.nil? || specimen.sequence.empty?
       next unless specimen_is_from_area(specimen: specimen, region_params: region_params) if region_params.any?
-
       SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
     end
 
