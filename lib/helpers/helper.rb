@@ -553,4 +553,32 @@ class Helper
 
     return params
   end
+
+
+  def self.get_inv_contaminants(file_manager, marker_objects)
+    # contaminants_dir_path = file_manager.dir_path + 'contaminants/'
+    contaminants_dir_path = Pathname.new('fm_data/NCBIGENBANK/inv_contaminants/')
+    FileUtils.mkdir_p(contaminants_dir_path)
+    
+    wolbachia_contaminants_file_path = contaminants_dir_path + 'Wolbachia.gb'
+    
+    ncbi_api = NcbiApi.new(markers: marker_objects, taxon_name: 'Wolbachia', max_seq: 100, file_name: wolbachia_contaminants_file_path)
+    ncbi_api.efetch
+    
+    human_contaminants_file_path = contaminants_dir_path + 'Homo_sapiens.gb'
+    
+    ncbi_api = NcbiApi.new(markers: marker_objects, taxon_name: 'Homo sapiens', max_seq: 10, file_name: human_contaminants_file_path)
+    ncbi_api.efetch
+
+    result_contaminants_dir_path = file_manager.dir_path + 'contaminants/'
+    FileUtils.mkdir_p(result_contaminants_dir_path)
+    
+    wolbachia_result_contaminants_file_path = result_contaminants_dir_path + 'Wolbachia_output.out'
+    ncbi_genbank_extractor = NcbiGenbankExtractor.new(file_name: wolbachia_contaminants_file_path, taxon_name: 'Wolbachia', markers: marker_objects, result_file_name: wolbachia_result_contaminants_file_path)
+    ncbi_genbank_extractor.run
+
+    human_result_contaminants_file_path = result_contaminants_dir_path + 'Homo_sapiens_output.out'
+    ncbi_genbank_extractor = NcbiGenbankExtractor.new(file_name: human_contaminants_file_path, taxon_name: 'Homo sapiens', markers: marker_objects, result_file_name: human_result_contaminants_file_path)
+    ncbi_genbank_extractor.run
+  end
 end

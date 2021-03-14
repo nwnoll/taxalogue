@@ -222,10 +222,34 @@ end
 ## if taxonomy was chosen by user, it needs to be updated
 params = Helper.assign_taxon_info_to_params(params, params[:taxon])
 
-exit
+
+
+# ncbi_api = NcbiApi.new(markers: params[:marker_objects], taxon_name: 'Wolbachia', max_seq: 100)
+# ncbi_api.efetch
+
+# ncbi_api = NcbiApi.new(markers: params[:marker_objects], taxon_name: 'Homo sapiens', max_seq: 10)
+# ncbi_api.efetch
+
+# exit
 
 fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 fm.create_dir
+
+# contaminants_dir_path = fm.dir_path + 'contaminants/'
+# FileUtils.mkdir_p(contaminants_dir_path)
+
+# contaminants_file_path = contaminants_dir_path + 'Wolbachia.gb'
+
+# ncbi_api = NcbiApi.new(markers: params[:marker_objects], taxon_name: 'Wolbachia', max_seq: 100, file_name: contaminants_file_path)
+# ncbi_api.efetch
+
+# contaminants_file_path = contaminants_dir_path + 'Homo_sapiens.gb'
+
+# ncbi_api = NcbiApi.new(markers: params[:marker_objects], taxon_name: 'Homo sapiens', max_seq: 10, file_name: contaminants_file_path)
+# ncbi_api.efetch
+
+Helper.get_inv_contaminants(fm, params[:marker_objects])
+
 BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region]).run
 # NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region]).run
 # GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region]).run

@@ -2,23 +2,28 @@
 
 require 'resolv-replace'
 class NcbiApi
-      attr_reader :markers, :taxon_name
+      attr_reader :markers, :taxon_name, :max_seq, :file_name
 
       SearchResult = Struct.new(:web, :key, :count)
 
-      def initialize(markers:, taxon_name:)
+      def initialize(markers:, taxon_name:, max_seq: nil, file_name:)
             @markers    = markers
             @taxon_name = taxon_name
+            @max_seq    = max_seq
+            @file_name   = file_name
       end
 
       def efetch
-            ## use Filestructure
-            file = File.open('results/efetch.test2', 'w')
-            retmax            = 500
+            # out_file_name = taxon_name.gsub(' ', '_')
+            # file = File.open("contaminants_#{out_file_name}.gb", 'w')
+            file = File.open(file_name, 'w')
+            retmax            = max_seq < 500 ? max_seq : 500
             retstart          = 0
             esearch_result    = _run_esearch
 
-            until retstart > esearch_result.count
+            stop_at = max_seq ? max_seq : esearch_result.count
+            
+            until retstart >= stop_at
                   url         = "#{_base}efetch.fcgi?db=nucleotide&WebEnv=#{esearch_result.web}&query_key=#{esearch_result.key}&retstart=#{retstart}&retmax=#{retmax}&rettype=gb&retmode=text"
                   uri         = URI(url)
                   # use HTTP downloader

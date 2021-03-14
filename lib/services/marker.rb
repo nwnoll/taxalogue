@@ -57,7 +57,7 @@ class Marker
     end
 
     def _ncbi_classes
-        [NcbiGenbankImporter, NcbiGenbankJob, NcbiGenbankConfig, NcbiApi]
+        [NcbiGenbankImporter, NcbiGenbankJob, NcbiGenbankConfig, NcbiApi, NcbiGenbankExtractor]
     end
 
     def _gbol_classes

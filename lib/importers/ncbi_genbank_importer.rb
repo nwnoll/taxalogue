@@ -26,18 +26,12 @@ class NcbiGenbankImporter
     @region_params        = region_params
   end
 
-  # /country="Russia"
-  # /lat_lon="50.20821 N 84.55408 E"
-
-
-
   def run
     ## TODO: change to one file per run or both
     file_names = []
     file_names.push(file_name)
 
     file_names.each do |file|
-      next unless file.to_s.match(/gbinv159/)
       file_name_match             = file.to_s.match(/gb\w+\d+/)
       # file_name_match             = file.to_s.match(/gbinv159/)
       base_name                   = file_name_match[0]
