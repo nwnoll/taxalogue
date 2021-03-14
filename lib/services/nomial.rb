@@ -231,7 +231,7 @@ class Monomial
   def _ncbi_taxonomy_object(records:)
     return nil if records.nil? || records.empty?
 
-    records = records.select { |record| NcbiTaxonomy.allowed_ranks.include?(record.taxon_rank) }
+    records = records.select { |record| NcbiTaxonomy.possible_ranks.include?(record.taxon_rank) }
 
     return records.first
   end

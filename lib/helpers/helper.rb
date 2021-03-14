@@ -505,7 +505,8 @@ class Helper
 
   def self.choose_ncbi_record(taxon_name)
     records = get_ncbi_records(taxon_name)
-		records = records.select { |record| NcbiTaxonomy.allowed_ranks.include?(record.taxon_rank) }
+    return nil if records.nil?
+		records = records.select { |record| NcbiTaxonomy.possible_ranks.include?(record.taxon_rank) }
 		
     return records.first
   end

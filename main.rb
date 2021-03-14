@@ -124,7 +124,6 @@ subcommands = {
 
 			opt
 		end
-			params = Helper.assign_taxon_info_to_params(params, params[:taxon])
 		opts.on('-n', '--ncbi', 'Taxon information is mapped to NCBI Taxonomy') do |opt|
 			params[:taxonomy][:gbif_backbone] = false
 			params[:taxonomy][:gbif] = false
@@ -212,6 +211,8 @@ subcommands = {
 	end
  }
 
+global.order!
+
 loop do 
 	break if ARGV.empty?
 	command = ARGV.shift.to_sym
@@ -219,8 +220,31 @@ loop do
 end
 
 ## if taxonomy was chosen by user, it needs to be updated
+
+# pp params
+
+# byebug
+
+
+ranked_lineages = NcbiRankedLineage.where(phylum: 'Arthropoda', classis: "", ordo: "", familia: "", genus: "", species: "").where.not("name LIKE ? OR name LIKE ? OR name LIKE ? OR name LIKE ?", '%sp.%', '%unclassified%', '%environmental%', '%uncultured%')
+
+ranked_lineages.each do |ranked_lineage|
+
+	tax_id = ranked_lineage.tax_id
+	node_record = NcbiNode.find_by(tax_id: tax_id)
+
+	if node_record.rank == 'class'
+		puts ranked_lineage.name
+	end
+	# puts node_record.rank
+	# puts
+
+end
+
+
 params = Helper.assign_taxon_info_to_params(params, params[:taxon])
 
+pp params
 exit
 # # Helper.download_fada_regions
 # Helper.get_shape_terreco_regions
@@ -670,7 +694,7 @@ end
 
 
 
-abort 'Please use only one Taxonomy mapping strategy e.g. bundle exec ruby main.rb taxonomy -B' if (params[:taxonomy].keys.reject { |o| o == :retain || o == :synonyms_allowed }.size) > 1
+# abort 'Please use only one Taxonomy mapping strategy e.g. bundle exec ruby main.rb taxonomy -B' if (params[:taxonomy].keys.reject { |o| o == :retain || o == :synonyms_allowed }.size) > 1
 ## TODO: same for other options...
 
 
