@@ -68,7 +68,7 @@ class NcbiGenbankJob
   end
 
   def _groups
-    return division_codes_for(animal_divisions) if taxon.canonical_name  == 'Animalia'
+    return division_codes_for(animal_divisions) if taxon.canonical_name  == 'Animalia' || taxon.canonical_name  == 'Metazoa'
     return division_codes_for(division_id)
   end
 

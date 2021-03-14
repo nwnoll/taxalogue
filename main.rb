@@ -23,7 +23,8 @@ if File.exists? CONFIG_FILE
 	config_options = YAML.load_file(CONFIG_FILE)
 	params.merge!(config_options)
 
-	taxon_object 			= GbifTaxonomy.find_by_canonical_name(params[:taxon])
+	taxon_object = Helper.get_query_taxon_record(params)
+	
 	if taxon_object.nil?
 		abort "Cannot find default Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species\nMaybe the Taxonomy Database is not properly setup, run the program with --setup_taxonomy to fix the issue."
 	end
@@ -51,18 +52,9 @@ global = OptionParser.new do |opts|
 	opts.on('-t TAXON', String, '--taxon', 'Choose a taxon to build your database, if you want a database for a species, put "" around the option: e.g.: -t "Apis mellifera". default: Arthropoda') do |taxon_name|
 		abort 'Taxon is extinct, please choose another Taxon' if Helper.is_extinct?(taxon_name)
 
-		## TODO: should be changed
-		taxon_objects 	= GbifTaxonomy.where(canonical_name: taxon_name)
-		taxon_objects 	= taxon_objects.select { |t| t.taxonomic_status == 'accepted' }
-		taxon_object 	= taxon_objects.first
-		####
+		params = Helper.assign_taxon_info_to_params(params, taxon_name)
+		params[:taxon] = taxon_name
 		
-		params[:taxon_object] = taxon_object
-		if taxon_object
-			params[:taxon_rank] = taxon_object.taxon_rank
-		else
-			abort 'Cannot find Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species'
-		end
 		taxon_name
 	end
 	
@@ -120,9 +112,25 @@ subcommands = {
 	end,
 	taxonomy: OptionParser.new do |opts|
 		opts.banner = "Usage: taxonomy [options]"
-		opts.on('-b', '--gbif', 'Taxon information is mapped to GBIF Taxonomy backbone + additional available datasets from the GBIF API')
-		opts.on('-B', '--gbif_backbone', 'Taxon information is mapped to GBIF Taxonomy backbone')
-		opts.on('-n', '--ncbi', 'Taxon information is mapped to NCBI Taxonomy')
+		opts.on('-b', '--gbif', 'Taxon information is mapped to GBIF Taxonomy backbone + additional available datasets from the GBIF API') do |opt|
+			params[:taxonomy][:gbif_backbone] = false
+			params[:taxonomy][:ncbi] = false
+
+			opt
+		end
+		opts.on('-B', '--gbif_backbone', 'Taxon information is mapped to GBIF Taxonomy backbone') do |opt|
+			params[:taxonomy][:gbif] = false
+			params[:taxonomy][:ncbi] = false
+
+			opt
+		end
+			params = Helper.assign_taxon_info_to_params(params, params[:taxon])
+		opts.on('-n', '--ncbi', 'Taxon information is mapped to NCBI Taxonomy') do |opt|
+			params[:taxonomy][:gbif_backbone] = false
+			params[:taxonomy][:gbif] = false
+
+			opt
+		end
 		opts.on('-u', '--unmapped', 'No mapping takes place, original specimen information is used but only standard ranks are used (e.g. no subfamilies)')
 		opts.on('-s', '--synonyms_allowed', 'Allows Taxon information of synonyms to be set to sequences')
 		opts.on('-r', '--retain', 'retains sequences for taxa that are not present in chosen taxonomy')
@@ -168,7 +176,7 @@ subcommands = {
 			params = Helper.check_biogeo(params)
 			
 			if params[:region][:biogeo_ary] == :skip
-+				exit
+				exit
 			else
 				Helper.print_all_regions($fada_regions_of.keys.sort)
 				exit
@@ -204,13 +212,16 @@ subcommands = {
 	end
  }
 
-global.order!
 loop do 
 	break if ARGV.empty?
 	command = ARGV.shift.to_sym
 	subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
 end
 
+## if taxonomy was chosen by user, it needs to be updated
+params = Helper.assign_taxon_info_to_params(params, params[:taxon])
+
+exit
 # # Helper.download_fada_regions
 # Helper.get_shape_terreco_regions
 # exit
@@ -306,17 +317,13 @@ shp.get_info[:number_of_entities].times do |i|
 
 	
 	eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['ECO_NAME'])
-	# puts eco_name
 
 	# if shp_obj.get_x_min.positive? && shp_obj.get_y_min.positive?
 	# 	$splitted_areas_of[:positive_x][:positive_y][eco_name]
 	# end
 
 	field_num_of.each do |field, num|
-		# puts "#{field}: #{dbf.read_string_attribute(shp_obj.get_shape_id, num)}"
 	end
-	# puts
-	# puts
 	# eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['name'])
 	# eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['Regions']) 
 	# eco_name = dbf.read_string_attribute(shp_obj.get_shape_id, field_num_of['fullupgmar'])
@@ -401,11 +408,9 @@ end
 
 	# byebug if name == 'Western European broadleaf forests'
 	# if rect_polygon.contains?(Geokit::LatLng.new(47.997791, 7.842609))
-	# 	puts name
 	# 	$areas_of[name].each do |area|
 	# 		if area.contains?(Geokit::LatLng.new(47.997791, 7.842609))
 	# 			print '  '
-	# 			puts name
 	# 		end
 	# 	end
 	# end
@@ -413,10 +418,8 @@ end
 	# shape_objects.each do |o| 
 	# 	o.get_x.size.times do |i|
 	# 		is_in_polygon = rect_polygon.contains?(Geokit::LatLng.new(o.get_x[i], o.get_y[i]))
-	# 		puts name if
 	# 	end
 	# end
-	# puts
 # end
 
 
@@ -447,7 +450,6 @@ end
 
 # $areas_of.each do |eco_name, area_polygons|
 # 	area_polygons.each do |polygon|
-# 		# puts eco_name if polygon.contains?(lat_lng)
 # 	end
 # end
 
@@ -517,7 +519,6 @@ end
 # module Geokit
 # 	class LatLng
 # 		def initialize(lng, lat)
-# 			puts "#{lng} #{lat}"
 # 			# p lat
 # 			# lng = lng.to_f if lng && !lng.is_a?(Numeric)
 # 			# lat = lat.to_f if lat && !lat.is_a?(Numeric)
@@ -598,9 +599,6 @@ end
 # points3 << Geokit::LatLng.new(-15.7535398925005, -144.636321651707)
 
 
-# puts
-# puts
-# puts
 # polygon3 = Geokit::Polygon.new(points3)
 # p polygon3.centroid
 # p polygon3.contains? polygon3.centroid
@@ -619,11 +617,7 @@ end
 # p polygon.contains? polygon.centroid #this should return true
 		
 # RGeo::Shapefile::Reader.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', assume_inner_follows_outer: true) do |file|
-# 	puts "File contains #{file.num_records} records."
 # 	file.each do |record|
-# 	  puts "Record number #{record.index}:"
-# 	  puts "  Geometry: #{record.geometry.as_text}"
-# 	  puts "  eco: #{record.attributes['ECO_NAME']}"
 # 	end
 # end
 
@@ -631,11 +625,7 @@ end
 
 
 # RGeo::Shapefile::Reader.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', assume_inner_follows_outer: true) do |file|
-# 	puts "File contains #{file.num_records} records."
 # 	file.each do |record|
-# 	  puts "Record number #{record.index}:"
-# 	  puts "  Geometry: #{record.geometry.as_text}"
-# 	  puts "  eco: #{record.attributes['ECO_NAME']}"
 	  
 	 
 # 		# polygons = record.geometry.as_text.tr('()MULTIPOLYGON', '').lstrip.split(', ')
@@ -653,8 +643,6 @@ end
 # 		#   record.geometry
 # 		end
 # 		multipolygon = Geokit::Polygon.new(points)
-# 		# puts multipolygon.contains? multipolygon.centroid
-# 		puts multipolygon.centroid
 
 # 		# exit
 # 	end
@@ -678,8 +666,6 @@ end
 # 	# factory = RGeo::Cartesian::Factory# (I'm using a cartesian factory because acording to my investigation, if I use a spheric one, this wount work)
 # 	# poly = factory.new().parse_wkt(poly_text)
 # 	# point1 = factory.new().parse_wkt("POINT (0 0)")# (this point does not belong to the polygon)
-# 	# puts poly.within?(point1)
-# 	# puts "First record geometry was: #{record.geometry.as_text}"
 # end
 
 
@@ -722,11 +708,9 @@ exit
 
 if params[:setup][:gbif_taxonomy]
 	if Helper.new_gbif_taxonomy_available?
-		puts "starting GBIF Taxonomy setup"
 		gbif_taxonomy_job = GbifTaxonomyJob.new
 		gbif_taxonomy_job.run
 	else
-		puts "GBIF Taxonomy is already up to date, do you want to replace it? [Y/n]"
 		user_input  		= gets.chomp
 		replace_taxonomy 	= (user_input =~ /y|yes/i) ? true : false
 
@@ -743,7 +727,6 @@ if params[:setup][:ncbi_taxonomy]
 		ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
 		ncbi_taxonomy_job.run
 	else
-		puts "NCBI Taxonomy is already up to date, do you want to replace it? [Y/n]"
 		user_input  		= gets.chomp
 		replace_taxonomy 	= (user_input =~ /y|yes/i) ? true : false
 
@@ -756,20 +739,14 @@ end
 
 
 if params[:setup][:taxonomies]
-	puts
-	puts "setting up taxonomies"
 	Helper.setup_taxonomy
 end
 
 if params[:setup][:terrestrial_ecoregions]
-	puts
-	puts "setting up terrestrial ecoregions"
 	Helper.get_shape_terreco_regions
 end
 
 if params[:setup][:biogeographic_realms]
-	puts
-	puts "setting up terrestrial ecoregions"
 	Helper.get_shape_fada_regions
 end
 
@@ -799,21 +776,17 @@ exit
 
 if params[:update][:all_taxonomies]
 	if Helper.new_gbif_taxonomy_available?
-		puts "new version of GBIF Taxonomy available, download starts soon."
 		
 		gbif_taxonomy_job = GbifTaxonomyJob.new
 		gbif_taxonomy_job.run
 	else
-		puts "your GBIF Taxonomy backbone is up to date."
 	end
 
 	if Helper.new_ncbi_taxonomy_available?
-		puts "new version of NCBI Taxonomy available, download starts soon."
 		
 		ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
 		ncbi_taxonomy_job.run
 	else
-		puts "your NCBI Taxonomy backbone is up to date."
 	end
 end
 

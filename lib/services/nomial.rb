@@ -171,7 +171,6 @@ class Monomial
   def unmapped_taxonomy(first_specimen_info:, importer:)
     # TODO: just exclude unmapped and retain? seems no direct value and every sequence gets catched atm 
     ## just exclude?
-    byebug
     ncbi_name_record = NcbiName.find_by(name: name)
     tax_id = ncbi_name_record.tax_id if ncbi_name_record
     ncbi_node_record = NcbiNode.find_by(tax_id: tax_id) if ncbi_name_record
@@ -300,7 +299,7 @@ class Monomial
         authority_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'authority' }.first
         authority = authority_record.nil? ? canonical_name : authority_record.name
 
-        taxonomic_status = _taxonomic_name(usable_ncbi_name_record)
+        taxonomic_status = _taxonomic_status(usable_ncbi_name_record)
 
         if ncbi_node_record.rank == 'species' || ncbi_node_record.rank == 'subspecies' || ncbi_node_record.rank == 'genus' 
           genus = usable_ncbi_name_record.name.split(' ')[0]
@@ -314,7 +313,7 @@ class Monomial
 
         genus = ncbi_node_record.rank == 'genus' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.genus
 
-        taxonomic_status = _taxonomic_name(scientifc_name_record) unless scientifc_name_record.nil?
+        taxonomic_status = _taxonomic_status(scientifc_name_record) unless scientifc_name_record.nil?
       end
 
       combined = _get_combined(ncbi_ranked_lineage_record, ncbi_node_record.rank)
@@ -445,7 +444,7 @@ class Monomial
     return combined
   end
 
-  def _taxonomic_name(record)
+  def _taxonomic_status(record)
     return if record.nil?
 
     if record.name_class == 'scientific name'
