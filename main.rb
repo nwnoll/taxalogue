@@ -220,35 +220,9 @@ loop do
 end
 
 ## if taxonomy was chosen by user, it needs to be updated
-
-# pp params
-
-# byebug
-
-
-ranked_lineages = NcbiRankedLineage.where(phylum: 'Arthropoda', classis: "", ordo: "", familia: "", genus: "", species: "").where.not("name LIKE ? OR name LIKE ? OR name LIKE ? OR name LIKE ?", '%sp.%', '%unclassified%', '%environmental%', '%uncultured%')
-
-ranked_lineages.each do |ranked_lineage|
-
-	tax_id = ranked_lineage.tax_id
-	node_record = NcbiNode.find_by(tax_id: tax_id)
-
-	if node_record.rank == 'class'
-		puts ranked_lineage.name
-	end
-	# puts node_record.rank
-	# puts
-
-end
-
-
 params = Helper.assign_taxon_info_to_params(params, params[:taxon])
 
-pp params
 exit
-# # Helper.download_fada_regions
-# Helper.get_shape_terreco_regions
-# exit
 
 fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 fm.create_dir

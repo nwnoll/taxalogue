@@ -76,8 +76,13 @@ class BoldJob
               file_manager.status = 'failure'
             end
           else
-            node.content[1] = @success
-            file_manager.status = 'success'
+            if File.open(file_manager.file_path, &:gets) =~ /<!DOCTYPE html>/
+              node.content[1] = @failure
+              file_manager.status = 'failure'
+            else
+              node.content[1] = @success
+              file_manager.status = 'success'
+            end
           end
         rescue Net::ReadTimeout
           node.content[1] = @failure
@@ -89,7 +94,7 @@ class BoldJob
       end
       
       break if reached_family_level
-      break if i == 2
+      # break if i == 2
 
       failed_nodes                      = root_node.find_all { |node| node.content.last == @failure && node.is_leaf? }
       failed_nodes.each do |failed_node|
@@ -100,8 +105,19 @@ class BoldJob
         index_of_lower_rank             = index_of_rank - 1
         reached_family_level            = true if index_of_lower_rank == 2
         taxon_rank_to_try               = GbifTaxonomy.possible_ranks[index_of_lower_rank]
-        taxa_records_and_names_to_try   = GbifTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
         
+        taxa_records_and_names_to_try = nil
+        if taxonomy_params[:gbif] || taxonomy_params[:gbif_backbone]
+          taxa_records_and_names_to_try   = GbifTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
+        
+        elsif taxonomy_params[:ncbi]
+          taxa_records_and_names_to_try   = NcbiTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
+        
+        else
+          taxa_records_and_names_to_try   = NcbiTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
+        
+        end
+
         next if taxa_records_and_names_to_try.nil?
         added_names = []
         taxa_records_and_names_to_try.each do |record_and_name|

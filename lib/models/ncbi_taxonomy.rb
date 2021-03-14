@@ -13,25 +13,26 @@ class NcbiTaxonomy
     def self.where(tax_id:)
         ncbi_names = NcbiName.where(tax_id: tax_id)
         synonyms = ncbi_names.select { |record| record.name_class == 'synonym' || record.name_class == 'includes' }
+        
         return synonyms
     end
 
-    def self.taxa_names_for_rank(taxon:, rank:)
-        next_higher_rank            = next_higher_rank(rank: rank)
-        return nil if next_higher_rank.nil?
-        latinized_next_higher_rank  = Helper.latinize_rank(next_higher_rank)
-        # byebug if latinized_next_higher_rank.nil?
-        taxa                        = GbifTaxonomy.where(taxonomic_status: 'accepted', taxon_rank: rank, latinized_next_higher_rank => taxon.public_send(latinized_next_higher_rank))
-        taxa_names                  = []
-        taxa.each { |tax| taxa_names.push([tax, tax.canonical_name]) }
+    def self.taxa_names_for_rank(taxon: , rank:)
+
+        ranked_lineages = NcbiRankedLineage.where(regnum: taxon.regnum, phylum: taxon.phylum, classis: taxon.classis, ordo: taxon.ordo, familia: taxon.familia, genus: taxon.genus, species: "").where.not("name LIKE ? OR name LIKE ? OR name LIKE ? OR name LIKE ?", '%sp.%', '%unclassified%', '%environmental%', '%uncultured%')
+
+        ranked_lineages_for_rank = ranked_lineages.select do |ranked_lineage|
+            ncbi_node_record = NcbiNode.find_by(tax_id: ranked_lineage.tax_id)
+            if ncbi_node_record
+                ncbi_node_record.rank == rank
+            else
+                false
+            end
+        end
+
+        taxa_names = []
+        ranked_lineages_for_rank.each { |tax| taxa_names.push([Helper.choose_ncbi_record(tax.name), tax.name]) }
     
         return taxa_names
-      end
-    
-      def self.next_higher_rank(rank:)
-        index_of_rank               = possible_ranks.index(rank)
-        index_of_higher_rank        = index_of_rank + 1
-        return nil if index_of_rank ==  possible_ranks.size
-        possible_ranks[index_of_higher_rank]
-      end
+    end
 end
