@@ -32,7 +32,7 @@ class Marker
     end
 
     def regex(db:)
-        db_tag      = _db_tag(db: db)
+        db_tag = _db_tag(db: db)
         _to_regex(self.class.searchterms_of[marker_tag][db_tag])
     end
 
@@ -47,11 +47,11 @@ class Marker
     end
 
     def _db_tag(db:)
-        if _ncbi_classes.member? db.class
+        if _ncbi_classes.member? db
             return :ncbi
-        elsif _gbol_classes.member? db.class
+        elsif _gbol_classes.member? db
             return :gbol
-        elsif _bold_classes.member? db.class
+        elsif _bold_classes.member? db
             return :bold
         end
     end

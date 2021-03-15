@@ -22,7 +22,7 @@ class TestBoldConfig < Test::Unit::TestCase
       end
 
       def test_markers
-            marker1     = Marker.new(query_marker_name: 'coi')
+            marker1     = Marker.new(query_marker_name: 'co1')
             bc1         = BoldConfig.new(name: @name, markers: marker1)
             
             assert_match bc1.markers.first.regex(db: BoldConfig), 'COI-5P'

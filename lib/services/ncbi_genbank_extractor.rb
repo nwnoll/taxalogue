@@ -7,7 +7,7 @@ class NcbiGenbankExtractor
     @file_name            = file_name
     @taxon_name           = taxon_name
     @markers              = markers
-    @regexes_for_markers  = Marker.regexes(db: self, markers: markers)
+    @regexes_for_markers  = Marker.regexes(db: self.class, markers: markers)
     @result_file_name     = result_file_name
   end
 

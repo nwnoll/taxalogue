@@ -19,7 +19,7 @@ class NcbiGenbankImporter
     @query_taxon_rank     = query_taxon_object.taxon_rank
     @markers              = markers
     @fast_run             = fast_run
-    @regexes_for_markers  = Marker.regexes(db: self, markers: markers)
+    @regexes_for_markers  = Marker.regexes(db: self.class, markers: markers)
     @file_manager         = file_manager
     @filter_params        = filter_params
     @taxonomy_params      = taxonomy_params
