@@ -36,20 +36,31 @@ class Helper
     return false
   end
 
+  def self._get_char_pos(seq)
+
+    char_pos = 0
+    # char_pos_to_start = 0
+
+    seq.each_char do |char|
+      if char =~ /[ACGT]/
+        return char_pos
+      end
+
+      char_pos += 1
+    end
+
+    return 0
+  end
   def self.filter_seq(seq, criteria)
 
     seq = seq.dup
-    if seq =~ /^-|^N/
-      seq.gsub!(/^-+/, '')
-      seq.gsub!(/^N+/, '')
-      seq.gsub!(/^-+/, '') # needed if seq starts with N----
-    end
+    seq.upcase!
 
-    if seq =~ /-$|N$/
-      seq.gsub!(/-+$/, '')
-      seq.gsub!(/N+$/, '')
-      seq.gsub!(/-+$/, '') # needed if seq ends with N----
-    end
+    return nil if seq =~ /[^ACGTN-]/
+
+    start_pos = _get_char_pos(seq)
+    end_pos   = (seq.size - _get_char_pos(seq.reverse) - 1)
+    seq       = seq[start_pos..end_pos]
 
     return seq unless criteria
 
@@ -490,7 +501,7 @@ class Helper
   end
 
   def self._taxonomic_status(record)
-    return if record.nil?
+    return nil if record.nil?
 
     if record.name_class == 'scientific name'
       return 'accepted'
@@ -533,7 +544,6 @@ class Helper
     else ## default ncbi
       record = Helper.choose_ncbi_record(taxon_name)
       taxon_object = record
-
     end
 
     return taxon_object

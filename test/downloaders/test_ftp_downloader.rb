@@ -13,6 +13,13 @@ class TestFtpDownloader < Test::Unit::TestCase
                   target_file_base: '1KB',
                   file_manager: OpenStruct.new(dir_path: @temp_dir)
             )
+            
+            @original_stdout = $stdout
+            $stdout = File.open(File::NULL, 'w')
+      end
+
+      def teardown
+            $stdout = @original_stdout
       end
 
       def test_run

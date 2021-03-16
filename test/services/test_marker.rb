@@ -6,6 +6,16 @@ class TestMarker < Test::Unit::TestCase
 
       def setup
             @marker = Marker.new(query_marker_name: 'coi')
+
+            @original_stdout = $stdout
+            @original_stderr = $stderr
+            $stdout = File.open(File::NULL, 'w')
+            $stderr = File.open(File::NULL, 'w')
+      end
+
+      def teardown
+            $stdout = @original_stdout
+            $stderr = @original_stderr
       end
 
       def test_marker_tag

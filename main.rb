@@ -219,6 +219,8 @@ loop do
 	subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
 end
 
+
+# byebug
 ## if taxonomy was chosen by user, it needs to be updated
 params = Helper.assign_taxon_info_to_params(params, params[:taxon])
 
