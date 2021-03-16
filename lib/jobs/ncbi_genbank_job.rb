@@ -36,7 +36,7 @@ class NcbiGenbankJob
     fmanagers = []
 
     _configs.each do |config|
-      file_manager        = config.file_manager
+      file_manager = config.file_manager
       file_manager.create_dir
       
       ## TODO: uncomment again, this is because there are some ports not open at the museum...

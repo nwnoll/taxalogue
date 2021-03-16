@@ -226,6 +226,36 @@ params = Helper.assign_taxon_info_to_params(params, params[:taxon])
 
 
 
+if params[:import][:all_seqs]
+	file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+
+
+
+	bold_job = BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region])
+	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region])
+	gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
+
+	## TODO: maybe bad, since if one Job does not work there is still the folder
+	## could delte it if exit status is not 0 or some failure in between
+	## catch error with begin except?
+	file_manager.create_dir
+
+	Helper.get_inv_contaminants(fm, params[:marker_objects])
+
+
+	multiple_jobs = MultipleJobs.new(jobs: [gbol_job, bold_job, genbank_job])
+	multiple_jobs.run
+
+	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
+	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
+	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
+end
+
+
+exit
+
+
+
 # ncbi_api = NcbiApi.new(markers: params[:marker_objects], taxon_name: 'Wolbachia', max_seq: 100)
 # ncbi_api.efetch
 
@@ -252,9 +282,9 @@ fm.create_dir
 
 Helper.get_inv_contaminants(fm, params[:marker_objects])
 
-BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region]).run
+# BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region]).run
 # NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region]).run
-# GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region]).run
+GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region]).run
 
 exit
 

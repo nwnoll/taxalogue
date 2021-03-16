@@ -18,8 +18,8 @@ class HttpDownloader
     config.address.start_with?('https') ? use_ssl = true : use_ssl = false
     # add redirect
     Net::HTTP.start(uri.host, uri.port, use_ssl: use_ssl) do |http|
-      http.read_timeout = 1
-      http.max_retries  = 0
+      # http.read_timeout = 1
+      http.max_retries  = 1
       request = Net::HTTP::Get.new uri
 
       http.request request do |response|
