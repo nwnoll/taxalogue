@@ -35,7 +35,7 @@ class Nomial
   end
 
   def _open_nomenclature
-    ['gen.', 'sp.', 'ssp.', 'var.', 'subvar.', 'f.', 'subf.', 'cf.', 'kl.', 'nr.', 'aff.']
+    ['gen.', 'sp.', 'sp', 'ssp.', 'var.', 'subvar.', 'f.', 'subf.', 'cf.', 'kl.', 'nr.', 'aff.']
   end
 
   def _cleaned_name_parts

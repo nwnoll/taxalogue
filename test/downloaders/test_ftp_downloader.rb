@@ -11,7 +11,7 @@ class TestFtpDownloader < Test::Unit::TestCase
             @config = OpenStruct.new(
                   address: 'speedtest.tele2.net',
                   target_file_base: '1KB',
-                  file_structure: OpenStruct.new(directory_path: @temp_dir)
+                  file_manager: OpenStruct.new(dir_path: @temp_dir)
             )
       end
 

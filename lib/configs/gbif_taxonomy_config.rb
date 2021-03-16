@@ -3,7 +3,7 @@
 class GbifTaxonomyConfig
     attr_reader :name
     def initialize()
-        @name            = 'GBIF_TAXONOMY'
+        @name = 'GBIF_TAXONOMY'
     end
   
     def downloader

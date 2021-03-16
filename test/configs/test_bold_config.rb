@@ -6,13 +6,13 @@ class TestBoldConfig < Test::Unit::TestCase
 
       def setup
             @name                   = 'Lentulidae'
-            @source_name            = 'bold'
+            @source_name            = 'BOLD'
             @bold_config            = BoldConfig.new(name: @name)
-            @file_structure         = @bold_config.file_structure
+            @file_manager           = @bold_config.file_manager
 
             @parent_dir_name        = 'Orthoptera'
             @bold_config_pd         = BoldConfig.new(name: @name, parent_dir: @parent_dir_name)
-            @file_structure_pd      = @bold_config_pd.file_structure
+            @file_manager_pd        = @bold_config_pd.file_manager
 
       end
 
@@ -51,9 +51,9 @@ class TestBoldConfig < Test::Unit::TestCase
             assert_equal 'tsv', @bold_config_pd.file_type
       end
 
-      def test_file_structure
-            assert_kind_of FileStructure, @file_structure
-            assert_equal "data/#{@source_name}/#{@name}/", @file_structure.directory_path
-            assert_equal "data/#{@source_name}/#{@parent_dir_name}/#{@name}/", @file_structure_pd.directory_path
+      def test_file_manager
+            assert_kind_of FileManager, @file_manager
+            assert_equal Pathname.new("fm_data/#{@source_name}/#{@name}"), @file_manager.dir_path
+            assert_equal Pathname.new("fm_data/#{@source_name}/#{@parent_dir_name}/#{@name}"), @file_manager_pd.dir_path
       end
 end

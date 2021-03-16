@@ -5,9 +5,9 @@ require_relative '../test_helper'
 class TestGbifTaxonomyConfig < Test::Unit::TestCase
 
       def setup
-            @name             = 'backbone'
-            @gbif_taxonomy_config      = GbifTaxonomyConfig.new
-            @file_structure   = @gbif_taxonomy_config.file_structure
+            @name = 'GBIF_TAXONOMY'
+            @gbif_taxonomy_config = GbifTaxonomyConfig.new
+            @file_manager = @gbif_taxonomy_config.file_manager
       end
 
       def test_name
@@ -22,7 +22,7 @@ class TestGbifTaxonomyConfig < Test::Unit::TestCase
             assert_kind_of    Hash, @gbif_taxonomy_config.importers
             assert_equal      1, @gbif_taxonomy_config.importers.size
             assert_true       @gbif_taxonomy_config.importers.key?(:GbifTaxonomyImporter)
-            assert_equal      'taxon.tsv', @gbif_taxonomy_config.importers[:GbifTaxonomyImporter]
+            assert_equal      'Taxon.tsv', @gbif_taxonomy_config.importers[:GbifTaxonomyImporter]
       end
 
       def test_address
@@ -33,7 +33,7 @@ class TestGbifTaxonomyConfig < Test::Unit::TestCase
             assert_equal 'zip', @gbif_taxonomy_config.file_type
       end
 
-      def test_file_structure
-            assert_kind_of FileStructure, @file_structure
+      def test_file_manager
+            assert_kind_of FileManager, @file_manager
       end
 end

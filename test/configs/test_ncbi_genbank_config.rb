@@ -6,9 +6,9 @@ class TestNcbiGenbankConfig < Test::Unit::TestCase
 
       def setup
             @name                   = 'Lentulidae'
-            @source_name            = 'ncbigenbank'
+            @source_name            = 'NCBIGENBANK'
             @ncbi_genbank_config    = NcbiGenbankConfig.new(name: @name)
-            @file_structure         = @ncbi_genbank_config.file_structure
+            @file_manager           = @ncbi_genbank_config.file_manager
       end
 
       def test_name
@@ -27,8 +27,8 @@ class TestNcbiGenbankConfig < Test::Unit::TestCase
             assert_equal 'seq.gz', @ncbi_genbank_config.file_type
       end
 
-      def test_file_structure
-            assert_kind_of FileStructure, @file_structure
-            assert_equal "data/#{@source_name}/#{@name}/", @file_structure.directory_path
+      def test_file_manager
+            assert_kind_of FileManager, @file_manager
+            assert_equal Pathname.new("fm_data/#{@source_name}/#{@name}"), @file_manager.dir_path
       end
 end

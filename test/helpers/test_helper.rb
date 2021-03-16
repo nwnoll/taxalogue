@@ -6,7 +6,7 @@ class TestHelper < Test::Unit::TestCase
 
       def test_constantize
             assert_same BoldConfig,                   Helper.constantize('BoldConfig')
-            assert_same GbifTaxonomyConfig,              Helper.constantize('GbifTaxonomyConfig')
+            assert_same GbifTaxonomyConfig,           Helper.constantize('GbifTaxonomyConfig')
             assert_same GbolConfig,                   Helper.constantize('GbolConfig')
             assert_same NcbiGenbankConfig,            Helper.constantize('NcbiGenbankConfig')
             assert_same NcbiTaxonomyConfig,           Helper.constantize('NcbiTaxonomyConfig')
@@ -15,18 +15,17 @@ class TestHelper < Test::Unit::TestCase
             assert_same HttpDownloader,               Helper.constantize('HttpDownloader')
             assert_same Helper,                       Helper.constantize('Helper')
             assert_same BoldImporter,                 Helper.constantize('BoldImporter')
-            assert_same FastaImporter,                Helper.constantize('FastaImporter')
-            assert_same GbifTaxonomyImporter,            Helper.constantize('GbifTaxonomyImporter')
+            assert_same GbifTaxonomyImporter,         Helper.constantize('GbifTaxonomyImporter')
             assert_same GbolImporter,                 Helper.constantize('GbolImporter')
             assert_same NcbiGenbankImporter,          Helper.constantize('NcbiGenbankImporter')
             assert_same NcbiNameImporter,             Helper.constantize('NcbiNameImporter')
             assert_same NcbiNodeImporter,             Helper.constantize('NcbiNodeImporter')
             assert_same NcbiRankedLineageImporter,    Helper.constantize('NcbiRankedLineageImporter')
             assert_same BoldJob,                      Helper.constantize('BoldJob')
-            assert_same GbifTaxonomyJob,                 Helper.constantize('GbifTaxonomyJob')
+            assert_same GbifTaxonomyJob,              Helper.constantize('GbifTaxonomyJob')
             assert_same NcbiGenbankJob,               Helper.constantize('NcbiGenbankJob')
             assert_same NcbiTaxonomyJob,              Helper.constantize('NcbiTaxonomyJob')
-            assert_same GbifTaxonomy,                    Helper.constantize('GbifTaxonomy')
+            assert_same GbifTaxonomy,                 Helper.constantize('GbifTaxonomy')
             assert_same NcbiName,                     Helper.constantize('NcbiName')
             assert_same NcbiNode,                     Helper.constantize('NcbiNode')
             assert_same NcbiRankedLineage,            Helper.constantize('NcbiRankedLineage')
@@ -85,12 +84,15 @@ class TestHelper < Test::Unit::TestCase
                   end
             end
 
-            Helper.extract_zip(name: zip_path, destination: destination)
+            Helper.extract_zip(name: zip_path, destination: destination, files_to_extract: ['test_extract_zip0.txt', 'test_extract_zip1.txt'])
 
             assert_path_exist destination
 
             destination = Pathname.new(destination)
             files = destination.glob('*').select { |entry| entry.file? }
+            
+            assert_equal 2, files.size
+
             files.sort.each_with_index do |file, index|
                   assert_path_exist file
                   assert_equal "#{test_name}#{index}", File.open(file).read

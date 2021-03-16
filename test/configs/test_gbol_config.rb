@@ -5,10 +5,10 @@ require_relative '../test_helper'
 class TestGbolConfig < Test::Unit::TestCase
 
       def setup
-            @name             = 'GBOL_Dataset_Release-20200426'
-            @source_name      = 'gbol'
+            @name             = 'GBOL_Dataset_Release-20210128'
+            @source_name      = 'GBOL'
             @gbol_config      = GbolConfig.new
-            @file_structure   = @gbol_config.file_structure
+            @file_manager      = @gbol_config.file_manager
       end
 
       def test_name
@@ -20,15 +20,15 @@ class TestGbolConfig < Test::Unit::TestCase
       end
 
       def test_address
-            assert_equal 'https://bolgermany.de/release/GBOL_Dataset_Release-20200426.zip', @gbol_config.address
+            assert_equal 'https://www.bolgermany.de/gbol1/release/GBOL_Dataset_Release-20210128.zip', @gbol_config.address
       end
 
       def test_file_type
             assert_equal 'zip', @gbol_config.file_type
       end
 
-      def test_file_structure
-            assert_kind_of FileStructure, @file_structure
-            assert_equal "data/#{@source_name}/#{@name}/", @file_structure.directory_path
+      def test_file_manager
+            assert_kind_of FileManager, @file_manager
+            assert_equal Pathname.new("fm_data/#{@source_name}/#{@name}"), @file_manager.dir_path
       end
 end

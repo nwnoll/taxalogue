@@ -5,9 +5,9 @@ require_relative '../test_helper'
 class TestNcbiTaxonomyConfig < Test::Unit::TestCase
 
       def setup
-            @name                   = 'new_taxdump'
+            @name                   = 'NCBI_TAXONOMY'
             @ncbi_taxonomy_config   = NcbiTaxonomyConfig.new
-            @file_structure         = @ncbi_taxonomy_config.file_structure
+            @file_manager           = @ncbi_taxonomy_config.file_manager
       end
 
       def test_name
@@ -38,6 +38,6 @@ class TestNcbiTaxonomyConfig < Test::Unit::TestCase
       end
 
       def test_file_structure
-            assert_kind_of FileStructure, @file_structure
+            assert_kind_of FileManager, @file_manager
       end
 end

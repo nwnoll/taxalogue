@@ -9,7 +9,7 @@ class TestHttpDownloader < Test::Unit::TestCase
             @tempfile = Tempfile.new('test_http_downloader')
             @config = OpenStruct.new(
                   address: 'https://raw.githubusercontent.com/nwnoll/RubyTree/master/setup.rb',
-                  file_structure: OpenStruct.new(file_path: @tempfile)
+                  file_manager: OpenStruct.new(file_path: @tempfile)
             )
       end
 

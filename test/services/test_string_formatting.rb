@@ -14,12 +14,17 @@ class TestStringFormatting < Test::Unit::TestCase
                   genus: 'Apis',
                   canonical_name: 'Apis mellifera',
                   taxon_rank: 'species')
-            @identifier ='Test-123'
-            @sequence = 'ACGTCGCTAGTCGCTCTGATCGCTCTCGAGCTGAT'
+            @data = { 
+                        identifier: 'Test-123',
+                        sequence: 'ACGTCGCTAGTCGCTCTGATCGCTCTCGAGCTGAT',
+                        loc: 'Germany',
+                        lat: '51.0',
+                        long: '9.0'
+                  }
       end
 
       def test__tsv_header
-            assert_equal "identifier\tkingdom\tphylum\torder\tfamily\tgenus\tcanonical_name\tsequence", OutputFormat::Tsv._tsv_header
+            assert_equal "identifier\tkingdom\tphylum\tclass\torder\tfamily\tcanonical_name\tlocation\tlatitude\tlongitude\tsequence", OutputFormat::Tsv._tsv_header
             # p tsv._tsv_header
       end
 
@@ -27,20 +32,19 @@ class TestStringFormatting < Test::Unit::TestCase
             lineage_data1 = @lineage_data
             
             lineage_data2 = @lineage_data.dup
-            lineage_data2.canonical_name = nil
+            lineage_data2.canonical_name = 'Apis'
             lineage_data2.taxon_rank = 'genus'
 
-            assert_equal "#{@identifier}\tAnimalia\tArthropoda\tInsecta\tHymenoptera\tApidae\tApis\tApis mellifera\t#{@sequence}", OutputFormat::Tsv._tsv_row(lineage_data: lineage_data1, identifier: @identifier, sequence: @sequence)
-            assert_equal "#{@identifier}\tAnimalia\tArthropoda\tInsecta\tHymenoptera\tApidae\tApis\t\t#{@sequence}", OutputFormat::Tsv._tsv_row(lineage_data: lineage_data2, identifier: @identifier, sequence: @sequence)
+            assert_equal "#{@data[:identifier]}\tAnimalia\tArthropoda\tInsecta\tHymenoptera\tApidae\tApis mellifera\tGermany\t51.0\t9.0\t#{@data[:sequence]}", OutputFormat::Tsv._tsv_row(lineage_data: lineage_data1, identifier: @data[:identifier], sequence: @data[:sequence], loc: @data[:loc], lat: @data[:lat], long: @data[:long])
+            assert_equal "#{@data[:identifier]}\tAnimalia\tArthropoda\tInsecta\tHymenoptera\tApidae\tApis\tGermany\t51.0\t9.0\t#{@data[:sequence]}", OutputFormat::Tsv._tsv_row(lineage_data: lineage_data2, identifier: @data[:identifier], sequence: @data[:sequence], loc: @data[:loc], lat: @data[:lat], long: @data[:long])
       end
 
       def test__fasta_header
-            data = [@identifier, @sequence]
             lineage_data2 = @lineage_data.dup
-            lineage_data2.canonical_name = nil
+            lineage_data2.canonical_name = 'Apis'
             lineage_data2.taxon_rank = 'genus'
 
-            assert_equal ">#{@identifier}|Animalia|Arthropoda|Insecta|Hymenoptera|Apidae|Apis mellifera", OutputFormat::Fasta._fasta_header(data: data, taxonomic_info: @lineage_data)
-            assert_equal ">#{@identifier}|Animalia|Arthropoda|Insecta|Hymenoptera|Apidae|Apis", OutputFormat::Fasta._fasta_header(data: data, taxonomic_info: lineage_data2)
+            assert_equal ">#{@data[:identifier]}|Animalia|Arthropoda|Insecta|Hymenoptera|Apidae|Apis mellifera", OutputFormat::Fasta._fasta_header(data: @data, taxonomic_info: @lineage_data)
+            assert_equal ">#{@data[:identifier]}|Animalia|Arthropoda|Insecta|Hymenoptera|Apidae|Apis", OutputFormat::Fasta._fasta_header(data: @data, taxonomic_info: lineage_data2)
       end
 end

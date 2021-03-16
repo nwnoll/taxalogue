@@ -3,7 +3,7 @@
 class GbolConfig
     attr_reader :name
     def initialize()
-        @name            = 'GBOL_Dataset_Release-20210128'
+        @name = 'GBOL_Dataset_Release-20210128'
     end
   
     def downloader
