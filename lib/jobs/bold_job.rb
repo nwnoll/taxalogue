@@ -1,5 +1,25 @@
 # frozen_string_literal: true
 
+# /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:25:in `initialize': execution expired (Net::OpenTimeout)
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:25:in `initialize'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `open'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `block in connect'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/timeout.rb:107:in `timeout'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:985:in `connect'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:970:in `do_start'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:959:in `start'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:621:in `start'
+# 	from /home/nnoll/phd/db_merger/lib/downloaders/http_downloader.rb:20:in `run'
+# 	from /home/nnoll/phd/db_merger/lib/jobs/bold_job.rb:63:in `block (2 levels) in download_files'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:508:in `call_with_index'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:361:in `block (2 levels) in work_in_threads'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:519:in `with_instrumentation'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:360:in `block in work_in_threads'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:211:in `block (4 levels) in in_threads'
+
+
+
+
 class BoldJob
   attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params, :try_synonyms, :taxonomy_params, :region_params
 
@@ -103,7 +123,7 @@ class BoldJob
         node_name                       = failed_node.name
         index_of_rank                   = GbifTaxonomy.possible_ranks.index(node_record.taxon_rank)
         index_of_lower_rank             = index_of_rank - 1
-        reached_family_level            = true if index_of_lower_rank == 2
+        reached_family_level            = true if index_of_lower_rank == 1
         taxon_rank_to_try               = GbifTaxonomy.possible_ranks[index_of_lower_rank]
         
         taxa_records_and_names_to_try = nil
@@ -133,6 +153,9 @@ class BoldJob
         end
       end
     end
+
+    _write_result_files(root_node: root_node, fmanagers: fmanagers)
+
 
     return fmanagers
   end
@@ -241,11 +264,11 @@ class BoldJob
 
   def _write_result_files(root_node:, fmanagers:)
     root_dir              = fmanagers.select { |m| m.name == root_node.name }.first
-    merged_download_file  = File.open(root_dir.dir_path + "#{root_dir.name}_merged.tsv", 'w') 
+    # merged_download_file  = File.open(root_dir.dir_path + "#{root_dir.name}_merged.tsv", 'w') 
     download_info_file    = File.open(root_dir.dir_path + "#{root_dir.name}_download_info.tsv", 'w') 
-    download_successes    = fmanagers.select { |m| m.status == 'success' }
+    # download_successes    = fmanagers.select { |m| m.status == 'success' }
 
-    OutputFormat::MergedBoldDownload.write_to_file(file: merged_download_file, data: download_successes, header_length: HEADER_LENGTH, include_header: true)
+    # OutputFormat::MergedBoldDownload.write_to_file(file: merged_download_file, data: download_successes, header_length: HEADER_LENGTH, include_header: true)
     OutputFormat::DownloadInfo.write_to_file(file: download_info_file, fmanagers: fmanagers)
   end
 

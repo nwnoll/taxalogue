@@ -17,7 +17,7 @@ class HttpDownloader2
       # add redirect
       Net::HTTP.start(uri.host, uri.port, use_ssl: use_ssl) do |http|
         # http.read_timeout = 0.5
-        http.max_retries  = 1
+        http.max_retries  = 0
         request = Net::HTTP::Get.new uri
         http.request request do |response|
           # open config.file_structure.file_path, 'w' do |io|

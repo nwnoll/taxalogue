@@ -231,16 +231,16 @@ if params[:import][:all_seqs]
 
 
 
-	bold_job = BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region])
-	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region])
-	gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
+	bold_job = BoldJob.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region])
+	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region])
+	gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
 
 	## TODO: maybe bad, since if one Job does not work there is still the folder
 	## could delte it if exit status is not 0 or some failure in between
 	## catch error with begin except?
 	file_manager.create_dir
 
-	Helper.get_inv_contaminants(fm, params[:marker_objects])
+	Helper.get_inv_contaminants(file_manager, params[:marker_objects])
 
 
 	multiple_jobs = MultipleJobs.new(jobs: [gbol_job, bold_job, genbank_job])
