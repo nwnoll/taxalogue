@@ -4,6 +4,8 @@ require './requirements'
 include GeoUtils
 
 params = {
+	create: Hash.new,
+	classify: Hash.new,
 	import: Hash.new,
 	download: Hash.new,
 	setup: Hash.new,
@@ -36,6 +38,7 @@ end
 ## modified after https://gist.github.com/rkumar/445735
 subtext = <<HELP
 Commonly used commands are:
+   create   :  creates a barcode database
    import   :  imports files into SQL database, in general this happens after first start automatically
    download :  downloads sequence and specimen data
    setup    :  setup Taxonomies
@@ -67,6 +70,20 @@ global = OptionParser.new do |opts|
 end
 
 subcommands = { 
+	create: OptionParser.new do |opts|
+		opts.banner = "Usage: create [options]"
+		opts.on('-a', '--all', 'creates a reference database with sequences from BOLD, GenBank and GBOL')
+		opts.on('-g', '--gbol', 'creates a reference database with sequences from GBOL')
+		opts.on('-b', '--bold', 'creates a reference database with sequences from BOLD')
+		opts.on('-k', '--gbol', 'creates a reference database with sequences from Genbank')
+	end,
+	classify: OptionParser.new do |opts|
+		opts.banner = "Usage: classify [options]"
+		opts.on('-f FASTA', String, '--fasta')
+		opts.on('-g GBOL', String, '--gbol')
+		opts.on('-o BOLD', String, '--bold')
+		opts.on('-k GENBANK', String, '--genbank')
+	end,
 	import: OptionParser.new do |opts|
 		opts.banner = "Usage: import [options]"
 		opts.on('-f FASTA', String, '--fasta')
@@ -84,12 +101,14 @@ subcommands = {
 		opts.on('-g', '--gbol')
 		opts.on('-o', '--bold')
 		opts.on('-k', '--genbank')
+		opts.on('-a', '--all')
    end,
    setup: OptionParser.new do |opts|
 		opts.banner = "Usage: setup [options]"
 		opts.on('-t', '--taxonomies')
 		opts.on('-n', '--ncbi_taxonomy')
 		opts.on('-g', '--gbif_taxonomy')
+		opts.on('-r', '--regions')
 		opts.on('-e', '--terrestrial_ecoregions')
 		opts.on('-b', '--biogeographic_realms')
    end,
@@ -202,7 +221,7 @@ subcommands = {
 			params = Helper.check_fada(params)
 			
 			if params[:region][:terreco_ary] == :skip
-+				exit
+				exit
 			else
 				Helper.print_all_regions($eco_zones_of.keys.sort)
 				exit
@@ -224,14 +243,88 @@ end
 ## if taxonomy was chosen by user, it needs to be updated
 params = Helper.assign_taxon_info_to_params(params, params[:taxon])
 
+# byebug
+
+# exit
+
+# file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+# bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region])
+# file_manager.create_dir
+# Helper.get_inv_contaminants(file_manager, params[:marker_objects])
+# bold_job.run
+
+# exit
+
+
+# * Arthropoda                   failure
+# |---> Arachnida                loading
+# |---> Merostomata              success
+# |---> Pycnogonida              success
+# |---> Chilopoda                success
+# |---> Diplopoda                success
+# |---> Pauropoda                success
+# |---> Symphyla                 success
+# |---> Branchiopoda             success
+# |---> Cephalocarida            success
+# |---> Hexanauplia              success
+# |---> Malacostraca             loading
+# |---> Ichthyostraca            success
+# |---> Mystacocarida            failure
+# |---> Ostracoda                success
+# |---> Remipedia                success
+# |---> Collembola               loading
+# |---> Insecta                  failure
+# +---> Protura                  success
+
+
+# /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:14:in `rescue in getaddress': Failed to open TCP connection to www.boldsystems.org:80 (Hostname not known: www.boldsystems.org) (SocketError)
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:10:in `getaddress'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:25:in `initialize'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `open'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `block in connect'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/timeout.rb:97:in `block in timeout'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/timeout.rb:107:in `timeout'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:985:in `connect'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:970:in `do_start'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:959:in `start'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:621:in `start'
+# 	from /home/nnoll/phd/db_merger/lib/downloaders/http_downloader.rb:20:in `run'
+# 	from /home/nnoll/phd/db_merger/lib/jobs/bold_job2.rb:68:in `_download_response'
+# 	from /home/nnoll/phd/db_merger/lib/jobs/bold_job2.rb:125:in `block (2 levels) in dload'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:508:in `call_with_index'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:361:in `block (2 levels) in work_in_threads'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:519:in `with_instrumentation'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:360:in `block in work_in_threads'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:211:in `block (4 levels) in in_threads'
+# /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv.rb:94:in `getaddress': no address for www.boldsystems.org (Resolv::ResolvError)
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv.rb:44:in `getaddress'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:12:in `getaddress'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:25:in `initialize'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `open'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `block in connect'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/timeout.rb:97:in `block in timeout'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/timeout.rb:107:in `timeout'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:985:in `connect'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:970:in `do_start'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:959:in `start'
+# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:621:in `start'
+# 	from /home/nnoll/phd/db_merger/lib/downloaders/http_downloader.rb:20:in `run'
+# 	from /home/nnoll/phd/db_merger/lib/jobs/bold_job2.rb:68:in `_download_response'
+# 	from /home/nnoll/phd/db_merger/lib/jobs/bold_job2.rb:125:in `block (2 levels) in dload'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:508:in `call_with_index'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:361:in `block (2 levels) in work_in_threads'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:519:in `with_instrumentation'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:360:in `block in work_in_threads'
+# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:211:in `block (4 levels) in in_threads'
+
+
+
 
 
 if params[:import][:all_seqs]
 	file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 
-
-
-	bold_job = BoldJob.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region])
+	bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region])
 	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region])
 	gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
 
@@ -240,10 +333,10 @@ if params[:import][:all_seqs]
 	## catch error with begin except?
 	file_manager.create_dir
 
-	Helper.get_inv_contaminants(file_manager, params[:marker_objects])
+	# Helper.get_inv_contaminants(file_manager, params[:marker_objects])
 
 
-	multiple_jobs = MultipleJobs.new(jobs: [gbol_job, bold_job, genbank_job])
+	multiple_jobs = MultipleJobs.new(jobs: [bold_job, gbol_job, genbank_job])
 	multiple_jobs.run
 
 	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
