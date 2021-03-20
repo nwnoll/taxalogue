@@ -82,21 +82,22 @@ class BoldJob2
   end
 
   def dload
-    root_node = Tree::TreeNode.new(taxon_name, [taxon, @pending])
+    root_node = Tree::TreeNode.new(taxon_name, [taxon, @pending, 'pending'])
     num_of_ranks = GbifTaxonomy.possible_ranks.size
-    reached_family_level = false
     reached_genus_level = false
     fmanagers = []
     num_threads = 5
 
     dl_file = File.open('results/download.txt', 'w')
     request_file = File.open('results/requests.txt', 'w')
+    fh = File.open('results/tree_file.txt', 'w')
+
     
     num_of_ranks.times do |i|
       _print_download_progress_report(root_node: root_node, rank_level: i)
 
       Parallel.map(root_node.entries, in_threads: num_threads) do |node|
-        next unless node.content.last == @pending
+        next unless node.content[1] == @pending
 
         config = _create_config(node: node)
 
@@ -112,11 +113,13 @@ class BoldJob2
         rank_status = _get_rank_status(node.name, stats_file_path, reached_genus_level)
 
         node.content[1] = @loading
+        node.content[2] = 'loading'
         file_manager.status = 'loading'
 
         ## skip since download never succeeds due to too many records
         if rank_status == :no_records || rank_status == :over_75k || rank_status == :failing_taxon
           node.content[1] = @failure
+          node.content[2] = rank_status.to_s
           file_manager.status = 'failure'
           fmanagers.push(file_manager)
           _print_download_progress_report(root_node: root_node, rank_level: i)
@@ -133,22 +136,25 @@ class BoldJob2
 
         if download_response == :success
           node.content[1] = @success
+          node.content[2] = download_response.to_s
           file_manager.status = 'success'
-          sleep 1
+          # sleep 1
 
         elsif download_response == :empty_file
           node.content[1] = @failure
+          node.content[2] = download_response.to_s
           file_manager.status = 'failure'
-          sleep 5
+          # sleep 5
 
         elsif download_response == :read_timeout
           node.content[1] = @failure
+          node.content[2] = download_response.to_s
           file_manager.status = 'failure'
 
         elsif download_response == :open_timeout || download_response == :server_offline || download_response == :socket_error || download_response == :other_error 
           success_after_sleep = false
           3.times do
-            sleep 120
+            # sleep 120
             download_response = _download_response(downloader: downloader, file_path: file_manager.file_path)
             if download_response == :success
               success_after_sleep =  true
@@ -158,9 +164,11 @@ class BoldJob2
 
           if success_after_sleep
             node.content[1] = @success
+            node.content[2] = download_response.to_s
             file_manager.status = 'success'
           else
             node.content[1] = @failure
+            node.content[2] = download_response.to_s
             file_manager.status = 'failure'
           end
         end
@@ -169,18 +177,22 @@ class BoldJob2
 
         fmanagers.push(file_manager)
         _print_download_progress_report(root_node: root_node, rank_level: i)
+        # exit
+        # root_node.each do |node|
+        #   pp node
+        #   puts '-----'
+        # end
       end
 
       break if reached_genus_level
       # break if i == 2
 
-      failed_nodes = root_node.find_all { |node| node.content.last == @failure && node.is_leaf? }
+      failed_nodes = root_node.find_all { |node| node.content[1] == @failure && node.is_leaf? }
       failed_nodes.each do |failed_node|
         node_record                     = failed_node.content.first
         node_name                       = failed_node.name
         index_of_rank                   = GbifTaxonomy.possible_ranks.index(node_record.taxon_rank)
         index_of_lower_rank             = index_of_rank - 1
-        # reached_family_level            = true if index_of_lower_rank == 2
         reached_genus_level             = true if index_of_lower_rank == 1
         taxon_rank_to_try               = GbifTaxonomy.possible_ranks[index_of_lower_rank]
         
@@ -206,15 +218,36 @@ class BoldJob2
           next if Helper.is_extinct?(name)
           next if added_names.include?(name) # prevent breaking if name occurs multiple times maybe due to wrong backbone
 
-          failed_node << Tree::TreeNode.new(name, [record, @pending])
+          failed_node << Tree::TreeNode.new(name, [record, @pending, 'pending'])
           added_names.push(name)
         end
       end
     end
 
     # _write_result_files(root_node: root_node, fmanagers: fmanagers)
+    # root_node.each do |node|
+    #   pp node
+    #   puts '-----'
+    # end
+    # exit
+    root_node.print_tree(level = root_node.node_depth, max_depth = nil, block = lambda { |node, prefix| fh.puts "#{'-' * node.node_depth}#{node.name}: #{node.content[2]}" })
+    
+    real_failed_nodes = root_node.find_all { |node| node.is_leaf? && _real_failure(node.content[2]) }
+    
+    success = real_failed_nodes.empty? ? 'true' : 'false'
+    
+    fh.puts
+    fh.puts "success: #{success}"
+    real_failed_nodes.each do |node|
+      fh.print node.name
+      fh.print ": #{node.content[2]}\n"
+    end
 
     return fmanagers
+  end
+
+  def _real_failure(node_content)
+    failure = node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' 
   end
 
   def _safe_download(node:, file_manager:, root_node:, i:)
@@ -274,7 +307,7 @@ class BoldJob2
       _print_download_progress_report(root_node: root_node, rank_level: i)
       
       Parallel.map(root_node.entries, in_threads: num_threads) do |node|
-        next unless node.content.last == @pending
+        next unless node.content[1] == @pending
 
         config = _create_config(node: node)
 
@@ -339,7 +372,7 @@ class BoldJob2
       break if reached_genus_level
       # break if i == 2
 
-      failed_nodes = root_node.find_all { |node| node.content.last == @failure && node.is_leaf? }
+      failed_nodes = root_node.find_all { |node| node.content[1] == @failure && node.is_leaf? }
       failed_nodes.each do |failed_node|
         node_record                     = failed_node.content.first
         node_name                       = failed_node.name
@@ -389,11 +422,11 @@ class BoldJob2
     system("clear") || system("cls")
     puts
 
-    nodes_currently_loading = root_copy.find_all { |node| node.content.last == @loading && node.is_leaf? }
+    nodes_currently_loading = root_copy.find_all { |node| node.content[1] == @loading && node.is_leaf? }
     return if nodes_currently_loading.nil?
     
     if rank_level <= 1
-      root_copy.print_tree(level = root_copy.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
+      root_copy.print_tree(level = root_copy.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content[1]}" })
       _print_legend
       return
     end
@@ -402,12 +435,12 @@ class BoldJob2
     loading_parent_nodes    = []
     nodes_currently_loading.each { |node| loading_parent_nodes.push(node.parentage); loading_parent_nodes.flatten! }
     
-    root_copy.print_tree(level = root_copy.node_depth, max_depth = 1, block = lambda { |node, prefix| puts loading_parent_nodes.include?(node) ? "#{prefix} #{Pastel.new.white.on_blue(node.name)}".ljust(30 + @loading_color_char_num) + " #{node.content.last}" : "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
+    root_copy.print_tree(level = root_copy.node_depth, max_depth = 1, block = lambda { |node, prefix| puts loading_parent_nodes.include?(node) ? "#{prefix} #{Pastel.new.white.on_blue(node.name)}".ljust(30 + @loading_color_char_num) + " #{node.content[1]}" : "#{prefix} #{node.name}".ljust(30) + " #{node.content[1]}" })
     
     puts
     puts "currently loading:"
     nodes_currently_loading.each do |loading_node|
-      not_loading_nodes = loading_node.parent.find_all { |node| node.content.last != @loading && node.is_leaf? }
+      not_loading_nodes = loading_node.parent.find_all { |node| node.content[1] != @loading && node.is_leaf? }
       not_loading_nodes.each do |not_loading_node|
         loading_node.parent.remove!(not_loading_node)
       end
@@ -415,7 +448,7 @@ class BoldJob2
       if already_printed_parents.include?(loading_node.parent.name)
         next
       else
-        loading_node.parent.print_tree(level = loading_node.parent.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
+        loading_node.parent.print_tree(level = loading_node.parent.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content[1]}" })
       end
 
       already_printed_parents.push(loading_node.parent.name)

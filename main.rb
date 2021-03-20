@@ -247,13 +247,13 @@ params = Helper.assign_taxon_info_to_params(params, params[:taxon])
 
 # exit
 
-# file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-# bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region])
-# file_manager.create_dir
+file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region])
+file_manager.create_dir
 # Helper.get_inv_contaminants(file_manager, params[:marker_objects])
-# bold_job.run
+bold_job.run
 
-# exit
+exit
 
 
 # * Arthropoda                   failure
