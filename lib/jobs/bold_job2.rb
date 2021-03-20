@@ -247,7 +247,7 @@ class BoldJob2
   end
 
   def _real_failure(node_content)
-    failure = node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' 
+    node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' 
   end
 
   def _safe_download(node:, file_manager:, root_node:, i:)
