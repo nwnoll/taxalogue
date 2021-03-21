@@ -86,6 +86,7 @@ class BoldJob2
     num_of_ranks = GbifTaxonomy.possible_ranks.size
     reached_genus_level = false
     fmanagers = []
+    rest_taxa = Hash.new
     num_threads = 5
 
     dl_file = File.open('results/download.txt', 'w')
@@ -152,17 +153,14 @@ class BoldJob2
           file_manager.status = 'failure'
 
         elsif download_response == :open_timeout || download_response == :server_offline || download_response == :socket_error || download_response == :other_error 
-          success_after_sleep = false
           3.times do
             # sleep 120
             download_response = _download_response(downloader: downloader, file_path: file_manager.file_path)
-            if download_response == :success
-              success_after_sleep =  true
-              break
-            end
+            
+            break if download_response == :success
           end
 
-          if success_after_sleep
+          if download_response == :success
             node.content[1] = @success
             node.content[2] = download_response.to_s
             file_manager.status = 'success'
@@ -173,7 +171,8 @@ class BoldJob2
           end
         end
 
-        dl_file.puts "#{node.name}: #{download_response.to_s} -> #{file_manager.status}" 
+        dl_file.puts "#{node.name}: #{download_response.to_s} -> #{file_manager.status}"
+
 
         fmanagers.push(file_manager)
         _print_download_progress_report(root_node: root_node, rank_level: i)
@@ -208,7 +207,46 @@ class BoldJob2
         
         end
 
+
         next if taxa_records_and_names_to_try.nil?
+
+        if _needs_rest_download(failed_node.content[2])
+          config = _create_config(node: failed_node)
+
+          file_manager = config.file_manager
+          rest_path = file_manager.dir_path + "#{failed_node.name}_REST.tsv"
+          copy_of_taxa_records_and_names_to_try = taxa_records_and_names_to_try.clone
+
+          rest_query = _rest_query(failed_node.name, copy_of_taxa_records_and_names_to_try)
+          downloader = HttpDownloader2.new(address: rest_query, destination: rest_path)
+
+          p rest_query
+
+
+          ## request too long.. over 2k chars igth cause problems
+          ## TODO: NEXT
+          # <html>
+          # <head><title>414 Request-URI Too Large</title></head>
+          # <body bgcolor="white">
+          # <center><h1>414 Request-URI Too Large</h1></center>
+          # <hr><center>nginx</center>
+          # </body>
+          # </html>
+          
+
+          # "http://www.boldsystems.org/index.php/API_Public/combined?taxon=Carabidae|-Apotomus|-Aptinus|-Brachinus|-Mastax|-Pheropsophus|-Styphlodromus|-Styphlomerus|-Crepidogaster|-Acallistus|-Bountya|-Broscodera|-Broscosoma|-Broscus|-Brullea|-Chylnus|-Craspedonotus|-Creobius|-Diglymma|-Mecodema|-Metaglymma|-Miscodera|-Oregus|-Percolestus|-Percosoma|-Promecoderus|-Zacotus|-Aplothorax|-Australodrepa|-Callisthenes|-Callitropa|-Calosoma|-Camedula|-Campalita|-Carabomimus|-Carabomorphus|-Castrida|-Charmosta|-Chrysostigma|-Ctenosta|-Microcallisthenes|-Carabus|-Ceroglossus|-Cychropsis|-Cychrus|-Scaphinotus|-Sphaeroderus|-Maoripamborus|-Pamborus|-Antennaria|-Bennigsenium|-Brasiella|-Caledonica|-Callytron|-Calomera|-Calyptoglossa|-Cenothyla|-Cephalota|-Cheilonycha|-Cheiloxya|-Cicindela|-Cylindera|-Distipsidera|-Dromica|-Eucallia|-Eurymorpha|-Euzona|-Habrodera|-Habroscelimorpha|-Heptodonta|-Hypaetha|-Jansenia|-Lophyra|-Microthylax|-Myriochila|-Neocicindela|-Odontocheila|-Opilidia|-Oxycheila|-Oxygonia|-Pentacomia|-Peridexia|-Physodeutera|-Polyrhanis|-Pometon|-Prothyma|-Prothymidia|-Pseudoxycheila|-Stenocosmia|-Sumlinia|-Therates|-Waltherhornia|-Zecicindela|-Ctenostoma|-Neocollyris|-Pogonostoma|-Tricondyla|-Manticora|-Amblycheila|-Aniara|-Australicapitona|-Grammognatha|-Megacephala|-Metriocheila|-Omus|-Phaeoxantha|-Picnochile|-Platychile|-Pseudotetracha|-Tetracha|-Polistichus|-Blethisa|-Diacheila|-Elaphrus|-Gehringia|-Abacetus|-Abacidus|-Cerabilia|-Cyrtomoscelis|-Inkosa|-Metabacetus|-Oxycrepis|-Pediomorphus|-Zeodera|-Diachromus|-Anthia|-Cypholoba|-Catapiesis|-Cnemalobus|-Calophaena|-Ctenodactyla|-Leptotrachelus|-Plagiotelum|-Teukrus|-Desera|-Drypta|-Ancystroglossus|-Galerita|-Planetes|-Trichognathus|-Acinopus|-Acupalpus|-Afromizonus|-Agonoleptus|-Amblygnathus|-Amblystomus|-Amphasia|-Anisodactylus|-Anthracus|-Athrostictus|-Aulacoryssus|-Axinotoma|-Bradybaenus|-Bradycellus|-Carterus|-Cenogmus|-Coleolissus|-Crasodactylus|-Cratacanthus|-Cryptophonus|-Daptus|-Dicheirotrichus|-Dicheirus|-Discoderus|-Ditomus|-Dixus|-Egadroma|-Eocarterus|-Euryderus|-Euthenarus|-Geopinus|-Gnathaphanus|-Graniger|-Harpalus|-Hartonymus|-Hyparpalus|-Hypharpax|-Incisophonus|-Lecanomerus|-Nesarpalus|-Nornalupia|-Notiobia|-Odontocarus|-Ophonus|-Parophonus|-Pelmatellus|-Philodes|-Phorticosomus|-Piosoma|-Platymetopus|-Pogonodaptus|-Polpochila|-Pseudognathaphanus|-Scybalicus|-Selenophorus|-Semiophonus|-Stenolophus|-Stenomorphus|-Trichotichnus|-Tschitscherinellus|-Aenigma|-Dicranoglossus|-Gigadaema|-Helluomorphoides|-Macrocheilus|-Omphra|-Pogonoglossus|-Dinopelma|-Hexagonia|-Metius|-Morion|-Moriosomus|-Orthogonius|-Craspedophorus|-Dischissus|-Micrixys|-Microschemus|-Panagaeus|-Tefflus|-Eripus|-Pelecium|-Pentagonica|-Scopodes|-Adelotopus|-Pseudomorpha|-Sphallomorpha|-Abaris|-Abax|-Abropus|-Acanthoferonia|-Ancholeus|-Aporesthus|-Aristochroa|-Aulacopodus|-Caelostomus|-Castelnaudia|-Colpodes|-Conchitella|-Cyclotrachelus|-Eucamptognathus|-Eudromus|-Euplynes|-Eutrichopus|-Gastrellarius|-Henrotius|-Hybothecus|-Leiradira|-Lesticus|-Lophoglossus|-Loxodactylus|-Megadromus|-Molopidius|-Molops|-Myas|-Nirmala|-Notonomus|-Nurus|-Orthomus|-Oscadytes|-Paniestichus|-Parhypates|-Pedius|-Percus|-Piesmus|-Platycaelus|-Poecilus|-Pseudamara|-Pseudoceneus|-Pterostichus|-Sarticus|-Setalimorphus|-Speomolops|-Stereocerus|-Stomis|-Styracoderus|-Tanythrix|-Tapinopterus|-Trichosternus|-Trigonognatha|-Trigonotoma|-Typhlochoromus|-Wolltinerfia|-Zariquieya|-Elaphropus|-Paratachys|-Porotachys|-Tachys|-Amara|-Zabrus|-Acrogenys|-Ildobates|-Mischocephalus|-Parazuphium|-Pseudaptinus|-Thalpius|-Zuphium|-Gomerina|-Paraeutrichopus|-Aephnidius|-Sarothrocrepis|-Tetragonoderus|-Graphipterus|-Anchonoderus|-Asklepia|-Calybe|-Euphorticus|-Homethes|-Lachnophorus|-Actenonyx|-Agra|-Anomotarus|-Antimerina|-Apenes|-Apristus|-Arsinoe|-Aspasiola|-Axinopalpus|-Brachyctis|-Calleida|-Callidiola|-Calodromius|-Catascopus|-Celaenephes|-Coptodera|-Coptoptera|-Cylindrocranius|-Cymindis|-Cymindoidea|-Demetrias|-Demetrida|-Dromius|-Endynomena|-Euproctinus|-Eurydera|-Hyboptera|-Hystrichopus|-Inna|-Lachnoderma|-Lebia|-Lia|-Lionychus|-Menarus|-Microlestes|-Mimodromius|-Mochtherus|-Mormolyce|-Nemotarsus|-Onota|-Paradromius|-Parena|-Peliocypas|-Pericalus|-Philophlaeus|-Philophuga|-Philorhizus|-Physodera|-Plochionus|-Pristacrus|-Pseudotrechus|-Serrimargo|-Sinurus|-Somotrichus|-Stenocallida|-Stenognathus|-Stenotelus|-Syntomus|-Tecnophilus|-Thysanotus|-Anaulacus|-Masoreus|-Clarencia|-Colliuris|-Cosnania|-Dicraspeda|-Lasiocera|-Odacantha|-Ophionea|-Stenidia|-Diploharpus|-Perigona|-Ripogena|-Callistus|-Chlaenius|-Badister|-Dicaelus|-Dicrochile|-Diplocheila|-Eutogeneius|-Lacordairia|-Lestignathus|-Licinus|-Adelopomorpha|-Anatrichis|-Dercylus|-Lachnocrepis|-Oodes|-Stenocrepis|-Loricera|-Cymbionotum|-Amarotypus|-Antarctonomus|-Lissopterus|-Monolobus|-Pseudomigadops|-Leistus|-Nebria|-Oreonebria|-Notiophilus|-Opisthius|-Omophron|-Metrius|-Anentmetus|-Entomoantyx|-Filicerozaena|-Goniotropis|-Inflatozaena|-Itamus|-Mystropomus|-Ozaena|-Pachyteles|-Physea|-Platycerozaena|-Proozaena|-Pseudozaena|-Serratozaena|-Sphaerostylus|-Tachypeles|-Tropopsis|-Arthropterus|-Carabidomemnus|-Cerapterus|-Ceratoderus|-Edaphopaussus|-Eohomopterus|-Euplatyrhopalus|-Granulopaussus|-Heteropaussus|-Homopterus|-Hylopaussus|-Lebioderus|-Paussus|-Pentaplatarthrus|-Platyrhopalopsis|-Platyrhopalus|-Protopaussus|-Agonum|-Anchomenus|-Atranus|-Blackburnia|-Calathidius|-Ctenognathus|-Dicranoncus|-Dyscolus|-Glyptolenus|-Incagonum|-Liagonum|-Limodromus|-Metacolpodes|-Neomegalonychus|-Notagonum|-Olisthopus|-Oxypselaphus|-Paranchus|-Platynus|-Rhadine|-Sericoda|-Tanystoma|-Acalathus|-Amaroschema|-Anchomenidius|-Calathus|-Dolichus|-Laemostenus|-Licinopsis|-Lindrothius|-Miquihuana|-Platyderus|-Pristosia|-Synuchidius|-Synuchus|-Thermoscelis|-Xestopus|-Dalyat|-Promecognathus|-Meonis|-Amblytelus|-Mecyclothorax|-Melisodera|-Laccocenus|-Nomius|-Psydrus|-Raphetis|-Tropopterus|-Sitaphe|-Clinidium|-Dhysores|-Omoglymmius|-Rhysodes|-Akephorus|-Antireicheia|-Ardistomis|-Clivina|-Dyschiriodes|-Dyschirius|-Paraclivina|-Reicheia|-Schizogenius|-Trilophidius|-Typhloreicheia|-Carenum|-Distichus|-Pasimachus|-Scarites|-Siagona|-Lusotyphlus|-Microcharidius|-Typhlocharis|-Andinodontis|-Argentinatachoides|-Bembidarenas|-Tasmanitachoides|-Amerizus|-Anillinus|-Anillodes|-Anillus|-Anomotachys|-Argiloborus|-Asaphidion|-Batesiana|-Bembidion|-Binaghites|-Caeconannus|-Erwiniana|-Geocharidius|-Geocharis|-Gouleta|-Hypotyphlus|-Iberanillus|-Illaphanus|-Kiwitachys|-Lionepha|-Lymnastis|-Meotachys|-Micratopus|-Microdipnus|-Microtyphlus|-Mioptachys|-Nesamblyops|-Nothoderis|-Ocys|-Orthotyphlus|-Orzolina|-Parvocaecus|-Pelonomites|-Pericompsus|-Philipis|-Polyderis|-Pseudanillus|-Rhegmatobius|-Scotodipnus|-Serranillus|-Sinechostictus|-Tachyta|-Tachyura|-Apatrobus|-Apenetretus|-Archipatrobus|-Dimorphopatrobus|-Diplous|-Lissopogonus|-Parapenetretus|-Patrobus|-Penetretus|-Platidiolus|-Platypatrobus|-Qiangopatrobus|-Diplochaetus|-Pogonistes|-Pogonus|-Sirdenus|-Thalassotrechus|-Chaltenia|-Phrypeus|-Sinozolus|-Adriaphaenops|-Aepopsis|-Agonotrechus|-Agostinia|-Allegrettia|-Ameroduvalius|-Anophthalmus|-Aphaenopidius|-Aphaenops|-Apoduvalius|-Apoplotrechus|-Arctaphaenops|-Blemus|-Boldoriella|-Bothynotrechus|-Cnides|-Cyphotrechodes|-Darlingtonea|-Doderotrechus|-Duvalius|-Epaphiopsis|-Epaphius|-Eutrechopsis|-Geotrechus|-Homaloderodes|-Hydraphaenops|-Iberotrechus|-Italaphaenops|-Jeannelius|-Kenodactylus|-Laosaphaenops|-Lessinodytes|-Mexitrechus|-Mimotrechus|-Neaphaenops|-Nelsonites|-Neotrechus|-Nototrechus|-Omalodera|-Orotrechus|-Oxytrechus|-Pachydesus|-Paraphaenops|-Paratrechodes|-Paratrechus|-Perileptus|-Pheggomisetes|-Pseudanophthalmus|-Pseudocnides|-Sardaphaenops|-Speotrechus|-Sporades|-Tasmanorites|-Thalassophilus|-Trechiella|-Trechimorphus|-Trechinotus|-Trechisibus|-Trechistus|-Trechobembix|-Trechoblemus|-Trechodes|-Trechosiella|-Trechus|-Trichaphaenops|-Tropidotrechus|-Typhlotrechus|-Xenotrechus|-Merizodus|-Oopterus|-Pseudoopterus|-Sloaneana|-Anoplogenius|-Argutoridius|-Askalaphium|-Aspidoglossa|-Baripus|-Blennidus|-Brachygnathus|-Brachyodes|-Bronislavia|-Cascellius|-Cheiloxia|-Cicindis|-Cyrtolaus|-Dioryche|-Enceladus|-Eucamaragnathus|-Eucheila|-Eurycoleus|-Eurynebria|-Geobius|-Geoscaptus|-Gynandropus|-Helluodes|-Helluomorpha|-Hiletus|-Lebidia|-Lelis|-Microcosmodes|-Migadops|-Nanodiodes|-Neoaulacoryssus|-Nyctosyles|-Oceanella|-Onypterygia|-Oodinus|-Oosoma|-Paropisthius|-Peronomerus|-Phloeoxena|-Pseudabarys|-Simous|-Somoplatus|-Styphromerus|-Trichognatus|-Trichopselaphus|-Trirammatus|-Whiteheadiana&format=tsv"
+
+
+          p taxa_records_and_names_to_try
+          puts 'startin rest download for:'
+          puts failed_node.name
+
+          download_response = _download_response(downloader: downloader, file_path: rest_path)
+          puts download_response.to_s
+          exit
+        end
+
+
         added_names = []
         taxa_records_and_names_to_try.each do |record_and_name|
 
@@ -248,6 +286,29 @@ class BoldJob2
 
   def _real_failure(node_content)
     node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' 
+  end
+
+  def _needs_rest_download(node_content)
+    node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' || node_content == 'over_75k' || node_content == 'failing_taxon'
+  end
+
+  def _rest_query(failed_taxon, taxa_to_exclude)
+
+    base = 'http://www.boldsystems.org/index.php/API_Public/combined?'
+    
+    taxa = []
+    taxa_to_exclude.each_with_index do |taxon, i|
+      taxon_name = taxon.last
+      excluded_taxon_name = taxon_name.split.unshift('-').join('')
+      taxa.push(excluded_taxon_name)
+    end
+
+    excluded_taxa_string = taxa.join('|')
+    query = excluded_taxa_string.prepend("taxon=#{failed_taxon}|")
+    query = query.concat('&format=tsv')
+    query = base.dup.concat(query)
+
+    return query
   end
 
   def _safe_download(node:, file_manager:, root_node:, i:)
@@ -474,6 +535,12 @@ class BoldJob2
     end
   end
 
+  def _get_rest_of_taxon_query
+
+
+
+  end
+
   def _get_parentage_as_dir_structure(node)
     if node.parentage
       parent_names  = []
@@ -556,7 +623,7 @@ class BoldJob2
   end
 
   def _get_rank_status(name, file_path, reached_genus_level)
-    failing_taxa = ['Arthropoda', 'Insecta', 'Arachnida', 'Collembola', 'Malacostraca']#, 'Insecta', 'Arachnida', 'Malacostraca', 'Collembola']
+    failing_taxa = ['Arthropoda', 'Insecta', 'Arachnida', 'Collembola', 'Malacostraca', 'Carabidae']#, 'Insecta', 'Arachnida', 'Malacostraca', 'Collembola']
     stats_downloader = HttpDownloader2.new(address: _bold_stats_api(name), destination: file_path)
     no_stats_file = nil
 
