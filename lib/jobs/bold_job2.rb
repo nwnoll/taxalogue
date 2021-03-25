@@ -1,33 +1,5 @@
 # frozen_string_literal: true
 
-# /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:25:in `initialize': execution expired (Net::OpenTimeout)
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:25:in `initialize'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `open'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `block in connect'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/timeout.rb:107:in `timeout'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:985:in `connect'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:970:in `do_start'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:959:in `start'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:621:in `start'
-# 	from /home/nnoll/phd/db_merger/lib/downloaders/http_downloader.rb:20:in `run'
-# 	from /home/nnoll/phd/db_merger/lib/jobs/bold_job.rb:63:in `block (2 levels) in download_files'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:508:in `call_with_index'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:361:in `block (2 levels) in work_in_threads'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:519:in `with_instrumentation'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:360:in `block in work_in_threads'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:211:in `block (4 levels) in in_threads'
-
-
-
-# <!DOCTYPE html>
-# <html>
-#         <head>
-#                 <meta charset="utf-8" />
-# <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-
-# <title>Server Offline | BOLDSYSTEMS</title>
-
-
 class BoldJob2
   attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params, :try_synonyms, :taxonomy_params, :region_params
 
@@ -91,6 +63,9 @@ class BoldJob2
 
     dl_file = File.open('results/download.txt', 'w')
     request_file = File.open('results/requests.txt', 'w')
+
+    # result_file_manager.dir_path + 'download_'
+    ## NEXT
     fh = File.open('results/tree_file.txt', 'w')
 
     
@@ -117,8 +92,8 @@ class BoldJob2
         node.content[2] = 'loading'
         file_manager.status = 'loading'
 
-        ## skip since download never succeeds due to too many records
-        if rank_status == :no_records || rank_status == :over_75k || rank_status == :failing_taxon
+        ## skip since download never succeeds due to too many records or other reasons
+        if rank_status == :no_records || rank_status == :too_many_records || rank_status == :failing_taxon
           node.content[1] = @failure
           node.content[2] = rank_status.to_s
           file_manager.status = 'failure'
@@ -139,13 +114,13 @@ class BoldJob2
           node.content[1] = @success
           node.content[2] = download_response.to_s
           file_manager.status = 'success'
-          # sleep 1
+          sleep 1
 
         elsif download_response == :empty_file
           node.content[1] = @failure
           node.content[2] = download_response.to_s
           file_manager.status = 'failure'
-          # sleep 5
+          sleep 5
 
         elsif download_response == :read_timeout
           node.content[1] = @failure
@@ -154,7 +129,7 @@ class BoldJob2
 
         elsif download_response == :open_timeout || download_response == :server_offline || download_response == :socket_error || download_response == :other_error 
           3.times do
-            # sleep 120
+            sleep 120
             download_response = _download_response(downloader: downloader, file_path: file_manager.file_path)
             
             break if download_response == :success
@@ -172,6 +147,7 @@ class BoldJob2
         end
 
         dl_file.puts "#{node.name}: #{download_response.to_s} -> #{file_manager.status}"
+
 
 
         fmanagers.push(file_manager)
@@ -245,8 +221,6 @@ class BoldJob2
           ## if the records will be more than approx 100k there might be no success
           ## no encounters atm since the overlap of NcbiTaxonomy and BOLD is great
           download_response = _download_response(downloader: downloader, file_path: rest_path)
-          puts download_response.to_s
-          exit
         end
 
 
@@ -292,7 +266,7 @@ class BoldJob2
   end
 
   def _needs_rest_download(node_content)
-    node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' || node_content == 'over_75k' || node_content == 'failing_taxon'
+    node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' || node_content == 'too_many_records' || node_content == 'failing_taxon'
   end
 
   def _rest_query(failed_taxon, taxa_to_exclude)
@@ -315,7 +289,8 @@ class BoldJob2
     end
 
     excluded_taxa_string = taxa.join('|')
-    query = excluded_taxa_string.prepend("taxon=#{failed_taxon}|")
+    query = excluded_taxa_string.prepend("taxon=")
+    query = query.concat("|#{failed_taxon}")
     query = query.concat('&format=tsv')
     
     if query.size >= max_query_size
@@ -667,10 +642,10 @@ class BoldJob2
         num_total_records = stats["total_records"]
         if !num_total_records.nil? && num_total_records == 0
           rank_status = :no_records
-        elsif !num_total_records.nil? && num_total_records <= 75_000
-          rank_status = :under_75k
+        elsif !num_total_records.nil? && num_total_records <= 90_000
+          rank_status = :suitable_records_num
         else
-          rank_status = :over_75k
+          rank_status = :too_many_records
         end
       end
     end
