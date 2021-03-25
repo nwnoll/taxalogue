@@ -30,6 +30,29 @@ class FileManager
             versioned_file_name     = Pathname.new("#{name}-#{current_datetime}")
       end
 
+      def self.directories_of(dir:)
+            dir.glob('*').select { |entry| entry.directory? }
+      end
+      
+      def self.directories_with_name_of(dir:, dir_name:)
+            dir.glob('*').select { |entry| entry.directory? && entry.basename.to_s =~ /#{dir_name}/ }
+      end
+
+      def self.most_recent_version(dirs:)
+            return nil if dirs.empty?
+            dirs_and_datetimes = []
+            dirs.each do |dir|
+                  datetime = FileManager.datetime_of(dir: dir)
+                  next unless datetime
+                  next if datetime == 'not_versioned'
+
+                  dirs_and_datetimes.push([dir, datetime])
+            end
+
+            dirs_and_datetimes.sort_by! { |entry| entry.last }
+            dirs_and_datetimes.last.first
+      end
+
       def directories_of(dir:)
             dir.glob('*').select { |entry| entry.directory? }
       end
@@ -97,7 +120,7 @@ class FileManager
             return nil if dirs.empty?
             dirs_and_datetimes = []
             dirs.each do |dir|
-                  datetime = datetime_of(dir: dir)
+                  datetime = FileManager.datetime_of(dir: dir)
                   next if datetime == 'not_versioned'
 
                   dirs_and_datetimes.push([dir, datetime])
@@ -116,12 +139,14 @@ class FileManager
             end
       end
 
-      def is_older_than(datetime:, days: 90)
+      def self.is_older_than(datetime:, days: 90)
+            return nil unless datetime
             long_time_ago = DateTime.now - days
             datetime < long_time_ago
       end
 
-      def datetime_of(dir:)
+      def self.datetime_of(dir:)
+            return nil unless dir
             dir               = dir
             base_name         = dir.basename.to_s
             is_versioned      = (base_name =~ /\w+-\d{8}T\d{4}/) ? true : false

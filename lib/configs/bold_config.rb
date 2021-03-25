@@ -36,7 +36,7 @@ class BoldConfig
       versioned_file_name = FileManager.get_versioned_file_name(name)
       FileManager.new(name: name, versioning: false, base_dir: ("fm_data/#{_source_name}/#{versioned_file_name.to_s}/"), config: self)
     else
-      FileManager.new(name: name, versioning: false, base_dir: ("fm_data/#{_source_name}/" + parent_dir.to_s), config: self)
+      FileManager.new(name: name, versioning: false, base_dir: ("fm_data/#{_source_name}/" + parent_dir), config: self)
     end
   end
 

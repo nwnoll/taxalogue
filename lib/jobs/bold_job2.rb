@@ -4,6 +4,7 @@ class BoldJob2
   attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params, :try_synonyms, :taxonomy_params, :region_params
 
   HEADER_LENGTH = 1
+  BOLD_DIR = Pathname.new('fm_data/BOLD')
 
   def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil, try_synonyms: false, taxonomy_params:, region_params: nil)
     @taxon                = taxon
@@ -15,7 +16,7 @@ class BoldJob2
     @try_synonyms         = try_synonyms
     @taxonomy_params      = taxonomy_params
     @region_params        = region_params
-    @root_dir_name        = nil
+    @root_download_dir    = nil
 
     @pending = Pastel.new.white.on_yellow('pending')
     @failure = Pastel.new.white.on_red('failure')
@@ -27,6 +28,28 @@ class BoldJob2
 
   def run
     # download_file_managers = download_files
+
+
+    ## TODO:
+    ## NEXT:
+    ## write a function that asks for next steps..
+    ## should old download be used (if it was a success?) replaced... ask for new one if its older tan x days?
+    ## new database without delting the old?
+    ## also make check if taxon has already been downloaded?
+    ## prblem migth be differing taxonomies used?
+    ## cant just use folder names
+    ## have to make database search
+    ## maybe ask tif it should be checked beforehand?
+    all_dirs = FileManager.directories_with_name_of(dir: BOLD_DIR, dir_name: taxon_name)
+    # byebug
+    p all_dirs
+    most_recent_dir = FileManager.most_recent_version(dirs: all_dirs)
+    p most_recent_dir
+    most_recent_dir_datetime = FileManager.datetime_of(dir: most_recent_dir)
+    p most_recent_dir_datetime
+    p FileManager.is_older_than(datetime: most_recent_dir_datetime, days: 90)
+    # exit
+
     download_file_managers = dload
 
     _classify_downloads(download_file_managers: download_file_managers)
@@ -67,7 +90,6 @@ class BoldJob2
 
     # result_file_manager.dir_path + 'download_'
     ## NEXT
-    fh = File.open('results/tree_file.txt', 'w')
 
     
     num_of_ranks.times do |i|
@@ -80,13 +102,8 @@ class BoldJob2
 
         file_manager = config.file_manager
         file_manager.create_dir
-
-        if node.is_root?
-          versioned_root_dir_name = file_manager.dir_path.ascend.first(2).last.basename
-          unversioned_root_dir_name = file_manager.dir_path.ascend.first(2).first.basename
-          @root_dir_name = (versioned_root_dir_name + unversioned_root_dir_name).to_s
-        end
-
+        
+        @root_download_dir = file_manager.base_dir.basename if node.is_root?
 
         stats_file_path = file_manager.dir_path + "#{node.name}_stats.json"
         stats_downloader = HttpDownloader2.new(address: _bold_stats_api(node.name), destination: stats_file_path)
@@ -193,6 +210,8 @@ class BoldJob2
 
         next if taxa_records_and_names_to_try.nil?
 
+
+        ## TODO: does not include taxa with 0 records
         if _needs_rest_download(failed_node.content[2])
           config = _create_config(node: failed_node)
 
@@ -202,9 +221,6 @@ class BoldJob2
 
           rest_query = _rest_query(failed_node.name, copy_of_taxa_records_and_names_to_try)
           downloader = HttpDownloader2.new(address: rest_query, destination: rest_path)
-
-          p rest_query
-
 
           ## request too long.. over 2k chars igth cause problems
           ## TODO: NEXT
@@ -252,20 +268,28 @@ class BoldJob2
     #   puts '-----'
     # end
     # exit
-    root_node.print_tree(level = root_node.node_depth, max_depth = nil, block = lambda { |node, prefix| fh.puts "#{'-' * node.node_depth}#{node.name}: #{node.content[2]}" })
-    
-    real_failed_nodes = root_node.find_all { |node| node.is_leaf? && _real_failure(node.content[2]) }
-    
-    success = real_failed_nodes.empty? ? 'true' : 'false'
-    
-    fh.puts
-    fh.puts "success: #{success}"
-    real_failed_nodes.each do |node|
-      fh.print node.name
-      fh.print ": #{node.content[2]}\n"
-    end
+
+
+    downloads_fh = File.open(BOLD_DIR + @root_download_dir + 'download_info.txt', 'w')
+    results_fh = File.open(result_file_manager.dir_path +  'download_info.txt', 'w')
+    _write_download_info(files: [downloads_fh, results_fh], root_node: root_node)
 
     return fmanagers
+  end
+
+  def _write_download_info(files:, root_node:)
+    files.each do |file|
+      root_node.print_tree(level = root_node.node_depth, max_depth = nil, block = lambda { |node, prefix| file.puts "#{'-' * node.node_depth}#{node.name}: #{node.content[2]}" })
+      real_failed_nodes = root_node.find_all { |node| node.is_leaf? && _real_failure(node.content[2]) }
+      success = real_failed_nodes.empty? ? 'true' : 'false'
+      file.puts
+      file.puts "success: #{success}"
+      
+      real_failed_nodes.each do |node|
+        file.print node.name
+        file.print ": #{node.content[2]}\n"
+      end
+    end
   end
 
   def _real_failure(node_content)
@@ -542,9 +566,10 @@ class BoldJob2
     if node.parentage
       parent_names  = []
       node.parentage.each do |parent_node|
-        parent_node.is_root? ? parent_names.push(@root_dir_name) : parent_names.push(parent_node.name)
+        parent_node.is_root? ? parent_names.push((@root_download_dir + parent_node.name).to_s) : parent_names.push(Pathname.new(parent_node.name))
       end
-      parent_dir    = parent_names.reverse.join('/')
+      # parent_dir = parent_names.reverse.join('/')
+      parent_dir = parent_names.reverse.inject(:+)
       
       return parent_dir
     end
