@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 class BoldConfig
-  attr_reader :markers, :name, :parent_dir
-  def initialize(name:, markers: nil, parent_dir: nil)
+  attr_reader :markers, :name, :parent_dir, :is_root
+  def initialize(name:, markers: nil, parent_dir: nil, is_root: false)
     @name            = name
     @markers         = markers.kind_of?(Array) ? markers : [markers]
     @parent_dir      = parent_dir
+    @is_root      = is_root
   end
 
   def downloader
@@ -31,7 +32,12 @@ class BoldConfig
   end
 
   def file_manager
-    FileManager.new(name: name, versioning: false, base_dir: ("fm_data/#{_source_name}/" + parent_dir.to_s), config: self)
+    if is_root
+      versioned_file_name = FileManager.get_versioned_file_name(name)
+      FileManager.new(name: name, versioning: false, base_dir: ("fm_data/#{_source_name}/#{versioned_file_name.to_s}/"), config: self)
+    else
+      FileManager.new(name: name, versioning: false, base_dir: ("fm_data/#{_source_name}/" + parent_dir.to_s), config: self)
+    end
   end
 
   private

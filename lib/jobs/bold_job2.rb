@@ -15,6 +15,7 @@ class BoldJob2
     @try_synonyms         = try_synonyms
     @taxonomy_params      = taxonomy_params
     @region_params        = region_params
+    @root_dir_name        = nil
 
     @pending = Pastel.new.white.on_yellow('pending')
     @failure = Pastel.new.white.on_red('failure')
@@ -79,6 +80,12 @@ class BoldJob2
 
         file_manager = config.file_manager
         file_manager.create_dir
+
+        if node.is_root?
+          versioned_root_dir_name = file_manager.dir_path.ascend.first(2).last.basename
+          unversioned_root_dir_name = file_manager.dir_path.ascend.first(2).first.basename
+          @root_dir_name = (versioned_root_dir_name + unversioned_root_dir_name).to_s
+        end
 
 
         stats_file_path = file_manager.dir_path + "#{node.name}_stats.json"
@@ -521,7 +528,7 @@ class BoldJob2
       parent_dir    = _get_parentage_as_dir_structure(node)
       config        = BoldConfig.new(name: node.name, markers: markers, parent_dir: parent_dir)
     else
-      config        = BoldConfig.new(name: node.name, markers: markers)
+      config        = BoldConfig.new(name: node.name, markers: markers, is_root: true)
     end
   end
 
@@ -534,7 +541,9 @@ class BoldJob2
   def _get_parentage_as_dir_structure(node)
     if node.parentage
       parent_names  = []
-      node.parentage.each { |parent| parent_names.push(parent.name) } 
+      node.parentage.each do |parent_node|
+        parent_node.is_root? ? parent_names.push(@root_dir_name) : parent_names.push(parent_node.name)
+      end
       parent_dir    = parent_names.reverse.join('/')
       
       return parent_dir

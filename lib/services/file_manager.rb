@@ -1,20 +1,20 @@
 # frozen_string_literal: true
 
 class FileManager
-      attr_reader :directory, :versioning, :name, :base_dir, :dir_path, :datetime_format, :force, :config, :multiple_files_per_dir, :created_files
+      attr_reader :directory, :versioning, :name, :base_dir, :dir_path, :force, :config, :multiple_files_per_dir, :created_files
       attr_accessor :status
+      DATE_TIME_FORMAT = "%Y%m%dT%H%M"
 
       def initialize(name:, versioning: true, base_dir: '.', force: true, config: nil, multiple_files_per_dir: false)
             @base_dir               = Pathname.new(base_dir)
             @name                   = name
-            @datetime_format        = "%Y%m%dT%H%M"
             @force                  = force
 
             current_datetime        = DateTime.now
-            current_datetime        = current_datetime.strftime(@datetime_format)
+            current_datetime        = current_datetime.strftime(DATE_TIME_FORMAT)
 
             @versioning             = versioning
-            versioning              ? @directory = Pathname.new("#{name}-#{current_datetime}") : @directory = Pathname.new(name)
+            versioning              ? @directory = FileManager.get_versioned_file_name(name) : @directory = Pathname.new(name)
 
             @dir_path               = @base_dir + @directory
 
@@ -22,6 +22,12 @@ class FileManager
             @multiple_files_per_dir = multiple_files_per_dir
 
             @created_files          = [] 
+      end
+
+      def self.get_versioned_file_name(name)
+            current_datetime        = DateTime.now
+            current_datetime        = current_datetime.strftime(DATE_TIME_FORMAT)
+            versioned_file_name     = Pathname.new("#{name}-#{current_datetime}")
       end
 
       def directories_of(dir:)
@@ -123,7 +129,7 @@ class FileManager
 
             parts             = base_name.split('-')
             datetime          = parts.last
-            datetime          = DateTime.strptime(datetime, datetime_format)
+            datetime          = DateTime.strptime(datetime, DATE_TIME_FORMAT)
             return datetime
       end
 
