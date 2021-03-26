@@ -34,9 +34,12 @@ class BoldConfig
   def file_manager
     if is_root
       versioned_file_name = FileManager.get_versioned_file_name(name)
-      FileManager.new(name: name, versioning: false, base_dir: ("fm_data/#{_source_name}/#{versioned_file_name.to_s}/"), config: self)
+      base_dir_path = Pathname.new("fm_data/#{_source_name}/#{versioned_file_name.to_s}/")
+      FileManager.new(name: name, versioning: false, base_dir: base_dir_path, config: self)
     else
-      FileManager.new(name: name, versioning: false, base_dir: ("fm_data/#{_source_name}/" + parent_dir), config: self)
+      base_dir_path = Pathname.new("fm_data/#{_source_name}/")
+      base_dir_path = base_dir_path + parent_dir
+      FileManager.new(name: name, versioning: false, base_dir: base_dir_path, config: self)
     end
   end
 

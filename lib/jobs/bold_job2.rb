@@ -280,25 +280,54 @@ class BoldJob2
     # exit
 
 
-    downloads_fh = File.open(BOLD_DIR + @root_download_dir + 'download_info.txt', 'w')
-    results_fh = File.open(result_file_manager.dir_path +  'download_info.txt', 'w')
-    _write_download_info(files: [downloads_fh, results_fh], root_node: root_node)
+    dl_path_public = Pathname.new(BOLD_DIR + @root_download_dir + 'download_info.txt')
+    dl_path_hidden = Pathname.new(BOLD_DIR + @root_download_dir + '.download_info.txt')
+    rs_path_public = Pathname.new(result_file_manager.dir_path + 'download_info.txt')
+    rs_path_hidden = Pathname.new(result_file_manager.dir_path + '.download_info.txt')
+    _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], root_node: root_node)
 
+    failures = DownloadInfoParser.get_download_failures(dl_path_hidden)
+    
+    unless failures.empty?
+
+    end
     return fmanagers
   end
 
-  def _write_download_info(files:, root_node:)
-    files.each do |file|
-      root_node.print_tree(level = root_node.node_depth, max_depth = nil, block = lambda { |node, prefix| file.puts "#{'-' * node.node_depth}#{node.name}: #{node.content[2]}" })
+  def _write_download_info(paths:, root_node:)
+
+    paths.each do |path|
+      file = File.open(path, 'w')
+
+      root_node_copy = root_node.detached_subtree_copy
+      root_node_copy.each do |node|
+        node.content = node.content.last
+      end
+
+      basename = path.basename.to_s
+      if basename.starts_with?('.')
+        hash = root_node_copy.to_h
+        json_hash = hash.to_json
+
+        file.puts(json_hash)
+      else
+        root_node_copy.print_tree(level = root_node.node_depth, max_depth = nil, block = lambda { |node, prefix| file.puts "#{prefix} #{node.name}".ljust(30) + " #{node.content}" })
+      end
+
       real_failed_nodes = root_node.find_all { |node| node.is_leaf? && _real_failure(node.content[2]) }
       success = real_failed_nodes.empty? ? 'true' : 'false'
+
+      if path.descend.first.to_s == 'results'
+        file.puts
+        file.puts "corresponding data directory: #{(BOLD_DIR + @root_download_dir).to_s}"
+      else
+        file.puts
+        file.puts "corresponding result directory: #{result_file_manager.dir_path.to_s}"
+      end
+
       file.puts
       file.puts "success: #{success}"
-      
-      real_failed_nodes.each do |node|
-        file.print node.name
-        file.print ": #{node.content[2]}\n"
-      end
+      file.rewind
     end
   end
 
@@ -335,7 +364,7 @@ class BoldJob2
     query = query.concat('&format=tsv')
     
     if query.size >= max_query_size
-
+      ## TODO:
     end
     query = base.dup.concat(query)
 
@@ -576,10 +605,14 @@ class BoldJob2
     if node.parentage
       parent_names  = []
       node.parentage.each do |parent_node|
-        parent_node.is_root? ? parent_names.push((@root_download_dir + parent_node.name).to_s) : parent_names.push(Pathname.new(parent_node.name))
+        parent_node.is_root? ? parent_names.push((@root_download_dir + parent_node.name)) : parent_names.push(Pathname.new(parent_node.name))
       end
       # parent_dir = parent_names.reverse.join('/')
-      parent_dir = parent_names.reverse.inject(:+)
+      begin
+        parent_dir = parent_names.reverse.inject(:+)
+      rescue TypeError
+        byebug
+      end
       
       return parent_dir
     end

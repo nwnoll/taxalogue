@@ -51,6 +51,7 @@ class Helper
 
     return 0
   end
+
   def self.filter_seq(seq, criteria)
 
     seq = seq.dup
@@ -87,6 +88,8 @@ class Helper
   def self.json_file_to_hash(file_name)
     file = File.read(file_name)
     hash = JSON.parse(file)
+
+    file.rewind
 
     return hash
   end
@@ -590,5 +593,40 @@ class Helper
     human_result_contaminants_file_path = result_contaminants_dir_path + 'Homo_sapiens_output.out'
     ncbi_genbank_extractor = NcbiGenbankExtractor.new(file_name: human_contaminants_file_path, taxon_name: 'Homo sapiens', markers: marker_objects, result_file_name: human_result_contaminants_file_path)
     ncbi_genbank_extractor.run
+  end
+
+  def self.has_been_downloaded?(taxon:, dirs:, was_successful: true)
+    taxon_name = taxon.canonical_name
+    
+    dirs.each do |dir|
+
+      dirs_with_taxon_name = FileManager.directories_with_name_of(dir: dir, dir_name: taxon_name)
+
+      ## TODO:
+      ## NEXT:
+      ## maybe also implement for non successful downloads
+      ## should definitely do the same for GBOL and NCBI..
+      ## need to specify what was successfull etc..
+      ##
+      successes = []
+      dirs_with_taxon_name.each do |dir_with_taxon_name|
+        file_path = dir_with_taxon_name + '.download_info.txt'
+        success = DownloadInfoParser.download_was_successful?(file_path)
+        successes.push(dir_with_taxon_name)
+      end
+    end
+  end
+
+  def self.taxon_belongs_to(taxon_object:, name:)
+    ## add GBIF
+    ## also for higher taxa
+    ## if i choose arthropoda,
+    ## e.g. check if insecta has aready been downlaoded
+    ncbi_record = Helper.choose_ncbi_record(name)
+    return false if ncbi_record.nil?
+
+    if ncbi_record.taxon_rank
+      taxon_object.public_send(Helper.latinize_rank(ncbi_record.taxon_rank)) == ncbi_record.canonical_name || taxon_object.canonical_name == ncbi_record.canonical_name
+    end
   end
 end

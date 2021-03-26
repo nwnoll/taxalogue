@@ -239,6 +239,15 @@ loop do
 end
 
 
+p Helper.taxon_belongs_to(taxon_object:params[:taxon_object], name: 'Mantophasmatodea')
+
+exit
+
+
+# download_info_path = Pathname.new("/home/nnoll/phd/db_merger/results/Mantophasmatodea-20210326T1433/.download_info.txt")
+# failures = DownloadInfoParser.get_download_failures(download_info_path)
+
+
 # byebug
 ## if taxonomy was chosen by user, it needs to be updated
 params = Helper.assign_taxon_info_to_params(params, params[:taxon])
