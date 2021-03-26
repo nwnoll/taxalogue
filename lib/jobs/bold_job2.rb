@@ -147,9 +147,28 @@ class BoldJob2
           sleep 5
 
         elsif download_response == :read_timeout
-          node.content[1] = @failure
-          node.content[2] = download_response.to_s
-          file_manager.status = 'failure'
+          if reached_genus_level
+            3.times do
+              sleep 5
+              download_response = _download_response(downloader: downloader, file_path: file_manager.file_path)
+              
+              break if download_response == :success
+            end
+  
+            if download_response == :success
+              node.content[1] = @success
+              node.content[2] = download_response.to_s
+              file_manager.status = 'success'
+            else
+              node.content[1] = @failure
+              node.content[2] = download_response.to_s
+              file_manager.status = 'failure'
+            end
+          else
+            node.content[1] = @failure
+            node.content[2] = download_response.to_s
+            file_manager.status = 'failure'
+          end
 
         elsif download_response == :open_timeout || download_response == :server_offline || download_response == :socket_error || download_response == :other_error 
           3.times do
@@ -170,17 +189,8 @@ class BoldJob2
           end
         end
 
-        dl_file.puts "#{node.name}: #{download_response.to_s} -> #{file_manager.status}"
-
-
-
         fmanagers.push(file_manager)
         _print_download_progress_report(root_node: root_node, rank_level: i)
-        # exit
-        # root_node.each do |node|
-        #   pp node
-        #   puts '-----'
-        # end
       end
 
       break if reached_genus_level

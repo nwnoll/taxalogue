@@ -39,6 +39,7 @@ class FileManager
       end
 
       def self.most_recent_version(dirs:)
+            return nil unless dirs
             return nil if dirs.empty?
             dirs_and_datetimes = []
             dirs.each do |dir|
@@ -50,6 +51,7 @@ class FileManager
             end
 
             dirs_and_datetimes.sort_by! { |entry| entry.last }
+            return nil unless dirs_and_datetimes.last
             dirs_and_datetimes.last.first
       end
 
