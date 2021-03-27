@@ -95,15 +95,15 @@ subcommands = {
 		opts.on('-s NAMES', String, '--names')
 		opts.on('-l LINEAGE', String, '--lineage')
 		opts.on('-a', '--all_seqs') 
-   end,
-   download: OptionParser.new do |opts|
+   	end,
+   	download: OptionParser.new do |opts|
 		opts.banner = "Usage: download [options]"
 		opts.on('-g', '--gbol')
 		opts.on('-o', '--bold')
 		opts.on('-k', '--genbank')
 		opts.on('-a', '--all')
-   end,
-   setup: OptionParser.new do |opts|
+   	end,
+   	setup: OptionParser.new do |opts|
 		opts.banner = "Usage: setup [options]"
 		opts.on('-t', '--taxonomies')
 		opts.on('-n', '--ncbi_taxonomy')
@@ -111,8 +111,8 @@ subcommands = {
 		opts.on('-r', '--regions')
 		opts.on('-e', '--terrestrial_ecoregions')
 		opts.on('-b', '--biogeographic_realms')
-   end,
-   update: OptionParser.new do |opts|
+   	end,
+   	update: OptionParser.new do |opts|
 		opts.banner = "Usage: update [options]"
 		opts.on('-A', '--all_taxonomies')
 		opts.on('-b', '--gbif_taxonomy')
@@ -228,7 +228,7 @@ subcommands = {
 			end
 		end
 	end
- }
+}
 
 global.order!
 
@@ -238,8 +238,17 @@ loop do
 	subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
 end
 
+bold_dirs = FileManager.directories_of(dir: Pathname.new('fm_data/BOLD/'))
+taxon_dirs = Helper.download_dirs_for_taxon(params: params, dirs: bold_dirs)
+
+pp params[:taxon_object]
+
+pp taxon_dirs
+exit
+
 p Helper.taxon_download_status(dir_name: 'Mantophasmatodea', params: params)
 p Helper.taxon_download_status(dir_name: 'Insecta', params: params)
+p Helper.taxon_download_status(dir_name: 'Indsecta', params: params)
 
 # p Helper.taxon_belongs_to(taxon_object:params[:taxon_object], dir_name: 'Mantophasmatodea')
 

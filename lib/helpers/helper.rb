@@ -617,6 +617,17 @@ class Helper
     end
   end
 
+  def self.download_dirs_for_taxon(params:, dirs:)
+    dirs_for_taxon = []
+    dirs.each do |dir|
+      dir_name = FileManager.dir_name_of(dir: dir)
+      taxon_download_status = Helper.taxon_download_status(dir_name: dir_name, params: params)
+      dirs_for_taxon.push([dir, taxon_download_status]) unless taxon_download_status == :dir_name_not_found || taxon_download_status == :taxon_not_found
+    end
+
+    return dirs_for_taxon
+  end
+
   def self.taxon_download_status(dir_name:, params:)
 
     taxon_query_object = params[:taxon_object]
@@ -636,6 +647,9 @@ class Helper
       ## works if taxon query is higher than dir name
       ## e.g. user wants Arthopoda, but has already downloaded seqs for Insecta  
       return :lower_taxon_found if record_for_dir_name.public_send(Helper.latinize_rank(taxon_query_object.taxon_rank)) == taxon_query_object.canonical_name
+    
+      ## did find no matches
+      return :taxon_not_found
     else
       return :taxon_not_found
     end
