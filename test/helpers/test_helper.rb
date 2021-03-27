@@ -284,32 +284,32 @@ class TestHelper < Test::Unit::TestCase
             params[:taxonomy][:gbif] = false
             params[:taxonomy][:gbif_backbone] = false
 
-            assert_equal OpenStruct, Helper.get_query_taxon_record(params).class      
-            assert_equal @lentulidae_obj, Helper.get_query_taxon_record(params)          
+            assert_equal OpenStruct, Helper.get_taxon_record(params).class      
+            assert_equal @lentulidae_obj, Helper.get_taxon_record(params)          
             
             params[:taxon] = 'xxxxccccccxxxxxx'
-            assert_equal nil, Helper.get_query_taxon_record(params)          
+            assert_equal nil, Helper.get_taxon_record(params)          
             
             params[:taxonomy][:ncbi] = false
             params[:taxonomy][:gbif] = true
             params[:taxonomy][:gbif_backbone] = false
-            assert_equal nil, Helper.get_query_taxon_record(params)          
+            assert_equal nil, Helper.get_taxon_record(params)          
 
             params[:taxon] = 'Lentulidae'
-            assert_equal GbifTaxonomy, Helper.get_query_taxon_record(params).class
+            assert_equal GbifTaxonomy, Helper.get_taxon_record(params).class
             
             obj = GbifTaxonomy.find_by(canonical_name: 'Lentulidae')
-            assert_equal obj, Helper.get_query_taxon_record(params)
+            assert_equal obj, Helper.get_taxon_record(params)
             
             params[:taxonomy][:ncbi] = false
             params[:taxonomy][:gbif] = false
             params[:taxonomy][:gbif_backbone] = true
             params[:taxon] = 'xxxxccccccxxxxxx'
-            assert_equal nil, Helper.get_query_taxon_record(params)          
+            assert_equal nil, Helper.get_taxon_record(params)          
             
             params[:taxon] = 'Lentulidae'
-            assert_equal GbifTaxonomy, Helper.get_query_taxon_record(params).class
-            assert_equal obj, Helper.get_query_taxon_record(params)
+            assert_equal GbifTaxonomy, Helper.get_taxon_record(params).class
+            assert_equal obj, Helper.get_taxon_record(params)
       end
 
       def test_assign_taxon_info_to_params

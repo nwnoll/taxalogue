@@ -525,7 +525,7 @@ class Helper
     return records.first
   end
 
-  def self.get_query_taxon_record(params, taxon_name = nil)
+  def self.get_taxon_record(params, taxon_name = nil)
     taxon_object = nil
     taxon_name = params[:taxon] if taxon_name.nil?
     if params[:taxonomy][:ncbi]
@@ -554,7 +554,7 @@ class Helper
 
   def self.assign_taxon_info_to_params(params, taxon_name)
 
-    taxon_object = Helper.get_query_taxon_record(params, taxon_name)
+    taxon_object = Helper.get_taxon_record(params, taxon_name)
 		
 		params[:taxon_object] = taxon_object
 		if taxon_object
@@ -617,16 +617,27 @@ class Helper
     end
   end
 
-  def self.taxon_belongs_to(taxon_object:, name:)
-    ## add GBIF
-    ## also for higher taxa
-    ## if i choose arthropoda,
-    ## e.g. check if insecta has aready been downlaoded
-    ncbi_record = Helper.choose_ncbi_record(name)
-    return false if ncbi_record.nil?
+  def self.taxon_download_status(dir_name:, params:)
 
-    if ncbi_record.taxon_rank
-      taxon_object.public_send(Helper.latinize_rank(ncbi_record.taxon_rank)) == ncbi_record.canonical_name || taxon_object.canonical_name == ncbi_record.canonical_name
+    taxon_query_object = params[:taxon_object]
+
+    record_for_dir_name = Helper.get_taxon_record(params, dir_name)
+    return :dir_name_not_found if record_for_dir_name.nil?
+
+    if taxon_query_object.canonical_name == record_for_dir_name.canonical_name
+      return :same_taxon_found
+
+    elsif record_for_dir_name.taxon_rank
+      
+      ## works if taxon query is lower than dir_name
+      ## e.g user wants Lentulidae, but has already downloaded seqs for Orthoptera
+      return :higher_taxon_found if taxon_query_object.public_send(Helper.latinize_rank(record_for_dir_name.taxon_rank)) == record_for_dir_name.canonical_name
+      
+      ## works if taxon query is higher than dir name
+      ## e.g. user wants Arthopoda, but has already downloaded seqs for Insecta  
+      return :lower_taxon_found if record_for_dir_name.public_send(Helper.latinize_rank(taxon_query_object.taxon_rank)) == taxon_query_object.canonical_name
+    else
+      return :taxon_not_found
     end
   end
 end

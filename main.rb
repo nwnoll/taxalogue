@@ -25,7 +25,7 @@ if File.exists? CONFIG_FILE
 	config_options = YAML.load_file(CONFIG_FILE)
 	params.merge!(config_options)
 
-	taxon_object = Helper.get_query_taxon_record(params)
+	taxon_object = Helper.get_taxon_record(params)
 	
 	if taxon_object.nil?
 		abort "Cannot find default Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species\nMaybe the Taxonomy Database is not properly setup, run the program with --setup_taxonomy to fix the issue."
@@ -238,8 +238,10 @@ loop do
 	subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
 end
 
+p Helper.taxon_download_status(dir_name: 'Mantophasmatodea', params: params)
+p Helper.taxon_download_status(dir_name: 'Insecta', params: params)
 
-p Helper.taxon_belongs_to(taxon_object:params[:taxon_object], name: 'Mantophasmatodea')
+# p Helper.taxon_belongs_to(taxon_object:params[:taxon_object], dir_name: 'Mantophasmatodea')
 
 exit
 

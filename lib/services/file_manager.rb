@@ -147,6 +147,17 @@ class FileManager
             datetime < long_time_ago
       end
 
+      def self.dir_name_of(dir:)
+            return nil unless dir
+
+            dir         = dir
+            base_name   = dir.basename.to_s
+            parts       = base_name.split('-')
+            dir_name    = parts.first
+
+            return dir_name
+      end
+
       def self.datetime_of(dir:)
             return nil unless dir
             dir               = dir
