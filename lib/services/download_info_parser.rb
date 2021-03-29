@@ -3,6 +3,8 @@
 class DownloadInfoParser
 
     def self.download_was_successful?(file_path)
+        return false unless File.file?(file_path)
+        
         file = File.open(file_path, 'r')
         lines = File.readlines(file)
         last_line = lines.last

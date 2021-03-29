@@ -617,15 +617,70 @@ class Helper
     end
   end
 
-  def self.download_dirs_for_taxon(params:, dirs:)
-    dirs_for_taxon = []
+  def self.select_from_download_dirs(dirs:)
+
+    # precedence:
+    ## only :same_taxon_found && :higher_taxon_found
+    ## successfull highest precendence, after that comes most recent version and
+    ## and after that comes distinction between same_taxon and higher_taxon
+    ## 1) :same_taxon_found && successful && most recent version
+    ## 2) :higher_taxon_found && successful && most recent version
+
+    ## 1) :same_taxon_found && successful
+    ## 2) :higher_taxon_found && successful
+
+    ## 3) :same_taxon_found
+    ## 3) :higher_taxon_found
+
+    precedence_of =
+      {
+        ## 0 higher precedence
+        'true' => 0,
+        'false' => 1,
+        "" =>  1, # nil
+
+        'same_taxon_found' => 0,
+        'higher_taxon_found' => 1,
+
+        'not_versioned' => DateTime.new(1900)
+    }
+    only_dirs = dirs.map { |ary| ary[0] }
+
+    desc_dirs_by_datetime = FileManager.sort_by_datetime(dirs: only_dirs, mode: 'desc')
+    
+    sorted = dirs.sort_by do |dir_and_state|
+      dir, state  = dir_and_state
+      file_path   = dir + '.download_info.txt'
+
+      success = DownloadInfoParser.download_was_successful?(file_path)
+
+      datetime = FileManager.datetime_of(dir: dir)
+      datetime = precedence_of[datetime] if precedence_of.key?(datetime)
+      
+      [precedence_of[success.to_s], desc_dirs_by_datetime.index(dir), precedence_of[state.to_s]]
+    end
+
+    sorted
+  end
+
+  def self.download_dirs_for_taxon(params:, dirs:, only_successful: false)
+    taxon_dirs = []
     dirs.each do |dir|
       dir_name = FileManager.dir_name_of(dir: dir)
       taxon_download_status = Helper.taxon_download_status(dir_name: dir_name, params: params)
-      dirs_for_taxon.push([dir, taxon_download_status]) unless taxon_download_status == :dir_name_not_found || taxon_download_status == :taxon_not_found
+      taxon_dirs.push([dir, taxon_download_status]) unless taxon_download_status == :dir_name_not_found || taxon_download_status == :taxon_not_found
     end
 
-    return dirs_for_taxon
+    if only_successful
+      successful_downloads = taxon_dirs.select do |dir_and_state|
+        dir, state = dir_and_state
+        file_path = dir + '.download_info.txt'
+
+        DownloadInfoParser.download_was_successful?(file_path)
+      end
+    end
+
+    return only_successful ? successful_downloads : taxon_dirs
   end
 
   def self.taxon_download_status(dir_name:, params:)
@@ -650,7 +705,7 @@ class Helper
     
       ## did find no matches
       return :taxon_not_found
-    else
+    else # no rank
       return :taxon_not_found
     end
   end

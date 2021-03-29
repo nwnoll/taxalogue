@@ -55,6 +55,33 @@ class FileManager
             dirs_and_datetimes.last.first
       end
 
+      def self.sort_by_datetime(dirs:, mode: 'desc')
+            return nil unless dirs
+            return nil if dirs.empty?
+            
+            dirs_and_datetimes = []
+            dirs.each do |dir|
+                  datetime = FileManager.datetime_of(dir: dir)
+                  datetime = DateTime.new(1900) unless datetime
+                  datetime = DateTime.new(1900) if datetime == 'not_versioned'
+
+                  dirs_and_datetimes.push([dir, datetime])
+            end
+
+            dirs_and_datetimes.sort_by! { |entry| entry.last }
+            
+            return [] if dirs_and_datetimes.empty?
+            
+            only_dirs = dirs_and_datetimes.map { |ary| ary[0] }
+            
+            if mode == 'asc'
+                  return only_dirs
+            elsif mode == 'desc'
+                  return only_dirs.reverse
+            end
+      end
+
+
       def directories_of(dir:)
             dir.glob('*').select { |entry| entry.directory? }
       end

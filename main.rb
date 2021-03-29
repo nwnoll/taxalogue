@@ -241,9 +241,13 @@ end
 bold_dirs = FileManager.directories_of(dir: Pathname.new('fm_data/BOLD/'))
 taxon_dirs = Helper.download_dirs_for_taxon(params: params, dirs: bold_dirs)
 
-pp params[:taxon_object]
+sorted = Helper.select_from_download_dirs(dirs: taxon_dirs)
 
 pp taxon_dirs
+puts
+puts
+pp sorted
+
 exit
 
 p Helper.taxon_download_status(dir_name: 'Mantophasmatodea', params: params)
