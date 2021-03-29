@@ -38,6 +38,22 @@ class FileManager
             dir.glob('*').select { |entry| entry.directory? && entry.basename.to_s =~ /#{dir_name}/ }
       end
 
+      def self.is_how_old?(dir:)
+            return nil unless dir
+            datetime = FileManager.datetime_of(dir: dir)
+
+
+            
+            return nil unless datetime
+            return nil if datetime == "not_versioned"
+
+            days = DateTime.now - datetime
+
+            return nil unless days
+
+            return days.to_i
+      end
+
       def self.most_recent_version(dirs:)
             return nil unless dirs
             return nil if dirs.empty?

@@ -241,22 +241,32 @@ end
 bold_dirs = FileManager.directories_of(dir: Pathname.new('fm_data/BOLD/'))
 taxon_dirs = Helper.download_dirs_for_taxon(params: params, dirs: bold_dirs)
 
-sorted = Helper.select_from_download_dirs(dirs: taxon_dirs)
+selected_bold_download_dir_and_state = Helper.select_from_download_dirs(dirs: taxon_dirs)
 
-pp taxon_dirs
-puts
-puts
-pp sorted
+# pp taxon_dirs
+# puts
+# puts
+# pp selected_bold_download_dir_and_state
 
-exit
+# puts
+# puts
+# p FileManager.is_how_old?(dir: selected_bold_download_dir_and_state.first)
 
-p Helper.taxon_download_status(dir_name: 'Mantophasmatodea', params: params)
-p Helper.taxon_download_status(dir_name: 'Insecta', params: params)
-p Helper.taxon_download_status(dir_name: 'Indsecta', params: params)
+# dir = Helper.ask_user_about_download_dirs(params)
+# p dir
+# p dir if dir
+
+# exit
+
+
+
+# p Helper.taxon_download_status(dir_name: 'Mantophasmatodea', params: params)
+# p Helper.taxon_download_status(dir_name: 'Insecta', params: params)
+# p Helper.taxon_download_status(dir_name: 'Indsecta', params: params)
 
 # p Helper.taxon_belongs_to(taxon_object:params[:taxon_object], dir_name: 'Mantophasmatodea')
 
-exit
+# exit
 
 
 # download_info_path = Pathname.new("/home/nnoll/phd/db_merger/results/Mantophasmatodea-20210326T1433/.download_info.txt")
@@ -272,7 +282,7 @@ params = Helper.assign_taxon_info_to_params(params, params[:taxon])
 # exit
 
 file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region])
+bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
 file_manager.create_dir
 # Helper.get_inv_contaminants(file_manager, params[:marker_objects])
 bold_job.run

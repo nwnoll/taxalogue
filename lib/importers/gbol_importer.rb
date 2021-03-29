@@ -8,7 +8,7 @@ class GbolImporter
   def self.get_source_lineage(row)
     OpenStruct.new(
       name:     row["Species"],
-      combined: row['HigherTaxa'].split(', ')
+      combined: row['HigherTaxa'].split(', ').push(row["Species"])
     )
   end
 

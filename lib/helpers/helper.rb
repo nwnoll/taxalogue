@@ -89,8 +89,6 @@ class Helper
     file = File.read(file_name)
     hash = JSON.parse(file)
 
-    file.rewind
-
     return hash
   end
 
@@ -623,24 +621,19 @@ class Helper
     ## only :same_taxon_found && :higher_taxon_found
     ## successfull highest precendence, after that comes most recent version and
     ## and after that comes distinction between same_taxon and higher_taxon
-    ## 1) :same_taxon_found && successful && most recent version
-    ## 2) :higher_taxon_found && successful && most recent version
-
-    ## 1) :same_taxon_found && successful
-    ## 2) :higher_taxon_found && successful
-
-    ## 3) :same_taxon_found
-    ## 3) :higher_taxon_found
 
     precedence_of =
       {
         ## 0 higher precedence
         'true' => 0,
         'false' => 1,
-        "" =>  1, # nil
+        "" =>  9, # nil
 
         'same_taxon_found' => 0,
         'higher_taxon_found' => 1,
+        'lower_taxon_found' => 2,
+        'taxon_not_found' => 3,
+        'dir_name_not_found' => 3,
 
         'not_versioned' => DateTime.new(1900)
     }
@@ -657,13 +650,17 @@ class Helper
       datetime = FileManager.datetime_of(dir: dir)
       datetime = precedence_of[datetime] if precedence_of.key?(datetime)
       
-      [precedence_of[success.to_s], desc_dirs_by_datetime.index(dir), precedence_of[state.to_s]]
+      ## defines precedence
+      ## success | datetime of dir | download_state
+      [precedence_of[success.to_s], precedence_of[state.to_s], desc_dirs_by_datetime.index(dir)]
     end
 
-    sorted
+    same_or_higher_taxa_sorted = sorted.select { |dir_and_state| dir_and_state.last == :same_taxon_found || dir_and_state.last == :higher_taxon_found  }
+
+    return same_or_higher_taxa_sorted.first
   end
 
-  def self.download_dirs_for_taxon(params:, dirs:, only_successful: false)
+  def self.download_dirs_for_taxon(params:, dirs:, only_successful: true)
     taxon_dirs = []
     dirs.each do |dir|
       dir_name = FileManager.dir_name_of(dir: dir)
@@ -709,4 +706,40 @@ class Helper
       return :taxon_not_found
     end
   end
+
+  def self.ask_user_about_download_dirs(params)
+    dirs = FileManager.directories_of(dir: Pathname.new('fm_data/BOLD/'))
+    return nil if Helper._is_nil_or_empty?(dirs)
+
+    taxon_dirs = Helper.download_dirs_for_taxon(params: params, dirs: dirs)
+    return nil if Helper._is_nil_or_empty?(taxon_dirs)
+
+    selected_download_dir_and_state = Helper.select_from_download_dirs(dirs: taxon_dirs)
+    return nil if Helper._is_nil_or_empty?(selected_download_dir_and_state)
+
+    selected_download_dir, selected_download_state = selected_download_dir_and_state
+    last_download_days = FileManager.is_how_old?(dir: selected_download_dir)
+    return nil if last_download_days.nil?
+
+    puts "You have already downloaded data for the taxon #{params[:taxon]}"
+    puts "Sequences for #{params[:taxon]} are available in: #{selected_download_dir.to_s}"
+    puts "The latest already downloaded version is #{last_download_days} days old"
+    puts
+    puts "Do you want to use the latest already downloaded version? [Y/n]"
+    puts "Otherwise a new download will start"
+
+
+    # nested_dir_name = FileManager.dir_name_of(dir: selected_download_dir)
+    # download_dir = selected_download_dir + nested_dir_name
+
+    user_input  = gets.chomp
+    use_latest_download = (user_input =~ /y|yes/i) ? true : false
+
+    return use_latest_download ? selected_download_dir : nil
+  end
+
+  def self._is_nil_or_empty?(data)
+    data.nil? || data.empty?
+  end
+
 end

@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 class BoldJob2
-  attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params, :try_synonyms, :taxonomy_params, :region_params
+  attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params, :try_synonyms, :taxonomy_params, :region_params, :params
 
   HEADER_LENGTH = 1
   BOLD_DIR = Pathname.new('fm_data/BOLD')
 
-  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil, try_synonyms: false, taxonomy_params:, region_params: nil)
+  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil, try_synonyms: false, taxonomy_params:, region_params: nil, params: nil)
     @taxon                = taxon
     @taxon_name           = taxon.canonical_name
     @markers              = markers
@@ -17,6 +17,7 @@ class BoldJob2
     @taxonomy_params      = taxonomy_params
     @region_params        = region_params
     @root_download_dir    = nil
+    @params               = params
 
     @pending = Pastel.new.white.on_yellow('pending')
     @failure = Pastel.new.white.on_red('failure')
@@ -40,23 +41,64 @@ class BoldJob2
     ## cant just use folder names
     ## have to make database search
     ## maybe ask tif it should be checked beforehand?
-    all_dirs = FileManager.directories_with_name_of(dir: BOLD_DIR, dir_name: taxon_name)
-    # byebug
-    p all_dirs
-    most_recent_dir = FileManager.most_recent_version(dirs: all_dirs)
-    p most_recent_dir
-    most_recent_dir_datetime = FileManager.datetime_of(dir: most_recent_dir)
-    p most_recent_dir_datetime
-    p FileManager.is_older_than(datetime: most_recent_dir_datetime, days: 90)
-    # exit
+    # all_dirs = FileManager.directories_with_name_of(dir: BOLD_DIR, dir_name: taxon_name)
+    # p all_dirs
+    # most_recent_dir = FileManager.most_recent_version(dirs: all_dirs)
+    # p most_recent_dir
+    # most_recent_dir_datetime = FileManager.datetime_of(dir: most_recent_dir)
+    # p most_recent_dir_datetime
+    # p FileManager.is_older_than(datetime: most_recent_dir_datetime, days: 90)
+    # # exit
 
-    download_file_managers = dload
 
+    already_downloaded_dir = Helper.ask_user_about_download_dirs(params)
+    if already_downloaded_dir
+
+      begin
+        fm_from_md_name         = already_downloaded_dir + '.download_file_managers.dump'
+        fm_from_md              = Marshal.load(File.open(fm_from_md_name, 'rb').read)
+        download_file_managers  = fm_from_md
+
+        _create_download_info_for_result_dir(already_downloaded_dir)
+      rescue StandardError
+        puts "Directory could not be used, starting download"
+        sleep 2
+
+        download_file_managers = dload
+        _write_marshal_file(BOLD_DIR + @root_download_dir, download_file_managers)
+      end
+    else
+
+      download_file_managers  = dload
+      _write_marshal_file(BOLD_DIR + @root_download_dir, download_file_managers)
+    end
+
+
+    # dir = Helper.ask_user_about_download_dirs(params)
+    # if dir
+    
     _classify_downloads(download_file_managers: download_file_managers)
     # _classify_downloads(download_file_managers: nil)
     
     return result_file_manager
     # _write_result_files(root_node: root_node, fmanagers: fmanagers)
+  end
+
+  def _create_download_info_for_result_dir(already_downloaded_dir)
+    data_dl_info_public_name = already_downloaded_dir + 'download_info.txt'
+    data_dl_info_hidden_name = already_downloaded_dir + '.download_info.txt'
+
+    result_dl_info_public_name = result_file_manager.dir_path + 'download_info.txt'
+    result_dl_info_hidden_name = result_file_manager.dir_path + '.download_info.txt'
+
+    dl_info_public = File.open(data_dl_info_public_name).read
+    dl_info_hidden = File.open(data_dl_info_hidden_name).read
+
+    dl_info_public.gsub!(/^corresponding result directory:.*$/, "corresponding data directory: #{already_downloaded_dir.to_s}")
+    dl_info_hidden.gsub!(/^corresponding result directory:.*$/, "corresponding data directory: #{already_downloaded_dir.to_s}")
+    
+    File.open(result_dl_info_public_name, 'w') { |f| f.write(dl_info_public) }
+    File.open(result_dl_info_hidden_name, 'w') { |f| f.write(dl_info_hidden) }
   end
 
   def _download_response(downloader:, file_path:)
@@ -93,7 +135,7 @@ class BoldJob2
 
     
     num_of_ranks.times do |i|
-      _print_download_progress_report(root_node: root_node, rank_level: i)
+      # _print_download_progress_report(root_node: root_node, rank_level: i)
 
       Parallel.map(root_node.entries, in_threads: num_threads) do |node|
         next unless node.content[1] == @pending
@@ -122,14 +164,14 @@ class BoldJob2
           node.content[2] = rank_status.to_s
           file_manager.status = 'failure'
           fmanagers.push(file_manager)
-          _print_download_progress_report(root_node: root_node, rank_level: i)
+          # _print_download_progress_report(root_node: root_node, rank_level: i)
           dl_file.puts "#{node.name}: #{rank_status.to_s} -> #{file_manager.status}"
           next
         end
 
 
         downloader = config.downloader.new(config: config)
-        _print_download_progress_report(root_node: root_node, rank_level: i)
+        # _print_download_progress_report(root_node: root_node, rank_level: i)
         download_response = _download_response(downloader: downloader, file_path: file_manager.file_path)
         
         request_file.puts("#{node.name} - #{config.address} - #{download_response.to_s}")
@@ -190,7 +232,8 @@ class BoldJob2
         end
 
         fmanagers.push(file_manager)
-        _print_download_progress_report(root_node: root_node, rank_level: i)
+
+        # _print_download_progress_report(root_node: root_node, rank_level: i)
       end
 
       break if reached_genus_level
@@ -292,6 +335,13 @@ class BoldJob2
 
     end
     return fmanagers
+  end
+
+  def _write_marshal_file(store_dir, file_managers)
+    marshal_dump_file_name = store_dir + '.download_file_managers.dump'
+    file_managers_dump = Marshal.dump(file_managers)
+    
+    File.open(marshal_dump_file_name, 'wb') { |f| f.write(file_managers_dump) }
   end
 
   def _write_download_info(paths:, root_node:)
@@ -611,7 +661,6 @@ class BoldJob2
       begin
         parent_dir = parent_names.reverse.inject(:+)
       rescue TypeError
-        byebug
       end
       
       return parent_dir

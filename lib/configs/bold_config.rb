@@ -6,7 +6,7 @@ class BoldConfig
     @name            = name
     @markers         = markers.kind_of?(Array) ? markers : [markers]
     @parent_dir      = parent_dir
-    @is_root      = is_root
+    @is_root         = is_root
   end
 
   def downloader
@@ -38,7 +38,7 @@ class BoldConfig
       FileManager.new(name: name, versioning: false, base_dir: base_dir_path, config: self)
     else
       base_dir_path = Pathname.new("fm_data/#{_source_name}/")
-      base_dir_path = base_dir_path + parent_dir
+      base_dir_path = base_dir_path + parent_dir if parent_dir
       FileManager.new(name: name, versioning: false, base_dir: base_dir_path, config: self)
     end
   end
