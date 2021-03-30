@@ -31,10 +31,12 @@ class FileManager
       end
 
       def self.directories_of(dir:)
+            dir = Pathname.new(dir) unless dir.class == Pathname
             dir.glob('*').select { |entry| entry.directory? }
       end
       
       def self.directories_with_name_of(dir:, dir_name:)
+            dir = Pathname.new(dir) unless dir.class == Pathname
             dir.glob('*').select { |entry| entry.directory? && entry.basename.to_s =~ /#{dir_name}/ }
       end
 

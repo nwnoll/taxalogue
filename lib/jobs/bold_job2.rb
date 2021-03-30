@@ -51,7 +51,7 @@ class BoldJob2
     # # exit
 
 
-    already_downloaded_dir = Helper.ask_user_about_download_dirs(params)
+    already_downloaded_dir = Helper.ask_user_about_bold_download_dirs(params)
     if already_downloaded_dir
 
       begin
@@ -65,16 +65,16 @@ class BoldJob2
         sleep 2
 
         download_file_managers = dload
-        _write_marshal_file(BOLD_DIR + @root_download_dir, download_file_managers)
+        Helper.write_marshal_file(BOLD_DIR + @root_download_dir, download_file_managers)
       end
     else
 
       download_file_managers  = dload
-      _write_marshal_file(BOLD_DIR + @root_download_dir, download_file_managers)
+      Helper.write_marshal_file(BOLD_DIR + @root_download_dir, download_file_managers)
     end
 
 
-    # dir = Helper.ask_user_about_download_dirs(params)
+    # dir = Helper.ask_user_about_bold_download_dirs(params)
     # if dir
     
     _classify_downloads(download_file_managers: download_file_managers)
@@ -127,15 +127,8 @@ class BoldJob2
     rest_taxa = Hash.new
     num_threads = 5
 
-    dl_file = File.open('results/download.txt', 'w')
-    request_file = File.open('results/requests.txt', 'w')
-
-    # result_file_manager.dir_path + 'download_'
-    ## NEXT
-
-    
     num_of_ranks.times do |i|
-      # _print_download_progress_report(root_node: root_node, rank_level: i)
+      _print_download_progress_report(root_node: root_node, rank_level: i)
 
       Parallel.map(root_node.entries, in_threads: num_threads) do |node|
         next unless node.content[1] == @pending
@@ -164,18 +157,15 @@ class BoldJob2
           node.content[2] = rank_status.to_s
           file_manager.status = 'failure'
           fmanagers.push(file_manager)
-          # _print_download_progress_report(root_node: root_node, rank_level: i)
-          dl_file.puts "#{node.name}: #{rank_status.to_s} -> #{file_manager.status}"
+          _print_download_progress_report(root_node: root_node, rank_level: i)
           next
         end
 
 
         downloader = config.downloader.new(config: config)
-        # _print_download_progress_report(root_node: root_node, rank_level: i)
+        _print_download_progress_report(root_node: root_node, rank_level: i)
         download_response = _download_response(downloader: downloader, file_path: file_manager.file_path)
         
-        request_file.puts("#{node.name} - #{config.address} - #{download_response.to_s}")
-
         if download_response == :success
           node.content[1] = @success
           node.content[2] = download_response.to_s
@@ -233,7 +223,7 @@ class BoldJob2
 
         fmanagers.push(file_manager)
 
-        # _print_download_progress_report(root_node: root_node, rank_level: i)
+        _print_download_progress_report(root_node: root_node, rank_level: i)
       end
 
       break if reached_genus_level
@@ -290,7 +280,6 @@ class BoldJob2
           # "http://www.boldsystems.org/index.php/API_Public/combined?taxon=Carabidae|-Apotomus|-Aptinus|-Brachinus|-Mastax|-Pheropsophus|-Styphlodromus|-Styphlomerus|-Crepidogaster|-Acallistus|-Bountya|-Broscodera|-Broscosoma|-Broscus|-Brullea|-Chylnus|-Craspedonotus|-Creobius|-Diglymma|-Mecodema|-Metaglymma|-Miscodera|-Oregus|-Percolestus|-Percosoma|-Promecoderus|-Zacotus|-Aplothorax|-Australodrepa|-Callisthenes|-Callitropa|-Calosoma|-Camedula|-Campalita|-Carabomimus|-Carabomorphus|-Castrida|-Charmosta|-Chrysostigma|-Ctenosta|-Microcallisthenes|-Carabus|-Ceroglossus|-Cychropsis|-Cychrus|-Scaphinotus|-Sphaeroderus|-Maoripamborus|-Pamborus|-Antennaria|-Bennigsenium|-Brasiella|-Caledonica|-Callytron|-Calomera|-Calyptoglossa|-Cenothyla|-Cephalota|-Cheilonycha|-Cheiloxya|-Cicindela|-Cylindera|-Distipsidera|-Dromica|-Eucallia|-Eurymorpha|-Euzona|-Habrodera|-Habroscelimorpha|-Heptodonta|-Hypaetha|-Jansenia|-Lophyra|-Microthylax|-Myriochila|-Neocicindela|-Odontocheila|-Opilidia|-Oxycheila|-Oxygonia|-Pentacomia|-Peridexia|-Physodeutera|-Polyrhanis|-Pometon|-Prothyma|-Prothymidia|-Pseudoxycheila|-Stenocosmia|-Sumlinia|-Therates|-Waltherhornia|-Zecicindela|-Ctenostoma|-Neocollyris|-Pogonostoma|-Tricondyla|-Manticora|-Amblycheila|-Aniara|-Australicapitona|-Grammognatha|-Megacephala|-Metriocheila|-Omus|-Phaeoxantha|-Picnochile|-Platychile|-Pseudotetracha|-Tetracha|-Polistichus|-Blethisa|-Diacheila|-Elaphrus|-Gehringia|-Abacetus|-Abacidus|-Cerabilia|-Cyrtomoscelis|-Inkosa|-Metabacetus|-Oxycrepis|-Pediomorphus|-Zeodera|-Diachromus|-Anthia|-Cypholoba|-Catapiesis|-Cnemalobus|-Calophaena|-Ctenodactyla|-Leptotrachelus|-Plagiotelum|-Teukrus|-Desera|-Drypta|-Ancystroglossus|-Galerita|-Planetes|-Trichognathus|-Acinopus|-Acupalpus|-Afromizonus|-Agonoleptus|-Amblygnathus|-Amblystomus|-Amphasia|-Anisodactylus|-Anthracus|-Athrostictus|-Aulacoryssus|-Axinotoma|-Bradybaenus|-Bradycellus|-Carterus|-Cenogmus|-Coleolissus|-Crasodactylus|-Cratacanthus|-Cryptophonus|-Daptus|-Dicheirotrichus|-Dicheirus|-Discoderus|-Ditomus|-Dixus|-Egadroma|-Eocarterus|-Euryderus|-Euthenarus|-Geopinus|-Gnathaphanus|-Graniger|-Harpalus|-Hartonymus|-Hyparpalus|-Hypharpax|-Incisophonus|-Lecanomerus|-Nesarpalus|-Nornalupia|-Notiobia|-Odontocarus|-Ophonus|-Parophonus|-Pelmatellus|-Philodes|-Phorticosomus|-Piosoma|-Platymetopus|-Pogonodaptus|-Polpochila|-Pseudognathaphanus|-Scybalicus|-Selenophorus|-Semiophonus|-Stenolophus|-Stenomorphus|-Trichotichnus|-Tschitscherinellus|-Aenigma|-Dicranoglossus|-Gigadaema|-Helluomorphoides|-Macrocheilus|-Omphra|-Pogonoglossus|-Dinopelma|-Hexagonia|-Metius|-Morion|-Moriosomus|-Orthogonius|-Craspedophorus|-Dischissus|-Micrixys|-Microschemus|-Panagaeus|-Tefflus|-Eripus|-Pelecium|-Pentagonica|-Scopodes|-Adelotopus|-Pseudomorpha|-Sphallomorpha|-Abaris|-Abax|-Abropus|-Acanthoferonia|-Ancholeus|-Aporesthus|-Aristochroa|-Aulacopodus|-Caelostomus|-Castelnaudia|-Colpodes|-Conchitella|-Cyclotrachelus|-Eucamptognathus|-Eudromus|-Euplynes|-Eutrichopus|-Gastrellarius|-Henrotius|-Hybothecus|-Leiradira|-Lesticus|-Lophoglossus|-Loxodactylus|-Megadromus|-Molopidius|-Molops|-Myas|-Nirmala|-Notonomus|-Nurus|-Orthomus|-Oscadytes|-Paniestichus|-Parhypates|-Pedius|-Percus|-Piesmus|-Platycaelus|-Poecilus|-Pseudamara|-Pseudoceneus|-Pterostichus|-Sarticus|-Setalimorphus|-Speomolops|-Stereocerus|-Stomis|-Styracoderus|-Tanythrix|-Tapinopterus|-Trichosternus|-Trigonognatha|-Trigonotoma|-Typhlochoromus|-Wolltinerfia|-Zariquieya|-Elaphropus|-Paratachys|-Porotachys|-Tachys|-Amara|-Zabrus|-Acrogenys|-Ildobates|-Mischocephalus|-Parazuphium|-Pseudaptinus|-Thalpius|-Zuphium|-Gomerina|-Paraeutrichopus|-Aephnidius|-Sarothrocrepis|-Tetragonoderus|-Graphipterus|-Anchonoderus|-Asklepia|-Calybe|-Euphorticus|-Homethes|-Lachnophorus|-Actenonyx|-Agra|-Anomotarus|-Antimerina|-Apenes|-Apristus|-Arsinoe|-Aspasiola|-Axinopalpus|-Brachyctis|-Calleida|-Callidiola|-Calodromius|-Catascopus|-Celaenephes|-Coptodera|-Coptoptera|-Cylindrocranius|-Cymindis|-Cymindoidea|-Demetrias|-Demetrida|-Dromius|-Endynomena|-Euproctinus|-Eurydera|-Hyboptera|-Hystrichopus|-Inna|-Lachnoderma|-Lebia|-Lia|-Lionychus|-Menarus|-Microlestes|-Mimodromius|-Mochtherus|-Mormolyce|-Nemotarsus|-Onota|-Paradromius|-Parena|-Peliocypas|-Pericalus|-Philophlaeus|-Philophuga|-Philorhizus|-Physodera|-Plochionus|-Pristacrus|-Pseudotrechus|-Serrimargo|-Sinurus|-Somotrichus|-Stenocallida|-Stenognathus|-Stenotelus|-Syntomus|-Tecnophilus|-Thysanotus|-Anaulacus|-Masoreus|-Clarencia|-Colliuris|-Cosnania|-Dicraspeda|-Lasiocera|-Odacantha|-Ophionea|-Stenidia|-Diploharpus|-Perigona|-Ripogena|-Callistus|-Chlaenius|-Badister|-Dicaelus|-Dicrochile|-Diplocheila|-Eutogeneius|-Lacordairia|-Lestignathus|-Licinus|-Adelopomorpha|-Anatrichis|-Dercylus|-Lachnocrepis|-Oodes|-Stenocrepis|-Loricera|-Cymbionotum|-Amarotypus|-Antarctonomus|-Lissopterus|-Monolobus|-Pseudomigadops|-Leistus|-Nebria|-Oreonebria|-Notiophilus|-Opisthius|-Omophron|-Metrius|-Anentmetus|-Entomoantyx|-Filicerozaena|-Goniotropis|-Inflatozaena|-Itamus|-Mystropomus|-Ozaena|-Pachyteles|-Physea|-Platycerozaena|-Proozaena|-Pseudozaena|-Serratozaena|-Sphaerostylus|-Tachypeles|-Tropopsis|-Arthropterus|-Carabidomemnus|-Cerapterus|-Ceratoderus|-Edaphopaussus|-Eohomopterus|-Euplatyrhopalus|-Granulopaussus|-Heteropaussus|-Homopterus|-Hylopaussus|-Lebioderus|-Paussus|-Pentaplatarthrus|-Platyrhopalopsis|-Platyrhopalus|-Protopaussus|-Agonum|-Anchomenus|-Atranus|-Blackburnia|-Calathidius|-Ctenognathus|-Dicranoncus|-Dyscolus|-Glyptolenus|-Incagonum|-Liagonum|-Limodromus|-Metacolpodes|-Neomegalonychus|-Notagonum|-Olisthopus|-Oxypselaphus|-Paranchus|-Platynus|-Rhadine|-Sericoda|-Tanystoma|-Acalathus|-Amaroschema|-Anchomenidius|-Calathus|-Dolichus|-Laemostenus|-Licinopsis|-Lindrothius|-Miquihuana|-Platyderus|-Pristosia|-Synuchidius|-Synuchus|-Thermoscelis|-Xestopus|-Dalyat|-Promecognathus|-Meonis|-Amblytelus|-Mecyclothorax|-Melisodera|-Laccocenus|-Nomius|-Psydrus|-Raphetis|-Tropopterus|-Sitaphe|-Clinidium|-Dhysores|-Omoglymmius|-Rhysodes|-Akephorus|-Antireicheia|-Ardistomis|-Clivina|-Dyschiriodes|-Dyschirius|-Paraclivina|-Reicheia|-Schizogenius|-Trilophidius|-Typhloreicheia|-Carenum|-Distichus|-Pasimachus|-Scarites|-Siagona|-Lusotyphlus|-Microcharidius|-Typhlocharis|-Andinodontis|-Argentinatachoides|-Bembidarenas|-Tasmanitachoides|-Amerizus|-Anillinus|-Anillodes|-Anillus|-Anomotachys|-Argiloborus|-Asaphidion|-Batesiana|-Bembidion|-Binaghites|-Caeconannus|-Erwiniana|-Geocharidius|-Geocharis|-Gouleta|-Hypotyphlus|-Iberanillus|-Illaphanus|-Kiwitachys|-Lionepha|-Lymnastis|-Meotachys|-Micratopus|-Microdipnus|-Microtyphlus|-Mioptachys|-Nesamblyops|-Nothoderis|-Ocys|-Orthotyphlus|-Orzolina|-Parvocaecus|-Pelonomites|-Pericompsus|-Philipis|-Polyderis|-Pseudanillus|-Rhegmatobius|-Scotodipnus|-Serranillus|-Sinechostictus|-Tachyta|-Tachyura|-Apatrobus|-Apenetretus|-Archipatrobus|-Dimorphopatrobus|-Diplous|-Lissopogonus|-Parapenetretus|-Patrobus|-Penetretus|-Platidiolus|-Platypatrobus|-Qiangopatrobus|-Diplochaetus|-Pogonistes|-Pogonus|-Sirdenus|-Thalassotrechus|-Chaltenia|-Phrypeus|-Sinozolus|-Adriaphaenops|-Aepopsis|-Agonotrechus|-Agostinia|-Allegrettia|-Ameroduvalius|-Anophthalmus|-Aphaenopidius|-Aphaenops|-Apoduvalius|-Apoplotrechus|-Arctaphaenops|-Blemus|-Boldoriella|-Bothynotrechus|-Cnides|-Cyphotrechodes|-Darlingtonea|-Doderotrechus|-Duvalius|-Epaphiopsis|-Epaphius|-Eutrechopsis|-Geotrechus|-Homaloderodes|-Hydraphaenops|-Iberotrechus|-Italaphaenops|-Jeannelius|-Kenodactylus|-Laosaphaenops|-Lessinodytes|-Mexitrechus|-Mimotrechus|-Neaphaenops|-Nelsonites|-Neotrechus|-Nototrechus|-Omalodera|-Orotrechus|-Oxytrechus|-Pachydesus|-Paraphaenops|-Paratrechodes|-Paratrechus|-Perileptus|-Pheggomisetes|-Pseudanophthalmus|-Pseudocnides|-Sardaphaenops|-Speotrechus|-Sporades|-Tasmanorites|-Thalassophilus|-Trechiella|-Trechimorphus|-Trechinotus|-Trechisibus|-Trechistus|-Trechobembix|-Trechoblemus|-Trechodes|-Trechosiella|-Trechus|-Trichaphaenops|-Tropidotrechus|-Typhlotrechus|-Xenotrechus|-Merizodus|-Oopterus|-Pseudoopterus|-Sloaneana|-Anoplogenius|-Argutoridius|-Askalaphium|-Aspidoglossa|-Baripus|-Blennidus|-Brachygnathus|-Brachyodes|-Bronislavia|-Cascellius|-Cheiloxia|-Cicindis|-Cyrtolaus|-Dioryche|-Enceladus|-Eucamaragnathus|-Eucheila|-Eurycoleus|-Eurynebria|-Geobius|-Geoscaptus|-Gynandropus|-Helluodes|-Helluomorpha|-Hiletus|-Lebidia|-Lelis|-Microcosmodes|-Migadops|-Nanodiodes|-Neoaulacoryssus|-Nyctosyles|-Oceanella|-Onypterygia|-Oodinus|-Oosoma|-Paropisthius|-Peronomerus|-Phloeoxena|-Pseudabarys|-Simous|-Somoplatus|-Styphromerus|-Trichognatus|-Trichopselaphus|-Trirammatus|-Whiteheadiana&format=tsv"
 
 
-          p taxa_records_and_names_to_try
           puts 'startin rest download for:'
           puts failed_node.name
 
@@ -323,8 +312,8 @@ class BoldJob2
     # exit
 
 
-    dl_path_public = Pathname.new(BOLD_DIR + @root_download_dir + 'download_info.txt')
-    dl_path_hidden = Pathname.new(BOLD_DIR + @root_download_dir + '.download_info.txt')
+    dl_path_public = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + 'download_info.txt')
+    dl_path_hidden = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + '.download_info.txt')
     rs_path_public = Pathname.new(result_file_manager.dir_path + 'download_info.txt')
     rs_path_hidden = Pathname.new(result_file_manager.dir_path + '.download_info.txt')
     _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], root_node: root_node)
@@ -332,16 +321,9 @@ class BoldJob2
     failures = DownloadInfoParser.get_download_failures(dl_path_hidden)
     
     unless failures.empty?
-
+      ## maybe directly try to download again?
     end
     return fmanagers
-  end
-
-  def _write_marshal_file(store_dir, file_managers)
-    marshal_dump_file_name = store_dir + '.download_file_managers.dump'
-    file_managers_dump = Marshal.dump(file_managers)
-    
-    File.open(marshal_dump_file_name, 'wb') { |f| f.write(file_managers_dump) }
   end
 
   def _write_download_info(paths:, root_node:)

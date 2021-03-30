@@ -707,8 +707,68 @@ class Helper
     end
   end
 
-  def self.ask_user_about_download_dirs(params)
-    dirs = FileManager.directories_of(dir: Pathname.new('fm_data/BOLD/'))
+  def self.ask_user_about_gbol_download_dirs
+    dirs = FileManager.directories_of(dir: GbolConfig::DOWNLOAD_DIR)
+    is_available = false
+    current_release = nil
+    dirs.each do |dir|
+      if dir == GbolConfig::DOWNLOAD_DIR + GbolConfig::RELEASES[:current]
+        is_available =  true
+        current_release = dir
+        break
+      end
+    end
+
+    if is_available
+
+      ## NEXT
+      ## TODO:
+      ## Check for download success
+      
+      puts "You already have the latest GBOL Dataset release"
+      return current_release
+    else
+      puts "A new GBOL dataset is available"
+      puts "Do you want to download the new release? [Y/n]"
+      user_input  = gets.chomp
+      download_new_release = (user_input =~ /y|yes/i) ? true : false
+      if download_new_release
+        return nil
+      else
+        if dirs.empty?
+          puts "No releases available. New GBOL dataset will be downloaded."
+          return nil
+        else
+          3.times do
+            puts "Please specify one of the following GBOL dataset releases:"
+            dirs.each { |dir| puts dir.to_s }
+
+            user_input  = gets.chomp
+            user_path = Pathname.new(user_input)
+            if dirs.include?(user_path)
+              puts "You specified #{user_input}"
+              return user_path
+            else
+              next
+            end
+
+            puts "No release specified. New GBOL dataset will be downloaded"
+            return nil
+          end
+        end
+      end
+    end
+  end
+
+  def self.write_marshal_file(store_dir, data)
+    marshal_dump_file_name = store_dir + '.download_file_managers.dump'
+    data_dump = Marshal.dump(data)
+    
+    File.open(marshal_dump_file_name, 'wb') { |f| f.write(data_dump) }
+  end
+
+  def self.ask_user_about_bold_download_dirs(params)
+    dirs = FileManager.directories_of(dir: BoldConfig::DOWNLOAD_DIR)
     return nil if Helper._is_nil_or_empty?(dirs)
 
     taxon_dirs = Helper.download_dirs_for_taxon(params: params, dirs: dirs)
@@ -736,6 +796,26 @@ class Helper
     use_latest_download = (user_input =~ /y|yes/i) ? true : false
 
     return use_latest_download ? selected_download_dir : nil
+  end
+
+
+  def self.create_download_info_for_result_dir(already_downloaded_dir:, result_file_manager:, source:)
+    download_info_str = source.class::DOWNLOAD_INFO_NAME
+
+    data_dl_info_public_name = already_downloaded_dir + download_info_str
+    data_dl_info_hidden_name = already_downloaded_dir + ".#{download_info_str}"
+
+    result_dl_info_public_name = result_file_manager.dir_path + download_info_str
+    result_dl_info_hidden_name = result_file_manager.dir_path + ".#{download_info_str}"
+
+    dl_info_public = File.open(data_dl_info_public_name).read
+    dl_info_hidden = File.open(data_dl_info_hidden_name).read
+
+    dl_info_public.gsub!(/^corresponding result directory:.*$/, "corresponding data directory: #{already_downloaded_dir.to_s}")
+    dl_info_hidden.gsub!(/^corresponding result directory:.*$/, "corresponding data directory: #{already_downloaded_dir.to_s}")
+    
+    File.open(result_dl_info_public_name, 'w') { |f| f.write(dl_info_public) }
+    File.open(result_dl_info_hidden_name, 'w') { |f| f.write(dl_info_hidden) }
   end
 
   def self._is_nil_or_empty?(data)

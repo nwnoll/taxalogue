@@ -2,6 +2,9 @@
 
 class BoldConfig
   attr_reader :markers, :name, :parent_dir, :is_root
+
+  DOWNLOAD_DIR = Pathname.new('fm_data/BOLD/')
+  
   def initialize(name:, markers: nil, parent_dir: nil, is_root: false)
     @name            = name
     @markers         = markers.kind_of?(Array) ? markers : [markers]

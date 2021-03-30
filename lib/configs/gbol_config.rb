@@ -1,7 +1,13 @@
 # frozen_string_literal: true
 
 class GbolConfig
-    attr_reader :name
+    attr_reader :name, :releases
+
+    DOWNLOAD_DIR = Pathname.new("fm_data/GBOL/")
+    RELEASES = { 
+        :current    => 'GBOL_Dataset_Release-20210128',
+        :previous   => []
+    }
     def initialize()
         @name = 'GBOL_Dataset_Release-20210128'
     end
