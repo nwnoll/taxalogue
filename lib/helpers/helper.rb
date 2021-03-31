@@ -709,17 +709,17 @@ class Helper
 
   def self.ask_user_about_gbol_download_dirs
     dirs = FileManager.directories_of(dir: GbolConfig::DOWNLOAD_DIR)
-    is_available = false
     current_release = nil
     dirs.each do |dir|
       if dir == GbolConfig::DOWNLOAD_DIR + GbolConfig::RELEASES[:current]
-        is_available =  true
-        current_release = dir
+        success = DownloadInfoParser.download_was_successful?(dir + ".#{GbolJob::DOWNLOAD_INFO_NAME}")
+        
+        current_release = dir if success
         break
       end
     end
 
-    if is_available
+    if current_release
 
       ## NEXT
       ## TODO:
