@@ -921,8 +921,10 @@ class Helper
   end
 
   def self.ask_user_about_genbank_download_dirs(params)
-    dirs = FileManager.directories_with_name_of(dir: NcbiGenbankConfig::DOWNLOAD_DIR, dir_name: 'genbank')
+    dirs = FileManager.directories_with_name_of(dir: NcbiGenbankConfig::DOWNLOAD_DIR, dir_name: 'release')
     return nil if Helper._is_nil_or_empty?(dirs)
+
+    byebug
 
 
     # success = DownloadInfoParser.download_was_successful?
@@ -952,6 +954,22 @@ class Helper
     use_latest_download = (user_input =~ /y|yes/i) ? true : false
 
     return use_latest_download ? selected_download_dir : nil
+  end
+
+  def self.get_current_genbank_release_number
+    file_path = NcbiGenbankConfig::DOWNLOAD_DIR + '.current_genbank_release_number.txt'
+    
+    begin
+      downloader = HttpDownloader2.new(address: NcbiGenbankConfig::CURRENT_RELEASE_ADDRESS, destination: file_path)
+      downloader.run
+    rescue StandardError
+      return nil
+    end
+
+    ## works until we reach Genbank release 1000
+    file_content = File.read(file_path, 3) if File.file?(file_path)
+    
+    return file_content
   end
 
 

@@ -387,4 +387,8 @@ class TestHelper < Test::Unit::TestCase
             assert_raise (SystemExit) { Helper.assign_taxon_info_to_params(params.dup, 'xxxxccccxxxxx') }
             assert_nothing_raised (SystemExit) { Helper.assign_taxon_info_to_params(params.dup, 'Lentulidae') }
       end
+
+      def test_get_current_genbank_release_number
+            assert_equal String, Helper.get_current_genbank_release_number.class
+      end
 end

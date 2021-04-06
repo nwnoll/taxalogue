@@ -7,7 +7,6 @@ class NcbiGenbankJob
 
   DOWNLOAD_INFO_NAME = 'ncbi_genbank_download_info.txt'
 
-
   def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, use_http: false, filter_params: nil, taxonomy_params:, region_params: nil)
     @taxon                = taxon
     @markers              = markers
@@ -20,6 +19,31 @@ class NcbiGenbankJob
   end
 
   def run
+    # already_downloaded_dir = Helper.ask_user_about_genbank_download_dirs(params)
+    # if already_downloaded_dir
+    #   begin
+    #     fm_from_md_name         = already_downloaded_dir + '.download_file_managers.dump'
+    #     fm_from_md              = Marshal.load(File.open(fm_from_md_name, 'rb').read)
+    #     download_file_managers  = fm_from_md
+
+    #     _create_download_info_for_result_dir(already_downloaded_dir)
+    #   rescue StandardError
+    #     puts "Directory could not be used, starting download"
+    #     sleep 2
+
+    #     download_file_managers = download_files
+    #     Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
+    #     Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
+    #   end
+    # else
+
+    #   download_file_managers  = download_files
+    #   Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
+    #   Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
+    # end
+
+
+
     # _write_result_files(fmanagers: fmanagers)
     download_file_managers = download_files
     # exit
@@ -63,8 +87,9 @@ class NcbiGenbankJob
   private
   def _configs
     configs = []
+    release_dir = _get_release_dir
     _groups.each do |name|
-      configs.push(NcbiGenbankConfig.new(name: name, markers: markers, use_http: use_http))
+      configs.push(NcbiGenbankConfig.new(name: name, markers: markers, use_http: use_http, parent_dir: release_dir))
     end
 
     return configs
@@ -124,5 +149,12 @@ class NcbiGenbankJob
     FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Tsv)
     FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Fasta)
     FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Comparison)
+  end
+
+  def _get_release_dir
+    release_number = Helper.get_current_genbank_release_number
+    name = "release#{release_number}"
+    
+    return Pathname.new(name)
   end
 end

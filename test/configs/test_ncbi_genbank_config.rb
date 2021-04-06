@@ -7,7 +7,8 @@ class TestNcbiGenbankConfig < Test::Unit::TestCase
       def setup
             @name                   = 'Lentulidae'
             @source_name            = 'NCBIGENBANK'
-            @ncbi_genbank_config    = NcbiGenbankConfig.new(name: @name)
+            @parent_dir_name        = 'parent_dir'
+            @ncbi_genbank_config    = NcbiGenbankConfig.new(name: @name, parent_dir: @parent_dir_name)
             @file_manager           = @ncbi_genbank_config.file_manager
       end
 
@@ -30,5 +31,10 @@ class TestNcbiGenbankConfig < Test::Unit::TestCase
       def test_file_manager
             assert_kind_of FileManager, @file_manager
             assert_equal Pathname.new("fm_data/#{@source_name}/#{@name}"), @file_manager.dir_path
+      end
+
+      def test_parent_dir
+            assert_equal 'parent_dir', @ncbi_genbank_config.parent_dir
+            assert_equal Pathname.new(NcbiGenbankConfig::DOWNLOAD_DIR + @parent_dir_name), @file_manager.base_dir
       end
 end

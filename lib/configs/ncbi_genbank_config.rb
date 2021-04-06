@@ -1,13 +1,15 @@
 # frozen_string_literal: true
 
 class NcbiGenbankConfig
-  attr_reader :name, :markers, :file_manager, :use_http
+  attr_reader :name, :markers, :file_manager, :use_http, :parent_dir
 
   DOWNLOAD_DIR = Pathname.new("fm_data/NCBIGENBANK/")
+  CURRENT_RELEASE_ADDRESS = 'https://ftp.ncbi.nlm.nih.gov/genbank/GB_Release_Number'
 
-  def initialize(name:, markers: nil, use_http: false)
+  def initialize(name:, markers: nil, use_http: false, parent_dir:)
     @name             = name
     @markers          = markers
+    @parent_dir       = parent_dir
     @file_manager     = _file_manager
     @use_http         = use_http
   end
@@ -38,7 +40,7 @@ class NcbiGenbankConfig
   end
 
   def _file_manager
-    FileManager.new(name: name, versioning: false, base_dir: "fm_data/#{_source_name}/", config: self, multiple_files_per_dir: true)
+    FileManager.new(name: name, versioning: false, base_dir: DOWNLOAD_DIR + parent_dir, config: self, multiple_files_per_dir: true)
   end
 
 end

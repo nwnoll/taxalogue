@@ -28,29 +28,6 @@ class BoldJob2
   end
 
   def run
-    # download_file_managers = download_files
-
-
-    ## TODO:
-    ## NEXT:
-    ## write a function that asks for next steps..
-    ## should old download be used (if it was a success?) replaced... ask for new one if its older tan x days?
-    ## new database without delting the old?
-    ## also make check if taxon has already been downloaded?
-    ## prblem migth be differing taxonomies used?
-    ## cant just use folder names
-    ## have to make database search
-    ## maybe ask tif it should be checked beforehand?
-    # all_dirs = FileManager.directories_with_name_of(dir: BOLD_DIR, dir_name: taxon_name)
-    # p all_dirs
-    # most_recent_dir = FileManager.most_recent_version(dirs: all_dirs)
-    # p most_recent_dir
-    # most_recent_dir_datetime = FileManager.datetime_of(dir: most_recent_dir)
-    # p most_recent_dir_datetime
-    # p FileManager.is_older_than(datetime: most_recent_dir_datetime, days: 90)
-    # # exit
-
-
     already_downloaded_dir = Helper.ask_user_about_bold_download_dirs(params)
     if already_downloaded_dir
 
@@ -74,10 +51,6 @@ class BoldJob2
       Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
       Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
     end
-
-
-    # dir = Helper.ask_user_about_bold_download_dirs(params)
-    # if dir
     
     _classify_downloads(download_file_managers: download_file_managers)
     # _classify_downloads(download_file_managers: nil)

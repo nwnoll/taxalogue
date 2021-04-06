@@ -35,14 +35,15 @@ class GbolJob
             Helper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
           end
         else
-    
 
+            download_file_manager = download_files
+            Helper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
+            Helper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
         end
 
         begin 
             _classify_downloads(download_file_manager)
         rescue Zip::Error => e
-            p e.inspect
             download_file_manager = download_files
           
             Helper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
