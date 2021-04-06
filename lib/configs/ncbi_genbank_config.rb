@@ -2,6 +2,9 @@
 
 class NcbiGenbankConfig
   attr_reader :name, :markers, :file_manager, :use_http
+
+  DOWNLOAD_DIR = Pathname.new("fm_data/NCBIGENBANK/")
+
   def initialize(name:, markers: nil, use_http: false)
     @name             = name
     @markers          = markers

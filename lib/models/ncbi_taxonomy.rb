@@ -17,7 +17,8 @@ class NcbiTaxonomy
         return synonyms
     end
 
-    def self.taxa_names_for_rank(taxon: , rank:)
+    ## maybe implement an 'automatic' option if for example lineage is predefined like here?
+    def self.taxa_names_for_rank(taxon:, rank:)
 
         ranked_lineages = NcbiRankedLineage.where(regnum: taxon.regnum, phylum: taxon.phylum, classis: taxon.classis, ordo: taxon.ordo, familia: taxon.familia, genus: taxon.genus, species: "").where.not("name LIKE ? OR name LIKE ? OR name LIKE ? OR name LIKE ?", '%sp.%', '%unclassified%', '%environmental%', '%uncultured%')
 
@@ -31,7 +32,7 @@ class NcbiTaxonomy
         end
 
         taxa_names = []
-        ranked_lineages_for_rank.each { |tax| taxa_names.push([Helper.choose_ncbi_record(tax.name), tax.name]) }
+        ranked_lineages_for_rank.each { |tax| taxa_names.push([Helper.choose_ncbi_record(tax.name, automatic: true), tax.name]) }
     
         return taxa_names
     end

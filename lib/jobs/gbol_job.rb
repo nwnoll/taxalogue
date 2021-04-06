@@ -31,7 +31,8 @@ class GbolJob
     
             download_file_manager = download_files
     
-            Helper.write_marshal_file(download_file_manager.dir_path, download_file_manager)
+            Helper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
+            Helper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
           end
         else
     
@@ -44,7 +45,8 @@ class GbolJob
             p e.inspect
             download_file_manager = download_files
           
-            Helper.write_marshal_file(download_file_manager.dir_path , download_file_manager)
+            Helper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
+            Helper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
         end
         
         return result_file_manager

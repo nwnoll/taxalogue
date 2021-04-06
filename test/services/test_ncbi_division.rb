@@ -20,13 +20,13 @@ class TestNcbiDivision < Test::Unit::TestCase
             assert_nil NcbiDivision.code_for[nil]
       end
 
-      def test_get_id
-            assert_equal [1], NcbiDivision.get_id(taxon_name: 'Hymenoptera')
-            assert_equal [1], NcbiDivision.get_id(taxon_name: 'Bombus')
-            assert_equal [1], NcbiDivision.get_id(taxon_name: 'Lentulidae')
-            assert_equal [5], NcbiDivision.get_id(taxon_name: 'Pan troglodytes')
-            assert_equal [2], NcbiDivision.get_id(taxon_name: 'Soricidae')
-            assert_equal [6], NcbiDivision.get_id(taxon_name: 'Mus musculus')
-            assert_equal [4], NcbiDivision.get_id(taxon_name: 'Quercus')
+      def test_get_division_id_by_taxon_name
+            assert_equal [1], NcbiDivision.get_division_id_by_taxon_name('Hymenoptera')
+            assert_equal [1], NcbiDivision.get_division_id_by_taxon_name('Bombus')
+            assert_equal [1], NcbiDivision.get_division_id_by_taxon_name('Lentulidae')
+            assert_equal [5], NcbiDivision.get_division_id_by_taxon_name('Pan troglodytes')
+            assert_equal [2], NcbiDivision.get_division_id_by_taxon_name('Soricidae')
+            assert_equal [6], NcbiDivision.get_division_id_by_taxon_name('Mus musculus')
+            assert_equal [4], NcbiDivision.get_division_id_by_taxon_name('Quercus')
       end
 end

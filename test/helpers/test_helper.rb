@@ -5,10 +5,10 @@ require_relative '../test_helper'
 class TestHelper < Test::Unit::TestCase
 
       def setup
-            @original_stdout = $stdout
-            @original_stderr = $stderr
-            $stdout = File.open(File::NULL, 'w')
-            $stderr = File.open(File::NULL, 'w')
+            # @original_stdout = $stdout
+            # @original_stderr = $stderr
+            # $stdout = File.open(File::NULL, 'w')
+            # $stderr = File.open(File::NULL, 'w')
 
             @lentulidae_obj = OpenStruct.new(
                   taxon_id: 62781,
@@ -24,11 +24,27 @@ class TestHelper < Test::Unit::TestCase
                   taxon_rank: 'family',
                   comment: ''
             )
+
+            @vertebrata_animal_obj = OpenStruct.new(
+                  taxon_id:7742,
+                  regnum:"Metazoa",
+                  phylum:"Chordata",
+                  classis:"",
+                  ordo:"",
+                  familia:"",
+                  genus:"",
+                  canonical_name:"Vertebrata",
+                  scientific_name:"Vertebrata Cuvier, 1812",
+                  taxonomic_status:"accepted",
+                  taxon_rank:"clade",
+                  comment:""
+            )
+
       end
 
       def teardown
-            $stdout = @original_stdout
-            $stderr = @original_stderr
+            # $stdout = @original_stdout
+            # $stderr = @original_stderr
       end
 
       def test_is_extinct?
@@ -270,14 +286,12 @@ class TestHelper < Test::Unit::TestCase
       end
 
       def test_choose_ncbi_record
-
-            
-            assert_nil Helper.choose_ncbi_record('xxxxccccccxxxxxx')
-            assert_equal OpenStruct, Helper.choose_ncbi_record('Lentulidae').class
-            assert_equal @lentulidae_obj, Helper.choose_ncbi_record('Lentulidae')
+            assert_nil Helper.choose_ncbi_record(taxon_name: 'xxxxccccccxxxxxx')
+            assert_equal OpenStruct, Helper.choose_ncbi_record(taxon_name: 'Lentulidae').class
+            assert_equal @lentulidae_obj, Helper.choose_ncbi_record(taxon_name: 'Lentulidae')
       end
 
-      def test_get_query_taxon_record
+      def test_get_taxon_record
             params = Hash.new { |h, k| h[k] = Hash.new }
             params[:taxon] = 'Lentulidae'
             params[:taxonomy][:ncbi] = true

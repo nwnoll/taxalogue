@@ -65,12 +65,14 @@ class BoldJob2
         sleep 2
 
         download_file_managers = dload
-        Helper.write_marshal_file(BOLD_DIR + @root_download_dir, download_file_managers)
+        Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
+        Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
       end
     else
 
       download_file_managers  = dload
-      Helper.write_marshal_file(BOLD_DIR + @root_download_dir, download_file_managers)
+      Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
+      Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
     end
 
 

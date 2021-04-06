@@ -515,19 +515,113 @@ class Helper
     end
   end
 
-  def self.choose_ncbi_record(taxon_name)
+  def self.choose_ncbi_record(taxon_name:, automatic: false)
     records = get_ncbi_records(taxon_name)
     return nil if records.nil?
-		records = records.select { |record| NcbiTaxonomy.possible_ranks.include?(record.taxon_rank) }
-		
-    return records.first
+
+		records_with_available_ranks = records.select { |record| NcbiTaxonomy.possible_ranks.include?(record.taxon_rank) }
+    chosen_taxon_object = nil
+
+    return records.first if records.size == 1 || automatic
+
+    puts "The following taxa are available:"
+    record_counter = 1
+    records_with_available_ranks.each do |record|
+      puts "#{record_counter}) #{record.canonical_name}"
+      _print_taxon_object(record)
+      puts
+
+      record_counter += 1
+    end
+
+    record_counter = 1
+    if records_with_available_ranks.size < records.size
+      print "Since only taxa are allowed for the ranks: kingdom, phylum, class, order, family, genus and species. "
+      print "Only taxa with these ranks can be chosen. Since your chosen taxon name might be a homonym, the only available choice "
+      print "might have a rank that is currently not available, it could be not the taxon which you intended to use.\n"
+
+      if records_with_available_ranks.size == 1
+        record = records_with_available_ranks.first
+        # puts "This is the only taxon where the rank is allowed:"
+        # _print_taxon_object(record)
+        # puts
+        puts "If this is not the taxon you intended to use please specify a lower or higher taxon with -t option"
+        puts "Please confirm that the taxon is your intended choice [Y/n]"
+        user_confirmation  = gets.chomp
+        confirmed = (user_confirmation =~ /y|yes/i) ? true : false
+        chosen_taxon_object = record if confirmed
+      else
+        3.times do 
+          result = Helper._user_input_taxon_choice(records_with_available_ranks)
+          if result.is_a?(OpenStruct)
+            chosen_taxon_object = result
+            break
+          elsif result == 'invalid'
+            next
+          elsif result == 'none'
+            break
+          end
+        end
+      end
+
+    else
+      3.times do 
+        result = Helper._user_input_taxon_choice(records_with_available_ranks)
+        if result.is_a?(OpenStruct)
+          chosen_taxon_object = result
+          break
+        elsif result == 'invalid'
+          next
+        elsif result == 'none'
+          break
+        end
+      end
+    end
+      
+    return chosen_taxon_object
   end
 
-  def self.get_taxon_record(params, taxon_name = nil)
+  def self._user_input_taxon_choice(records)
+    puts "Choose a taxon by typing the number, or type none if your intended taxon is not vaialble: "
+    user_input = gets.chomp
+    unser_input_integer = user_input.to_i
+    if (1..records.size).include?(user_input.to_i)
+      record_index = unser_input_integer - 1 # counter starts with 1 not with 0
+      chosen_taxon_object = records[record_index]
+      puts "You have chosen:"
+      _print_taxon_object(chosen_taxon_object)
+      
+      return chosen_taxon_object
+    elsif user_input == 'none'
+
+      return 'none'
+    else
+      puts
+      puts "Your choice is not available, please use a valid number: e.g. 1"
+
+      return 'invalid'
+    end
+  end
+
+  def self._print_taxon_object(obj)
+    puts "   kingdom: #{obj.regnum}"
+    puts "   phylum: #{obj.phylum}"
+    puts "   class: #{obj.classis}"
+    puts "   order: #{obj.ordo}"
+    puts "   family: #{obj.familia}"
+    puts "   genus: #{obj.genus}"
+    puts "   canonical_name: #{obj.canonical_name}"
+    puts "   scientific_name: #{obj.scientific_name}"
+    puts "   taxonomic_status: #{obj.taxonomic_status}"
+    puts "   taxon_rank: #{obj.taxon_rank}"
+    puts "   comment: #{obj.comment}"
+  end
+
+  def self.get_taxon_record(params, taxon_name = nil, automatic: false)
     taxon_object = nil
     taxon_name = params[:taxon] if taxon_name.nil?
     if params[:taxonomy][:ncbi]
-      record = Helper.choose_ncbi_record(taxon_name)
+      record = Helper.choose_ncbi_record(taxon_name: taxon_name, automatic: automatic)
       taxon_object = record
   
     elsif params[:taxonomy][:gbif]
@@ -543,7 +637,7 @@ class Helper
       taxon_objects = taxon_objects.select { |t| t.taxonomic_status == 'accepted' }
       taxon_object  = taxon_objects.first
     else ## default ncbi
-      record = Helper.choose_ncbi_record(taxon_name)
+      record = Helper.choose_ncbi_record(taxon_name: taxon_name, automatic: automatic)
       taxon_object = record
     end
 
@@ -554,7 +648,6 @@ class Helper
 
     taxon_object = Helper.get_taxon_record(params, taxon_name)
 		
-		params[:taxon_object] = taxon_object
 		if taxon_object
 			params[:taxon_rank]   = taxon_object.taxon_rank
 			params[:taxon_object] = taxon_object
@@ -663,8 +756,7 @@ class Helper
   def self.download_dirs_for_taxon(params:, dirs:, only_successful: true)
     taxon_dirs = []
     dirs.each do |dir|
-      dir_name = FileManager.dir_name_of(dir: dir)
-      taxon_download_status = Helper.taxon_download_status(dir_name: dir_name, params: params)
+      taxon_download_status = Helper.taxon_download_status(dir: dir, params: params)
       taxon_dirs.push([dir, taxon_download_status]) unless taxon_download_status == :dir_name_not_found || taxon_download_status == :taxon_not_found
     end
 
@@ -680,11 +772,27 @@ class Helper
     return only_successful ? successful_downloads : taxon_dirs
   end
 
-  def self.taxon_download_status(dir_name:, params:)
+  def self.taxon_download_status(dir:, params:)
 
     taxon_query_object = params[:taxon_object]
 
-    record_for_dir_name = Helper.get_taxon_record(params, dir_name)
+    record_for_dir_name = nil
+    taxon_object_from_marshal_dump = Helper._get_taxon_record_from_marshal_dump(dir)
+    if taxon_object_from_marshal_dump
+      ## since there are some differences between the taxonomies the taxon_object should only
+      ## come from the same taxonomy as ther user specified taxonomy
+      if taxon_object_from_marshal_dump.is_a?(GbifTaxonomy) && (params[:taxonomy][:gbif] || params[:taxonomy][:gbif_backbone])
+        record_for_dir_name = taxon_object_from_marshal_dump
+      elsif taxon_object_from_marshal_dump.is_a?(OpenStruct) && params[:taxonomy][:ncbi]
+        record_for_dir_name = taxon_object_from_marshal_dump
+      else
+        record_for_dir_name = nil
+      end
+    else
+      dir_name = FileManager.dir_name_of(dir: dir)
+      record_for_dir_name = Helper.get_taxon_record(params, dir_name)
+    end
+
     return :dir_name_not_found if record_for_dir_name.nil?
 
     if taxon_query_object.canonical_name == record_for_dir_name.canonical_name
@@ -704,6 +812,20 @@ class Helper
       return :taxon_not_found
     else # no rank
       return :taxon_not_found
+    end
+  end
+
+  def self._get_taxon_record_from_marshal_dump(dir)
+    file_path = dir + '.taxon_object.dump'
+    if File.file?(file_path)
+      begin
+        taxon_object = Marshal.load(File.open(file_path, 'rb').read)
+        return taxon_object
+      rescue StandardError
+        return nil
+      end
+    else
+      return nil
     end
   end
 
@@ -760,8 +882,8 @@ class Helper
     end
   end
 
-  def self.write_marshal_file(store_dir, data)
-    marshal_dump_file_name = store_dir + '.download_file_managers.dump'
+  def self.write_marshal_file(dir:, file_name:, data:)
+    marshal_dump_file_name = dir + file_name
     data_dump = Marshal.dump(data)
     
     File.open(marshal_dump_file_name, 'wb') { |f| f.write(data_dump) }
@@ -770,6 +892,40 @@ class Helper
   def self.ask_user_about_bold_download_dirs(params)
     dirs = FileManager.directories_of(dir: BoldConfig::DOWNLOAD_DIR)
     return nil if Helper._is_nil_or_empty?(dirs)
+
+    taxon_dirs = Helper.download_dirs_for_taxon(params: params, dirs: dirs)
+    return nil if Helper._is_nil_or_empty?(taxon_dirs)
+
+    selected_download_dir_and_state = Helper.select_from_download_dirs(dirs: taxon_dirs)
+    return nil if Helper._is_nil_or_empty?(selected_download_dir_and_state)
+
+    selected_download_dir, selected_download_state = selected_download_dir_and_state
+    last_download_days = FileManager.is_how_old?(dir: selected_download_dir)
+    return nil if last_download_days.nil?
+
+    puts "You have already downloaded data for the taxon #{params[:taxon]}"
+    puts "Sequences for #{params[:taxon]} are available in: #{selected_download_dir.to_s}"
+    puts "The latest already downloaded version is #{last_download_days} days old"
+    puts
+    puts "Do you want to use the latest already downloaded version? [Y/n]"
+    puts "Otherwise a new download will start"
+
+
+    # nested_dir_name = FileManager.dir_name_of(dir: selected_download_dir)
+    # download_dir = selected_download_dir + nested_dir_name
+
+    user_input  = gets.chomp
+    use_latest_download = (user_input =~ /y|yes/i) ? true : false
+
+    return use_latest_download ? selected_download_dir : nil
+  end
+
+  def self.ask_user_about_genbank_download_dirs(params)
+    dirs = FileManager.directories_with_name_of(dir: NcbiGenbankConfig::DOWNLOAD_DIR, dir_name: 'genbank')
+    return nil if Helper._is_nil_or_empty?(dirs)
+
+
+    # success = DownloadInfoParser.download_was_successful?
 
     taxon_dirs = Helper.download_dirs_for_taxon(params: params, dirs: dirs)
     return nil if Helper._is_nil_or_empty?(taxon_dirs)

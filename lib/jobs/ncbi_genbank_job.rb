@@ -5,6 +5,9 @@ class NcbiGenbankJob
 
   FILE_DESCRIPTION_PART = 10
 
+  DOWNLOAD_INFO_NAME = 'ncbi_genbank_download_info.txt'
+
+
   def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, use_http: false, filter_params: nil, taxonomy_params:, region_params: nil)
     @taxon                = taxon
     @markers              = markers
@@ -85,7 +88,7 @@ class NcbiGenbankJob
   end
 
   def division_id
-    id = NcbiDivision.get_id(taxon_name: taxon.canonical_name)
+    id = NcbiDivision.get_division_id_by_taxon_name(taxon.canonical_name)
     return id if id
     
     ## should make multiple searches to find taxon in NCBI Genbank database

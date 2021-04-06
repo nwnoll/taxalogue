@@ -55,9 +55,11 @@ global = OptionParser.new do |opts|
 	opts.on('-t TAXON', String, '--taxon', 'Choose a taxon to build your database, if you want a database for a species, put "" around the option: e.g.: -t "Apis mellifera". default: Arthropoda') do |taxon_name|
 		abort 'Taxon is extinct, please choose another Taxon' if Helper.is_extinct?(taxon_name)
 
-		params = Helper.assign_taxon_info_to_params(params, taxon_name)
+		# params = Helper.assign_taxon_info_to_params(params, taxon_name)
 		params[:taxon] = taxon_name
-		
+		puts '...'
+		puts taxon_name
+		puts '...'
 		taxon_name
 	end
 	
@@ -238,6 +240,58 @@ loop do
 	subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
 end
 
+## if taxonomy was chosen by user, it needs to be updated
+## object is also not set in opts.on
+params = Helper.assign_taxon_info_to_params(params, params[:taxon])
+
+
+file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+# gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
+
+bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+file_manager.create_dir
+# Helper.get_inv_contaminants(file_manager, params[:marker_objects])
+bold_job.run
+# gbol_job.run
+
+
+
+## TODO:
+## NEXT:
+# gbchg dvision plus accession of changed seq
+# gbdel dvision plus accession of deleted seq
+# num of seqs and bases is i relase note
+# gbrel.txt relase notes of current
+# num of new files per division
+# 1.3.1 Organizational changes
+
+#   The total number of sequence data files increased by 91 with this release:
+  
+#   - the BCT division is now composed of 533 files (+21)
+#   - the CON division is now composed of 219 files (+1)
+#   - the ENV division is now composed of  63 files (+1)
+#   - the INV division is now composed of 132 files (+35)
+#   - the PAT division is now composed of 217 files (+4)
+#   - the PLN division is now composed of 605 files (+11)
+#   - the VRL division is now composed of  45 files (+1)
+#   - the VRT division is now composed of 231 files (+17)
+
+# gbnew.txt division plus accession of added seq
+
+# one strategy
+# download whole new release..
+# another
+# go to chng del and new and only download the ones listed
+# if i only use the listed should i copy the old ones?
+# or just use them from the old release?+
+# makes things way mor complicated
+# but saves download time
+
+
+## another thing is the scanning of division files, sometimes only 3 records are in it. most likely not cox1..
+# dont knwo if i have to read in the whole file anyway?
+
+
 
 # bold_dirs = FileManager.directories_of(dir: Pathname.new('fm_data/BOLD/'))
 # taxon_dirs = Helper.download_dirs_for_taxon(params: params, dirs: bold_dirs)
@@ -275,21 +329,28 @@ end
 
 
 # byebug
-## if taxonomy was chosen by user, it needs to be updated
-params = Helper.assign_taxon_info_to_params(params, params[:taxon])
 
-# byebug
 
-# exit
+
+pp params
+
+exit
+p NcbiDivision.get_division_id_by_taxon_name(params[:taxon])
+p NcbiDivision.get_division_id_by_taxon_id(params[:taxon_object].taxon_id)
+exit
+
+p Helper.ask_user_about_genbank_download_dirs(params)
+
+exit
 
 file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
+# gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
 
-# bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
 file_manager.create_dir
 # Helper.get_inv_contaminants(file_manager, params[:marker_objects])
-# bold_job.run
-gbol_job.run
+bold_job.run
+# gbol_job.run
 
 exit
 
