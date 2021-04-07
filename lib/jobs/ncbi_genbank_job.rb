@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 class NcbiGenbankJob
-  attr_reader :taxon, :markers, :taxonomy, :result_file_manager, :use_http, :filter_params, :taxonomy_params, :region_params
+  attr_reader :taxon, :markers, :taxonomy, :result_file_manager, :use_http, :filter_params, :taxonomy_params, :region_params, :params
 
   FILE_DESCRIPTION_PART = 10
 
   DOWNLOAD_INFO_NAME = 'ncbi_genbank_download_info.txt'
 
-  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, use_http: false, filter_params: nil, taxonomy_params:, region_params: nil)
+  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, use_http: false, filter_params: nil, taxonomy_params:, region_params: nil, params: nil)
     @taxon                = taxon
     @markers              = markers
     @taxonomy             = taxonomy
@@ -16,10 +16,11 @@ class NcbiGenbankJob
     @filter_params        = filter_params
     @taxonomy_params      = taxonomy_params
     @region_params        = region_params
+    @params               = params
   end
 
   def run
-    # already_downloaded_dir = Helper.ask_user_about_genbank_download_dirs(params)
+    already_downloaded_dir = Helper.ask_user_about_genbank_download_dirs(params)
     # if already_downloaded_dir
     #   begin
     #     fm_from_md_name         = already_downloaded_dir + '.download_file_managers.dump'

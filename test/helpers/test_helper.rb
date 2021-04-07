@@ -40,6 +40,24 @@ class TestHelper < Test::Unit::TestCase
                   comment:""
             )
 
+            @metazoa_obj = OpenStruct.new(
+                  taxon_id:33208,
+                  regnum:"Metazoa",
+                  phylum:"",
+                  classis:"",
+                  ordo:"",
+                  familia:"",
+                  genus:"",
+                  canonical_name:"Metazoa",
+                  scientific_name:"Metazoa",
+                  taxonomic_status:"accepted",
+                  taxon_rank:"kingdom",
+                  comment:""
+            )
+
+
+            @params = {taxon_object: @lentulidae_obj, taxonomy: { ncbi: true}}
+            @params2 = {taxon_object: @metazoa_obj, taxonomy: { ncbi: true}}
       end
 
       def teardown
@@ -390,5 +408,10 @@ class TestHelper < Test::Unit::TestCase
 
       def test_get_current_genbank_release_number
             assert_equal String, Helper.get_current_genbank_release_number.class
+      end
+
+      def test_division_codes_for_taxon
+            assert_equal ['inv'], Helper.division_codes_for_taxon(@params)
+            assert_equal ["inv", "mam", "pri", "rod", "vrt"], Helper.division_codes_for_taxon(@params2)
       end
 end

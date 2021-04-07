@@ -893,7 +893,7 @@ class Helper
     dirs = FileManager.directories_of(dir: BoldConfig::DOWNLOAD_DIR)
     return nil if Helper._is_nil_or_empty?(dirs)
 
-    taxon_dirs = Helper.download_dirs_for_taxon(params: params, dirs: dirs)
+    taxon_dirs = Helper.download_dirs_for_taxon(params: params, dirs: dirs, only_successful: false)
     return nil if Helper._is_nil_or_empty?(taxon_dirs)
 
     selected_download_dir_and_state = Helper.select_from_download_dirs(dirs: taxon_dirs)
@@ -923,9 +923,6 @@ class Helper
   def self.ask_user_about_genbank_download_dirs(params)
     dirs = FileManager.directories_with_name_of(dir: NcbiGenbankConfig::DOWNLOAD_DIR, dir_name: 'release')
     return nil if Helper._is_nil_or_empty?(dirs)
-
-    byebug
-
 
     # success = DownloadInfoParser.download_was_successful?
 
@@ -994,6 +991,28 @@ class Helper
 
   def self._is_nil_or_empty?(data)
     data.nil? || data.empty?
+  end
+
+  def self.division_codes_for_taxon(params)
+    taxon_obj = params[:taxon_object]
+    # return nil unless taxon_obj
+
+    division_codes = []
+    if params[:taxonomy][:ncbi]
+      division_ids = NcbiDivision.get_division_id_by_taxon_id(taxon_obj.taxon_id)
+      division_ids.each do |division_id|
+        division_code = NcbiDivision.code_for[division_id]
+        division_codes.push(division_code)
+      end
+    else
+      division_ids = NcbiDivision.get_division_id_by_taxon_name(taxon_obj.canonical_name)
+      division_ids.each do |division_id|
+        division_code = NcbiDivision.code_for[division_id]
+        division_codes.push(division_code)
+      end
+    end
+
+    return division_codes
   end
 
 end
