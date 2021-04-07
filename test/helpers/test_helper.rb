@@ -58,6 +58,7 @@ class TestHelper < Test::Unit::TestCase
 
             @params = {taxon_object: @lentulidae_obj, taxonomy: { ncbi: true}}
             @params2 = {taxon_object: @metazoa_obj, taxonomy: { ncbi: true}}
+            @params3 = {taxon_object: nil, taxonomy: { ncbi: true}}
       end
 
       def teardown
@@ -413,5 +414,7 @@ class TestHelper < Test::Unit::TestCase
       def test_division_codes_for_taxon
             assert_equal ['inv'], Helper.division_codes_for_taxon(@params)
             assert_equal ["inv", "mam", "pri", "rod", "vrt"], Helper.division_codes_for_taxon(@params2)
+            assert_nil Helper.division_codes_for_taxon(@params3)
       end
+      
 end

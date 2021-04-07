@@ -926,15 +926,15 @@ class Helper
 
     # success = DownloadInfoParser.download_was_successful?
 
-    taxon_dirs = Helper.download_dirs_for_taxon(params: params, dirs: dirs)
-    return nil if Helper._is_nil_or_empty?(taxon_dirs)
+    division_codes = Helper.division_codes_for_taxon(params)
+    dirs.each do |dir|
+      division_codes.each do |division_code|
+        division_dirs = FileManager.directories_with_name_of(dir: dir, dir_name:division_code)
+        p division_dirs
+        puts
+      end
+    end
 
-    selected_download_dir_and_state = Helper.select_from_download_dirs(dirs: taxon_dirs)
-    return nil if Helper._is_nil_or_empty?(selected_download_dir_and_state)
-
-    selected_download_dir, selected_download_state = selected_download_dir_and_state
-    last_download_days = FileManager.is_how_old?(dir: selected_download_dir)
-    return nil if last_download_days.nil?
 
     puts "You have already downloaded data for the taxon #{params[:taxon]}"
     puts "Sequences for #{params[:taxon]} are available in: #{selected_download_dir.to_s}"
@@ -995,7 +995,7 @@ class Helper
 
   def self.division_codes_for_taxon(params)
     taxon_obj = params[:taxon_object]
-    # return nil unless taxon_obj
+    return nil unless taxon_obj
 
     division_codes = []
     if params[:taxonomy][:ncbi]

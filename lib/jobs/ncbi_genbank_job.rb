@@ -17,10 +17,12 @@ class NcbiGenbankJob
     @taxonomy_params      = taxonomy_params
     @region_params        = region_params
     @params               = params
+    @root_download_dir    = nil
   end
 
   def run
     already_downloaded_dir = Helper.ask_user_about_genbank_download_dirs(params)
+    
     # if already_downloaded_dir
     #   begin
     #     fm_from_md_name         = already_downloaded_dir + '.download_file_managers.dump'
@@ -81,11 +83,37 @@ class NcbiGenbankJob
       fmanagers.push(file_manager)
     end
 
+    success = fmanagers.all? { |fm| fm.status == 'success'}
+    dl_path_public = Pathname.new(file_manager.dir_path + DOWNLOAD_INFO_NAME)
+    dl_path_hidden = Pathname.new(file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
+    rs_path_public = Pathname.new(result_file_manager.dir_path + DOWNLOAD_INFO_NAME)
+    rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
+    root_download_dir
+    _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: fmanagers)
+
     return fmanagers
   end
 
-
   private
+  def _write_download_info(paths:, success:, download_file_managers:)
+
+      paths.each do |path|
+          file = File.open(path, 'w')
+  
+          basename = path.basename.to_s
+  
+          if path.descend.first.to_s == 'results'
+              file.puts "corresponding data directory: #{download_file_manager.dir_path.to_s}"
+          else
+              file.puts "corresponding result directory: #{result_file_manager.dir_path.to_s}"
+          end
+  
+          file.puts
+          file.puts "success: #{success}"
+          file.rewind
+      end
+  end
+
   def _configs
     configs = []
     release_dir = _get_release_dir
