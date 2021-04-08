@@ -84,8 +84,8 @@ class NcbiGenbankJob
     end
 
     success = fmanagers.all? { |fm| fm.status == 'success'}
-    dl_path_public = Pathname.new(file_manager.dir_path + DOWNLOAD_INFO_NAME)
-    dl_path_hidden = Pathname.new(file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
+    dl_path_public = Pathname.new(NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_NAME)
+    dl_path_hidden = Pathname.new(NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_NAME}")
     rs_path_public = Pathname.new(result_file_manager.dir_path + DOWNLOAD_INFO_NAME)
     rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
     root_download_dir

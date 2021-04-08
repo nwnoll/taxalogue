@@ -39,8 +39,12 @@ class NcbiGenbankConfig
     self.class.to_s.gsub('Config', '').upcase
   end
 
-  def _file_manager
-    FileManager.new(name: name, versioning: false, base_dir: DOWNLOAD_DIR + parent_dir, config: self, multiple_files_per_dir: true)
-  end
+    def _file_manager
+        # if is_root
+            FileManager.new(name: name, versioning: false, base_dir: DOWNLOAD_DIR + parent_dir, config: self, multiple_files_per_dir: true)
+        # else
+            # FileManager.new(name: name, versioning: false, base_dir: DOWNLOAD_DIR + parent_dir, config: self, multiple_files_per_dir: true)
+        # end
+    end
 
 end

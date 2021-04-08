@@ -241,9 +241,9 @@ end
 ## object is also not set in opts.on
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 
-# NcbiDownloadCheckHelper.ask_user_about_download_dirs(params)
+NcbiDownloadCheckHelper.ask_user_about_download_dirs(params)
 
-# exit
+exit
 
 
 file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)

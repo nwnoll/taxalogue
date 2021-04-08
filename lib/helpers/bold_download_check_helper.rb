@@ -108,11 +108,11 @@ class BoldDownloadCheckHelper
         end
     end
 
-    def self.ask_user_about_download_dirs(params)
+    def self.ask_user_about_download_dirs(params, only_successful = false)
         dirs = FileManager.directories_of(dir: BoldConfig::DOWNLOAD_DIR)
         return nil if DownloadCheckHelper.is_nil_or_empty?(dirs)
     
-        taxon_dirs = BoldDownloadCheckHelper.download_dirs_for_taxon(params: params, dirs: dirs, only_successful: false)
+        taxon_dirs = BoldDownloadCheckHelper.download_dirs_for_taxon(params: params, dirs: dirs, only_successful: only_successful)
         return nil if DownloadCheckHelper.is_nil_or_empty?(taxon_dirs)
     
         selected_download_dir_and_state = BoldDownloadCheckHelper.select_from_download_dirs(dirs: taxon_dirs)
@@ -137,5 +137,5 @@ class BoldDownloadCheckHelper
         use_latest_download = (user_input =~ /y|yes/i) ? true : false
     
         return use_latest_download ? selected_download_dir : nil
-      end
+    end
 end
