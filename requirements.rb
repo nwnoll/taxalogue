@@ -30,7 +30,6 @@ require 'rexml/document'
 require 'biodiversity'
 
 require_relative "db/database_schema"
-require_relative 'lib/helpers/helper'
 require_relative 'lib/output_formats/output_format'
 
 Bundler.require
@@ -45,7 +44,7 @@ else
 	DatabaseSchema.create_db
 end
 
-sections = ['decorators', 'services', 'models', 'importers', 'jobs', 'downloaders', 'configs', 'output_formats']
+sections = ['helpers', 'decorators', 'services', 'models', 'importers', 'jobs', 'downloaders', 'configs', 'output_formats']
 sections.each do |section|
 	Dir[File.dirname(__FILE__) + "/lib/#{section}/*.rb"].each do |file|
 		# puts File.basename(file, File.extname(file))

@@ -22,7 +22,7 @@ class Config
     end
 
     def _downloader
-        Helper.constantize(params["downloader"])
+        MiscHelper.constantize(params["downloader"])
     end
 
     def _address

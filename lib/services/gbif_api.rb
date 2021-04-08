@@ -4,7 +4,7 @@ class GbifApi
   attr_reader :path, :query, :response_hash, :taxonomy_params, :are_synonyms_allowed
   def initialize(path: 'species?name=', query:, taxonomy_params:)
     @path                 = path
-    @query                = CGI::escape(Helper.normalize(query.to_s))
+    @query                = CGI::escape(MiscHelper.normalize(query.to_s))
     @response_hash        = JSON.parse response.body
     @taxonomy_params      = taxonomy_params
     @are_synonyms_allowed = taxonomy_params[:synonyms_allowed]

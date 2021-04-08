@@ -3,6 +3,58 @@
 require_relative '../test_helper'
 
 class TestNcbiDivision < Test::Unit::TestCase
+
+      def setup
+            @lentulidae_obj = OpenStruct.new(
+                  taxon_id: 62781,
+                  regnum: 'Metazoa',
+                  phylum: 'Arthropoda',
+                  classis: 'Insecta',
+                  ordo: 'Orthoptera',
+                  familia: 'Lentulidae',
+                  genus: '',
+                  canonical_name: 'Lentulidae',
+                  scientific_name: 'Lentulidae',
+                  taxonomic_status: 'accepted',
+                  taxon_rank: 'family',
+                  comment: ''
+            )
+
+            @vertebrata_animal_obj = OpenStruct.new(
+                  taxon_id:7742,
+                  regnum:"Metazoa",
+                  phylum:"Chordata",
+                  classis:"",
+                  ordo:"",
+                  familia:"",
+                  genus:"",
+                  canonical_name:"Vertebrata",
+                  scientific_name:"Vertebrata Cuvier, 1812",
+                  taxonomic_status:"accepted",
+                  taxon_rank:"clade",
+                  comment:""
+            )
+
+            @metazoa_obj = OpenStruct.new(
+                  taxon_id:33208,
+                  regnum:"Metazoa",
+                  phylum:"",
+                  classis:"",
+                  ordo:"",
+                  familia:"",
+                  genus:"",
+                  canonical_name:"Metazoa",
+                  scientific_name:"Metazoa",
+                  taxonomic_status:"accepted",
+                  taxon_rank:"kingdom",
+                  comment:""
+            )
+
+
+            @params = {taxon_object: @lentulidae_obj, taxonomy: { ncbi: true}}
+            @params2 = {taxon_object: @metazoa_obj, taxonomy: { ncbi: true}}
+            @params3 = {taxon_object: nil, taxonomy: { ncbi: true}}
+      end
       
       def test_code_for
             assert_equal 'bct', NcbiDivision.code_for[0]
@@ -28,5 +80,11 @@ class TestNcbiDivision < Test::Unit::TestCase
             assert_equal [2], NcbiDivision.get_division_id_by_taxon_name('Soricidae')
             assert_equal [6], NcbiDivision.get_division_id_by_taxon_name('Mus musculus')
             assert_equal [4], NcbiDivision.get_division_id_by_taxon_name('Quercus')
+      end
+
+      def test_codes_for_taxon
+            assert_equal ['inv'], NcbiDivision.codes_for_taxon(@params)
+            assert_equal ["inv", "mam", "pri", "rod", "vrt"], NcbiDivision.codes_for_taxon(@params2)
+            assert_nil NcbiDivision.codes_for_taxon(@params3)
       end
 end

@@ -25,14 +25,14 @@ if File.exists? CONFIG_FILE
 	config_options = YAML.load_file(CONFIG_FILE)
 	params.merge!(config_options)
 
-	taxon_object = Helper.get_taxon_record(params)
+	taxon_object = TaxonHelper.get_taxon_record(params)
 	
 	if taxon_object.nil?
 		abort "Cannot find default Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species\nMaybe the Taxonomy Database is not properly setup, run the program with --setup_taxonomy to fix the issue."
 	end
 
 	params[:taxon_object] 	= taxon_object
-	params[:marker_objects] = Helper.create_marker_objects(query_marker_names: params[:markers])
+	params[:marker_objects] = MiscHelper.create_marker_objects(query_marker_names: params[:markers])
 end
 
 ## modified after https://gist.github.com/rkumar/445735
@@ -53,9 +53,9 @@ HELP
 global = OptionParser.new do |opts|
 	opts.banner = "Usage: bundle exec ruby main.rb [params] [subcommand [params]]"
 	opts.on('-t TAXON', String, '--taxon', 'Choose a taxon to build your database, if you want a database for a species, put "" around the option: e.g.: -t "Apis mellifera". default: Arthropoda') do |taxon_name|
-		abort 'Taxon is extinct, please choose another Taxon' if Helper.is_extinct?(taxon_name)
+		abort 'Taxon is extinct, please choose another Taxon' if TaxonHelper.is_extinct?(taxon_name)
 
-		# params = Helper.assign_taxon_info_to_params(params, taxon_name)
+		# params = TaxonHelper.assign_taxon_info_to_params(params, taxon_name)
 		params[:taxon] = taxon_name
 		puts '...'
 		puts taxon_name
@@ -64,7 +64,7 @@ global = OptionParser.new do |opts|
 	end
 	
 	opts.on('-m MARKERS', String, '--markers') do |markers|
-		params[:marker_objects] = Helper.create_marker_objects(query_marker_names: markers)
+		params[:marker_objects] = MiscHelper.create_marker_objects(query_marker_names: markers)
 	end
   
   opts.separator ""
@@ -164,21 +164,21 @@ subcommands = {
 		opts.on('-c COUNTRY', String, '--country', 'create a database consisting of sequences only from this country or a set of countries: if you want to specifiy multiple countries please use semicolons without spaces and quotes e.g. "Germany;France;Belgium"') do |opt|
 			valid_names = all_country_names 
 			opt_ary = opt.split(';')
-			Helper.check_valid_names(valid_names, opt_ary)
+			RegionHelper.check_valid_names(valid_names, opt_ary)
 			params[:region][:country_ary] = opt_ary
 			opt
 		end
-		opts.on('-C', '--available_countries', 'lists all available countries') { Helper.print_all_countries; exit }
+		opts.on('-C', '--available_countries', 'lists all available countries') { RegionHelper.print_all_countries; exit }
 		opts.on('-k CONTINENT', String,'--continent', 'create a database consisting of sequences only from this continent or a set of continents: if you want to specifiy a continent please use quotes e.g. "North America". For multiple continents please use semicolons without spaces e.g. "Europe;Asia"') do |opt|
 			valid_names = all_continent_names
 			opt_ary = opt.split(';')
-			Helper.check_valid_names(valid_names, opt_ary)
+			RegionHelper.check_valid_names(valid_names, opt_ary)
 			params[:region][:continent_ary] = opt_ary
 			opt
 		end
-		opts.on('-K', '--available_continents', 'lists all available continents') { Helper.print_all_continents; exit }
+		opts.on('-K', '--available_continents', 'lists all available continents') { RegionHelper.print_all_continents; exit }
 		opts.on('-b BIOGEOGRAPHIC_REALM', String,'--biogeographic_realm', 'create a database consisting of sequences only from this biogegraphic realm or a set of realms: if you want to specifiy a realm please use quotes e.g. "Oriental (Indomalaya)". For multiple realms pleas use quotes and semicolons without spaces e.g."Oriental (Indomalaya);Afrotropical"') do |opt|
-			params = Helper.check_biogeo(params)
+			params = RegionHelper.check_biogeo(params)
 			
 			if params[:region][:biogeo_ary] == :skip
 
@@ -186,25 +186,25 @@ subcommands = {
 			else
 				valid_names = $fada_regions_of.keys.sort
 				opt_ary = opt.split(';')
-				Helper.check_valid_names(valid_names, opt_ary)
+				RegionHelper.check_valid_names(valid_names, opt_ary)
 				params[:region][:biogeo_ary] = opt_ary
 
 				opt
 			end
 		end
 		opts.on('-B', '--available_biogeographic_realms', 'lists all available biogeographic realms') do |opt|
-			params = Helper.check_biogeo(params)
+			params = RegionHelper.check_biogeo(params)
 			
 			if params[:region][:biogeo_ary] == :skip
 				exit
 			else
-				Helper.print_all_regions($fada_regions_of.keys.sort)
+				RegionHelper.print_all_regions($fada_regions_of.keys.sort)
 				exit
 			end
 		end
 		opts.on('-e TERRESTRIAL_ECOREGION', String,'--terrestrial_ecoregion', 'create a database consisting of sequences only from this terrestrial ecoregion or a set of regions: if you want to specifiy a region please use quotes e.g. "North Atlantic moist mixed forests". For multiple realms pleas use quotes and semicolons without spaces e.g."North Atlantic moist mixed forests;Highveld grasslands"') do |opt|
 			
-			params = Helper.check_fada(params)
+			params = RegionHelper.check_fada(params)
 			
 			if params[:region][:terreco_ary] == :skip
 
@@ -212,7 +212,7 @@ subcommands = {
 			else
 				valid_names = $eco_zones_of.keys.sort
 				opt_ary = opt.split(';')
-				Helper.check_valid_names(valid_names, opt_ary)
+				RegionHelper.check_valid_names(valid_names, opt_ary)
 				params[:region][:terreco_ary] = opt_ary
 
 				opt
@@ -220,12 +220,12 @@ subcommands = {
 		end
 		opts.on('-E', '--available_terrestrial_ecoregion', 'lists all available terrestrial ecoregions') do |opt|
 			
-			params = Helper.check_fada(params)
+			params = RegionHelper.check_fada(params)
 			
 			if params[:region][:terreco_ary] == :skip
 				exit
 			else
-				Helper.print_all_regions($eco_zones_of.keys.sort)
+				RegionHelper.print_all_regions($eco_zones_of.keys.sort)
 				exit
 			end
 		end
@@ -242,9 +242,9 @@ end
 
 ## if taxonomy was chosen by user, it needs to be updated
 ## object is also not set in opts.on
-params = Helper.assign_taxon_info_to_params(params, params[:taxon])
+params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 
-Helper.ask_user_about_genbank_download_dirs(params)
+NcbiDownloadCheckHelper.ask_user_about_download_dirs(params)
 
 exit
 
@@ -257,7 +257,7 @@ exit
 
 bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
 file_manager.create_dir
-# Helper.get_inv_contaminants(file_manager, params[:marker_objects])
+# MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
 bold_job.run
 # gbol_job.run
 
@@ -301,9 +301,9 @@ bold_job.run
 
 
 # bold_dirs = FileManager.directories_of(dir: Pathname.new('fm_data/BOLD/'))
-# taxon_dirs = Helper.download_dirs_for_taxon(params: params, dirs: bold_dirs)
+# taxon_dirs = BoldDownloadCheckHelper.download_dirs_for_taxon(params: params, dirs: bold_dirs)
 
-# selected_bold_download_dir_and_state = Helper.select_from_download_dirs(dirs: taxon_dirs)
+# selected_bold_download_dir_and_state = BoldDownloadCheckHelper.select_from_download_dirs(dirs: taxon_dirs)
 
 # pp taxon_dirs
 # puts
@@ -314,7 +314,7 @@ bold_job.run
 # puts
 # p FileManager.is_how_old?(dir: selected_bold_download_dir_and_state.first)
 
-# dir = Helper.ask_user_about_bold_download_dirs(params)
+# dir = BoldDownloadCheckHelper.ask_user_about_download_dirs(params)
 # p dir
 # p dir if dir
 
@@ -322,9 +322,9 @@ bold_job.run
 
 
 
-# p Helper.taxon_download_status(dir_name: 'Mantophasmatodea', params: params)
-# p Helper.taxon_download_status(dir_name: 'Insecta', params: params)
-# p Helper.taxon_download_status(dir_name: 'Indsecta', params: params)
+# p BoldDownloadCheckHelper.taxon_download_status(dir_name: 'Mantophasmatodea', params: params)
+# p BoldDownloadCheckHelper.taxon_download_status(dir_name: 'Insecta', params: params)
+# p BoldDownloadCheckHelper.taxon_download_status(dir_name: 'Indsecta', params: params)
 
 # p Helper.taxon_belongs_to(taxon_object:params[:taxon_object], dir_name: 'Mantophasmatodea')
 
@@ -346,7 +346,7 @@ p NcbiDivision.get_division_id_by_taxon_name(params[:taxon])
 p NcbiDivision.get_division_id_by_taxon_id(params[:taxon_object].taxon_id)
 exit
 
-p Helper.ask_user_about_genbank_download_dirs(params)
+p NcbiDownloadCheckHelper.ask_user_about_download_dirs(params)
 
 exit
 
@@ -355,7 +355,7 @@ file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versi
 
 bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
 file_manager.create_dir
-# Helper.get_inv_contaminants(file_manager, params[:marker_objects])
+# MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
 bold_job.run
 # gbol_job.run
 
@@ -439,7 +439,7 @@ if params[:import][:all_seqs]
 	## catch error with begin except?
 	file_manager.create_dir
 
-	# Helper.get_inv_contaminants(file_manager, params[:marker_objects])
+	# MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
 
 
 	multiple_jobs = MultipleJobs.new(jobs: [bold_job, gbol_job, genbank_job])
@@ -479,7 +479,7 @@ fm.create_dir
 # ncbi_api = NcbiApi.new(markers: params[:marker_objects], taxon_name: 'Homo sapiens', max_seq: 10, file_name: contaminants_file_path)
 # ncbi_api.efetch
 
-Helper.get_inv_contaminants(fm, params[:marker_objects])
+MiscHelper.get_inv_contaminants(fm, params[:marker_objects])
 
 # BoldJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region]).run
 # NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: fm, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region]).run
@@ -928,7 +928,7 @@ end
 
 
 # ### import ncbi names do not delete should use it for later....
-# conf_params = Helper.json_file_to_hash('lib/configs/ncbi_taxonomy_config.json')
+# conf_params = MiscHelper.json_file_to_hash('lib/configs/ncbi_taxonomy_config.json')
 # config = Config.new(conf_params)
 # file_manager = config.file_manager
 
@@ -960,7 +960,7 @@ bold_job.run
 exit
 
 if params[:setup][:gbif_taxonomy]
-	if Helper.new_gbif_taxonomy_available?
+	if TaxonomyHelper.new_gbif_taxonomy_available?
 		gbif_taxonomy_job = GbifTaxonomyJob.new
 		gbif_taxonomy_job.run
 	else
@@ -976,7 +976,7 @@ end
 
 
 if params[:setup][:ncbi_taxonomy]
-	if Helper.new_ncbi_taxonomy_available?
+	if TaxonomyHelper.new_ncbi_taxonomy_available?
 		ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
 		ncbi_taxonomy_job.run
 	else
@@ -992,15 +992,15 @@ end
 
 
 if params[:setup][:taxonomies]
-	Helper.setup_taxonomy
+	TaxonomyHelper.setup_taxonomy
 end
 
 if params[:setup][:terrestrial_ecoregions]
-	Helper.get_shape_terreco_regions
+	RegionHelper.get_shape_terreco_regions
 end
 
 if params[:setup][:biogeographic_realms]
-	Helper.get_shape_fada_regions
+	RegionHelper.get_shape_fada_regions
 end
 
 
@@ -1028,14 +1028,14 @@ end
 exit
 
 if params[:update][:all_taxonomies]
-	if Helper.new_gbif_taxonomy_available?
+	if TaxonomyHelper.new_gbif_taxonomy_available?
 		
 		gbif_taxonomy_job = GbifTaxonomyJob.new
 		gbif_taxonomy_job.run
 	else
 	end
 
-	if Helper.new_ncbi_taxonomy_available?
+	if TaxonomyHelper.new_ncbi_taxonomy_available?
 		
 		ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
 		ncbi_taxonomy_job.run

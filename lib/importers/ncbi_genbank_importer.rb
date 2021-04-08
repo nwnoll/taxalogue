@@ -88,7 +88,7 @@ class NcbiGenbankImporter
           nucs = gb.naseq.splicing(features_of_gene.first.position).to_s
           next if nucs.nil? || nucs.empty?
 
-          nucs = Helper.filter_seq(nucs, filter_params)
+          nucs = FilterHelper.filter_seq(nucs, filter_params)
           next if nucs.nil? || nucs.empty?
 
           nucs.upcase!
@@ -113,13 +113,13 @@ class NcbiGenbankImporter
         taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
 
         next unless taxonomic_info
-        next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+        next unless taxonomic_info.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
         # Synonym List
-        syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [Helper.get_source_db(taxonomy_params)])
+        syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [TaxonomyHelper.latinize_rank(taxonomy_params)])
         # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
 
-        OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms[Helper.get_source_db(taxonomy_params)], used_taxonomy: Helper.get_source_db(taxonomy_params) )
+        OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms[TaxonomyHelper.latinize_rank(taxonomy_params)], used_taxonomy: TaxonomyHelper.latinize_rank(taxonomy_params) )
 
         specimens_of_taxon[taxon_name][:data].each do |data|
           OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)

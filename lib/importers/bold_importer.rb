@@ -25,7 +25,7 @@ class BoldImporter
     file = File.file?(file_name) ? File.open(file_name, 'r') : nil
     abort "#{file_name} is not a valid file" if file.nil?
     
-    @@index_by_column_name = Helper.generate_index_by_column_name(file: file, separator: "\t")
+    @@index_by_column_name = MiscHelper.generate_index_by_column_name(file: file, separator: "\t")
 
     file.each do |row|
       _matches_query_taxon(row.scrub!) ? nil : next if fast_run
@@ -50,11 +50,11 @@ class BoldImporter
       taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
       
       next unless taxonomic_info
-      next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+      next unless taxonomic_info.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
       # Synonym List
-      syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [Helper.get_source_db(taxonomy_params)])
-      OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms[Helper.get_source_db(taxonomy_params)], used_taxonomy: Helper.get_source_db(taxonomy_params) )
+      syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [TaxonomyHelper.latinize_rank(taxonomy_params)])
+      OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms[TaxonomyHelper.latinize_rank(taxonomy_params)], used_taxonomy: TaxonomyHelper.latinize_rank(taxonomy_params) )
       # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
       
 
@@ -76,7 +76,7 @@ class BoldImporter
     sequence                      = row[@@index_by_column_name['nucleotides']]
     return nil if sequence.nil? || sequence.blank?
     
-    sequence                      = Helper.filter_seq(sequence, filter_params)
+    sequence                      = FilterHelper.filter_seq(sequence, filter_params)
     marker                        = row[@@index_by_column_name["markercode"]]
     location                      = row[@@index_by_column_name["country"]]
     lat                           = row[@@index_by_column_name["lat"]]

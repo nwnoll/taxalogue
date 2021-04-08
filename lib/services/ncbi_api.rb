@@ -36,7 +36,7 @@ class NcbiApi
 
       private
       def _run_esearch
-            query       = CGI::escape(Helper.normalize("#{_taxon_query}#{_marker_query}#{_exclusion_query}"))
+            query       = CGI::escape(MiscHelper.normalize("#{_taxon_query}#{_marker_query}#{_exclusion_query}"))
             url         = "#{_base}esearch.fcgi?db=nucleotide&term=#{query}&usehistory=y"
             uri         = URI(url)
             response    = Net::HTTP.get_response(uri)

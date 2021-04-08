@@ -21,7 +21,7 @@ class NcbiGenbankJob
   end
 
   def run
-    already_downloaded_dir = Helper.ask_user_about_genbank_download_dirs(params)
+    already_downloaded_dir = NcbiDownloadCheckHelper.ask_user_about_download_dirs(params)
     
     # if already_downloaded_dir
     #   begin
@@ -35,14 +35,14 @@ class NcbiGenbankJob
     #     sleep 2
 
     #     download_file_managers = download_files
-    #     Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
-    #     Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
+    #     DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
+    #     DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
     #   end
     # else
 
     #   download_file_managers  = download_files
-    #   Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
-    #   Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
+    #   DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
+    #   DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
     # end
 
 
@@ -181,7 +181,7 @@ class NcbiGenbankJob
   end
 
   def _get_release_dir
-    release_number = Helper.get_current_genbank_release_number
+    release_number = NcbiDownloadCheckHelper.get_current_genbank_release_number
     name = "release#{release_number}"
     
     return Pathname.new(name)

@@ -5,6 +5,7 @@ class BoldJob2
 
   HEADER_LENGTH = 1
   BOLD_DIR = Pathname.new('fm_data/BOLD')
+  DOWNLOAD_INFO_NAME = "bold_download_info.txt"
 
   def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil, try_synonyms: false, taxonomy_params:, region_params: nil, params: nil)
     @taxon                = taxon
@@ -28,7 +29,7 @@ class BoldJob2
   end
 
   def run
-    already_downloaded_dir = Helper.ask_user_about_bold_download_dirs(params)
+    already_downloaded_dir = BoldDownloadCheckHelper.ask_user_about_download_dirs(params)
     if already_downloaded_dir
 
       begin
@@ -36,20 +37,21 @@ class BoldJob2
         fm_from_md              = Marshal.load(File.open(fm_from_md_name, 'rb').read)
         download_file_managers  = fm_from_md
 
-        _create_download_info_for_result_dir(already_downloaded_dir)
+        # _create_download_info_for_result_dir(already_downloaded_dir)
+        DownloadCheckHelper.create_download_info_for_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
       rescue StandardError
         puts "Directory could not be used, starting download"
         sleep 2
 
         download_file_managers = dload
-        Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
-        Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
+        DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
+        DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
       end
     else
 
       download_file_managers  = dload
-      Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
-      Helper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
+      DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
+      DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
     end
     
     _classify_downloads(download_file_managers: download_file_managers)
@@ -270,7 +272,7 @@ class BoldJob2
           record  = record_and_name.first
           name    = record_and_name.last
           
-          next if Helper.is_extinct?(name)
+          next if TaxonHelper.is_extinct?(name)
           next if added_names.include?(name) # prevent breaking if name occurs multiple times maybe due to wrong backbone
 
           failed_node << Tree::TreeNode.new(name, [record, @pending, 'pending'])
@@ -443,7 +445,7 @@ class BoldJob2
         file_manager.create_dir
 
         downloader = config.downloader.new(config: config)
-        # downloader.extend(Helper.constantize("Printing::#{downloader.class}"))
+        # downloader.extend(MiscHelper.constantize("Printing::#{downloader.class}"))
 
         begin
           node.content[1] = @loading
@@ -529,7 +531,7 @@ class BoldJob2
           record  = record_and_name.first
           name    = record_and_name.last
           
-          next if Helper.is_extinct?(name)
+          next if TaxonHelper.is_extinct?(name)
           next if added_names.include?(name) # prevent breaking if name occurs multiple times maybe due to wrong backbone
 
           failed_node << Tree::TreeNode.new(name, [record, @pending])
@@ -721,7 +723,7 @@ class BoldJob2
       if reached_genus_level
         rank_status = :genus_rank
       else
-        stats = Helper.json_file_to_hash(file_path)
+        stats = MiscHelper.json_file_to_hash(file_path)
         num_total_records = stats["total_records"]
         if !num_total_records.nil? && num_total_records == 0
           rank_status = :no_records

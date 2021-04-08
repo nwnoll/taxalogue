@@ -16,7 +16,7 @@ class GbolJob
     end
 
     def run
-        already_downloaded_dir = Helper.ask_user_about_gbol_download_dirs
+        already_downloaded_dir = GbolDownloadCheckHelper.ask_user_about_gbol_download_dirs
         
         if already_downloaded_dir
           begin
@@ -24,21 +24,21 @@ class GbolJob
             fm_from_md              = Marshal.load(File.open(fm_from_md_name, 'rb').read)
             download_file_manager  = fm_from_md
     
-            Helper.create_download_info_for_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self)
+            DownloadCheckHelper.create_download_info_for_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
           rescue StandardError => e
             puts "Release directory could not be used, starting download"
             sleep 2
     
             download_file_manager = download_files
     
-            Helper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
-            Helper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
+            DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
+            DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
           end
         else
 
             download_file_manager = download_files
-            Helper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
-            Helper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
+            DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
+            DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
         end
 
         begin 
@@ -46,8 +46,8 @@ class GbolJob
         rescue Zip::Error => e
             download_file_manager = download_files
           
-            Helper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
-            Helper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
+            DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
+            DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
         end
         
         return result_file_manager

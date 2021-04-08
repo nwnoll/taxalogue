@@ -76,7 +76,7 @@ class BoldJob
         file_manager.create_dir
 
         downloader = config.downloader.new(config: config)
-        # downloader.extend(Helper.constantize("Printing::#{downloader.class}"))
+        # downloader.extend(MiscHelper.constantize("Printing::#{downloader.class}"))
 
         begin
           node.content[1] = @loading
@@ -147,7 +147,7 @@ class BoldJob
           record  = record_and_name.first
           name    = record_and_name.last
           
-          next if Helper.is_extinct?(name)
+          next if TaxonHelper.is_extinct?(name)
           next if added_names.include?(name) # prevent breaking if name occurs multiple times maybe due to wrong backbone
 
           failed_node << Tree::TreeNode.new(name, [record, @pending])

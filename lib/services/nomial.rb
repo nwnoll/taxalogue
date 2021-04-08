@@ -42,7 +42,7 @@ class Nomial
     return [] if _name_parts.nil?
     i                   = _open_nomenclature.map { |n| _name_parts.index(n) }.compact.min
     cleaned_name_parts  = _name_parts[0 ... i]
-    cleaned_name_parts.map! { |word| Helper.normalize(word) }
+    cleaned_name_parts.map! { |word| MiscHelper.normalize(word) }
     cleaned = cleaned_name_parts.delete_if { |word| word =~ /[0-9]|_|\W/}
     cleaned.select! { |word| word == cleaned[0] || word !~ /[A-Z]/} if cleaned.size > 1
     cleaned
@@ -367,12 +367,12 @@ class Monomial
 
   def _belongs_to_correct_query_taxon_rank?(record)
     if taxonomy_params[:gbif] || taxonomy_params[:gbif_backbone]
-      record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+      record.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name
     elsif taxonomy_params[:unmapped]
       ## TODO:
     else
       # ncbi
-      record.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name || record.name == query_taxon_name
+      record.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name || record.name == query_taxon_name
     end
   end
 
@@ -437,7 +437,7 @@ class Monomial
     possible_ranks = NcbiTaxonomy.ranks_for_combined
 
     possible_ranks.reverse.each do |rank|
-      rank_info = rank_of_record == rank ? record.name : record.public_send(Helper.latinize_rank(rank))
+      rank_info = rank_of_record == rank ? record.name : record.public_send(TaxonomyHelper.latinize_rank(rank))
       combined.push(rank_info) unless rank_info.blank?
     end
 

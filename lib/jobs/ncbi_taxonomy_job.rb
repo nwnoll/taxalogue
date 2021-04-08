@@ -12,11 +12,11 @@ class NcbiTaxonomyJob
         file_manager.create_dir
 
         downloader = config.downloader.new(config: config)
-        # downloader.extend(Helper.constantize("Printing::#{downloader.class}"))
+        # downloader.extend(MiscHelper.constantize("Printing::#{downloader.class}"))
         downloader.run
 
         config.importers.each do |importer_name, import_file|
-            importer_class  = Helper.constantize(importer_name)
+            importer_class  = MiscHelper.constantize(importer_name)
             importer        = importer_class.new(file_manager: file_manager, file_name: import_file)
             importer.run
         end
@@ -24,7 +24,7 @@ class NcbiTaxonomyJob
 
     private
     def _config(config_file_name)
-        params = Helper.json_file_to_hash(config_file_name)
+        params = MiscHelper.json_file_to_hash(config_file_name)
         config = Config.new(params)
 
         return config

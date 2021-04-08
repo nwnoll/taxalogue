@@ -27,11 +27,11 @@ class GbolImporter
   def run
     specimens_of_taxon  = Hash.new { |hash, key| hash[key] = {} }
 
-    Helper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: [file_name.basename, 'metadata.xml'])
+    MiscHelper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: [file_name.basename, 'metadata.xml'])
     ## TODO:
     ## NEXT:
     ## whats correct?
-    # Helper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: [file_name.basename.sub_ext('.csv').to_s, 'metadata.xml'])
+    # MiscHelper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: [file_name.basename.sub_ext('.csv').to_s, 'metadata.xml'])
     
     csv_file_name = file_name.sub_ext('.csv')
     csv_file = File.open(csv_file_name, 'r')
@@ -61,10 +61,10 @@ class GbolImporter
       taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
       
       next unless taxonomic_info
-      next unless taxonomic_info.public_send(Helper.latinize_rank(query_taxon_rank)) == query_taxon_name
+      next unless taxonomic_info.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
-      syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [Helper.get_source_db(taxonomy_params)])
-      OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms[Helper.get_source_db(taxonomy_params)], used_taxonomy: Helper.get_source_db(taxonomy_params))
+      syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [TaxonomyHelper.latinize_rank(taxonomy_params)])
+      OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms[TaxonomyHelper.latinize_rank(taxonomy_params)], used_taxonomy: TaxonomyHelper.latinize_rank(taxonomy_params))
 
       # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
 
@@ -89,7 +89,7 @@ class GbolImporter
     location                      = row["Location"]
     lat                           = row["Latitude"]
     long                          = row["Longitude"]
-    sequence                      = Helper.filter_seq(sequence, filter_params)
+    sequence                      = FilterHelper.filter_seq(sequence, filter_params)
 
     return nil if sequence.nil?
 
