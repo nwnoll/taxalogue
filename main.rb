@@ -57,9 +57,6 @@ global = OptionParser.new do |opts|
 
 		# params = TaxonHelper.assign_taxon_info_to_params(params, taxon_name)
 		params[:taxon] = taxon_name
-		puts '...'
-		puts taxon_name
-		puts '...'
 		taxon_name
 	end
 	
@@ -244,17 +241,27 @@ end
 ## object is also not set in opts.on
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 
-NcbiDownloadCheckHelper.ask_user_about_download_dirs(params)
+# NcbiDownloadCheckHelper.ask_user_about_download_dirs(params)
 
-exit
+# exit
 
 
 file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
-file_manager.create_dir
-ncbi_genbank_job.run
-exit
+# ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+# file_manager.create_dir
+# ncbi_genbank_job.run
 
+# bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
+file_manager.create_dir
+
+gbol_job.run
+
+# MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
+# bold_job.run
+
+
+exit
 bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
 file_manager.create_dir
 # MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])

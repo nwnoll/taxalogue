@@ -39,7 +39,7 @@ class BoldJob2
 
         # _create_download_info_for_result_dir(already_downloaded_dir)
         DownloadCheckHelper.create_download_info_for_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
-      rescue StandardError
+      rescue StandardError => e
         puts "Directory could not be used, starting download"
         sleep 2
 
@@ -289,10 +289,10 @@ class BoldJob2
     # exit
 
 
-    dl_path_public = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + 'download_info.txt')
-    dl_path_hidden = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + '.download_info.txt')
-    rs_path_public = Pathname.new(result_file_manager.dir_path + 'download_info.txt')
-    rs_path_hidden = Pathname.new(result_file_manager.dir_path + '.download_info.txt')
+    dl_path_public = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_NAME)
+    dl_path_hidden = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_NAME}")
+    rs_path_public = Pathname.new(result_file_manager.dir_path + DOWNLOAD_INFO_NAME)
+    rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
     _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], root_node: root_node)
 
     failures = DownloadInfoParser.get_download_failures(dl_path_hidden)

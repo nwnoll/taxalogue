@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class RegionHelper
+    require_relative '../services/geo_utils'
     include GeoUtils
 
     def self.print_all_countries
