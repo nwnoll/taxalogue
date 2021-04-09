@@ -3,6 +3,8 @@
 class NcbiDownloadCheckHelper
 
     PRECEDENCE_OF = {
+        ## although 0 is higher
+        ## i reverse the resulting list later
         'true' => 2,
         'false' => 1,
         "" => 0,
@@ -22,21 +24,21 @@ class NcbiDownloadCheckHelper
             release_name    = dir.basename            
             release         = OpenStruct.new(name: dir.basename.to_s, base_dir: dir, success: success)
             
-            failed_divisions    = []
+            missing_divisions    = []
             has_all_divisions   = true
             division_codes.each do |division_code|
                 division_dirs = FileManager.directories_with_name_of(dir: dir, dir_name:division_code)
                 dirs_for_code[division_code] = division_dirs.first
                 
                 if DownloadCheckHelper.is_nil_or_empty?(division_dirs)
-                    failed_divisions.push(division_code)
+                    missing_divisions.push(division_code)
                     has_all_divisions = false
                 end
 
             end
 
             release.dirs_for_code       = dirs_for_code
-            release.failed_divisions    = failed_divisions
+            release.missing_divisions   = missing_divisions
             release.has_all_divisions   = has_all_divisions
 
             releases.push(release)
@@ -44,42 +46,53 @@ class NcbiDownloadCheckHelper
 
         releases = releases.sort_by { |e| [PRECEDENCE_OF[e.success.to_s], PRECEDENCE_OF[e.has_all_divisions.to_s], _get_release_number(e.name)] }.reverse
         releases = releases.select { |e| e.success } if only_successful
-        releases = releases.select { |e| e.has_all_divisions }
-        ## TODO:
-        ## NEXT:
-        ## if the already downloaded version is the current version and
-        ## it has been done for mam or rod, but the next query is inv
-        ## then it will download the rlease again but overwrites
-        ## the already downloaded mam and rod
-        ## maybe give the Job an array of divisons to download?
         return nil if DownloadCheckHelper.is_nil_or_empty?(releases)
 
-        has_dirs_for_each_division = !(dirs_for_code.values.any? { |e| DownloadCheckHelper.is_nil_or_empty?(e) })
-        return nil unless has_dirs_for_each_division
+        current_release_number = _get_release_number(NcbiDownloadCheckHelper.get_current_genbank_release_number)
 
-        release_number = NcbiDownloadCheckHelper.get_current_genbank_release_number
+        releases.each do |release|
+            release_number_of_release = _get_release_number(release.name)
+            if current_release_number == release_number_of_release
+                release.is_current_release = true
+            else
+                release.is_current_release = false
+            end
+        end
 
+        current_and_complete_release = releases.select { |r| r.is_current_release && r.has_all_divisions && r.success }.first
+        return current_and_complete_release unless current_and_complete_release.nil? ## success!
+        
+        current_incomplete_release = releases.select { |r| r.is_current_release && r.success }.first
+        if current_incomplete_release
+            puts "You already have the latest Genbank release"
+            puts "Since it is not complete for your queried Taxon, the download for the following divisions will start soon"
+            puts current_incomplete_release.missing_divisions
+            puts
+            return current_incomplete_release
+        end
 
-        DownloadCheckHelper.is_nil_or_empty?(data)
-        exit
+        successful_releases                 = releases.select { |r| r.success }
+        complete_releases                   = releases.select { |r| r.has_all_divisions }
+        successful_and_complete_releases    = releases.select { |r| r.has_all_divisions && r.has_all_divisions }
 
-    
-    
-        puts "You have already downloaded data for the taxon #{params[:taxon]}"
-        # puts "Sequences for #{params[:taxon]} are available in: #{selected_download_dir.to_s}"
-        # puts "The latest already downloaded version is #{last_download_days} days old"
-        # puts
-        puts "Do you want to use the latest already downloaded version? [Y/n]"
-        puts "Otherwise a new download will start"
-    
-    
-        # nested_dir_name = FileManager.dir_name_of(dir: selected_download_dir)
-        # download_dir = selected_download_dir + nested_dir_name
-    
-        user_input  = gets.chomp
-        use_latest_download = (user_input =~ /y|yes/i) ? true : false
-    
-        return use_latest_download ? selected_download_dir : nil
+        sorted_successful_and_complete_releases = successful_and_complete_releases.sort_by { |e| _get_release_number(e.name) }.reverse
+        successful_and_complete_release =sorted_successful_and_complete_releases.first
+        if successful_and_complete_release
+            suc_comp_release_num = _get_release_number(successful_and_complete_release.name)
+            puts "You already have downloaded a Genbank release with all needed divisions"
+            puts "However, it is not the latest version"
+            puts "You have version #{suc_comp_release_num}, the latest version is #{current_release_number}"
+            puts
+            puts "Do you want to use your old version? [Y/n]"
+            puts "Otherwise a new download will start"
+
+            user_input  = gets.chomp
+            use_old_version = (user_input =~ /y|yes/i) ? true : false
+        
+            return use_old_version ? successful_and_complete_release : nil
+        else
+            return nil
+        end
     end
     
     def self.get_current_genbank_release_number
@@ -99,6 +112,8 @@ class NcbiDownloadCheckHelper
     end
 
     def self._get_release_number(str)
+        return 0 unless str
+
         str[-3..-1].to_i
     end
 end
