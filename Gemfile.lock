@@ -48,7 +48,7 @@ GEM
     pastel (0.8.0)
       tty-color (~> 0.5)
     power_assert (1.2.0)
-    rexml (3.2.4)
+    rexml (3.2.5)
     rubyzip (2.3.0)
     shp (0.1.0)
     sqlite3 (1.4.2)
@@ -75,7 +75,7 @@ DEPENDENCIES
   geokit (~> 1.13, >= 1.13.1)
   parallel (~> 1.19, >= 1.19.2)
   pastel (~> 0.8.0)
-  rexml (~> 3.2, >= 3.2.4)
+  rexml (~> 3.2)
   rubytree!
   rubyzip (~> 2.3)
   shp

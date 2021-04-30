@@ -15,7 +15,7 @@ gem 'rubytree', git: 'https://github.com/nwnoll/RubyTree.git', branch: 'fix-synt
 gem 'parallel', '~> 1.19', '>= 1.19.2'
 gem 'pastel', '~> 0.8.0'
 gem 'test-unit'
-gem 'rexml', '~> 3.2', '>= 3.2.4'
+gem 'rexml', '~> 3.2'
 gem 'biodiversity', '~> 5.1', '>= 5.1.2'
 gem 'countries', '~> 1.2', '>= 1.2.5'
 gem 'geokit', '~> 1.13', '>= 1.13.1'
