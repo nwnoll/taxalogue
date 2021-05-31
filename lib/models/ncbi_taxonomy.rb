@@ -32,7 +32,7 @@ class NcbiTaxonomy
         end
 
         taxa_names = []
-        ranked_lineages_for_rank.each { |tax| taxa_names.push([TaxonHelper.choose_ncbi_record(tax.name, automatic: true), tax.name]) }
+        ranked_lineages_for_rank.each { |tax| taxa_names.push([TaxonHelper.choose_ncbi_record(taxon_name: tax.name, automatic: true), tax.name]) }
     
         return taxa_names
     end

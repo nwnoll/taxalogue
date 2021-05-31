@@ -7,7 +7,7 @@ class TestNomial < Test::Unit::TestCase
       def setup
             @query_taxon            = 'Arthropoda'
             @query_taxon_rank       = 'phylum'
-            @query_taxon_object     = TaxonHelper.choose_ncbi_record(@query_taxon)
+            @query_taxon_object     = TaxonHelper.choose_ncbi_record(taxon_name: @query_taxon)
             @taxonomy_params        = { ncbi: true }
 
             headers     = ["HigherTaxa", "Species", "BarcodeSequence", "Institute", "CatalogueNumber", "UUID", "Location", "Latitude", "Longitude"]

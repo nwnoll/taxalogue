@@ -80,8 +80,7 @@ class NcbiDownloadCheckHelper
         if successful_and_complete_release
             suc_comp_release_num = _get_release_number(successful_and_complete_release.name)
             puts "You already have downloaded a Genbank release with all needed divisions"
-            puts "However, it is not the latest version"
-            puts "You have version #{suc_comp_release_num}, the latest version is #{current_release_number}"
+            puts current_release_number == 0 ? "Current release number could not be identified\nYour old release version is #{suc_comp_release_num}" : "However, it is not the latest version\nYou have version #{suc_comp_release_num}, the latest version is #{current_release_number}"
             puts
             puts "Do you want to use your old version? [Y/n]"
             puts "Otherwise a new download will start"

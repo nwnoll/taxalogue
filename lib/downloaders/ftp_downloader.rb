@@ -9,20 +9,22 @@ class FtpDownloader
       @config = config
     end
 
-    def run
+    def run(files_to_download: [])
+        ## catch if offline
         ftp = Net::FTP.new(config.address)
         ftp.login
         files = ftp.chdir(config.target_directory) if config.target_directory
         files = ftp.nlst("#{config.target_file_base}*")
         files.each_with_index do |file, i|
-          # break if i == 1
-          # next unless file.to_s == "gbinv35.seq.gz"
-          local_path = File.join(config.file_manager.dir_path, file)
-          puts "local_path: #{local_path}"
-          puts "... downloading #{file}"
-          _get_with_progress(ftp, file, local_path)
-          puts "... finished, file is stored at #{local_path}"
-          puts
+            break if i == 1
+            next if files_to_download.any? && !files_to_download.include?(file.to_s)
+            #   next unless file.to_s == "gbinv35.seq.gz"
+            local_path = File.join(config.file_manager.dir_path, file)
+            puts "local_path: #{local_path}"
+            puts "... downloading #{file}"
+            _get_with_progress(ftp, file, local_path)
+            puts "... finished, file is stored at #{local_path}"
+            puts
         end
         ftp.close
     end
