@@ -64,7 +64,8 @@ class NcbiGenbankImporter
                     end
                 end
             rescue Zlib::Error => e
-                errors.push(e)
+                errors.push(file)
+                byebug
 
                 return errors
             end
@@ -101,6 +102,8 @@ class NcbiGenbankImporter
             fasta.close
             comparison_file.close
         end
+
+        byebug
 
         return errors
     end

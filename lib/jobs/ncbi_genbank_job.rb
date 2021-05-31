@@ -58,66 +58,13 @@ class NcbiGenbankJob
 
             puts "got some errors"
             p errors
+            byebug
+            download_file_managers = download_failed_files(download_file_managers: download_file_managers, errors: errors)
            
         end
 
         return result_file_manager
         # _merge_results
-    end
-
-    def download_failed_files(download_file_managers:, errors:)
-        @root_download_dir = _get_release_dir unless @root_download_dir
-
-        files_for_group = _get_files_for_group(errors)
-        fmanagers = []
-
-        files_for_group.each do |key, value|
-            download_file_manager = download_file_managers.select { |fm| fm.name == key }.first
-            config = download_file_manager.config
-            downloader = config.downloader.new(config: config)
-
-            download_did_fail   = false
-
-            begin
-                downloader.run(files_to_download: value)
-            rescue SocketError
-                download_did_fail = true
-            rescue StandardError
-                download_did_fail = true
-            end
-
-            files = download_file_manager.files_of(dir: download_file_manager.dir_path)
-            files.each do |file|
-                if File.empty?(file)
-                    download_did_fail = true
-                    break
-                end
-            end
-            download_file_manager.status = download_did_fail ? 'failure' : 'success'
-            
-            fmanagers.push(file_manager)
-        end
-
-        success = fmanagers.all? { |fm| fm.status == 'success'}
-        dl_path_public = Pathname.new(NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_NAME)
-        dl_path_hidden = Pathname.new(NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_NAME}")
-        rs_path_public = Pathname.new(result_file_manager.dir_path + DOWNLOAD_INFO_NAME)
-        rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
-        
-        _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: fmanagers)
-
-        return fmanagers
-    end
-
-    def _get_files_for_group(errors)
-        files_for_group = Hash.new { |h, k| h[k] = [] }
-
-        errors.each do |error_file|
-            group = error_file.dirname.split.last.to_s
-            files_for_group[group].push(error_file)
-        end
-
-        return files_for_group
     end
 
     def download_files
@@ -174,7 +121,64 @@ class NcbiGenbankJob
         return fmanagers
     end
 
+    def download_failed_files(download_file_managers:, errors:)
+        @root_download_dir = _get_release_dir unless @root_download_dir
+
+        files_for_group = _get_files_for_group(errors)
+
+        files_for_group.each do |key, value|
+            download_file_manager = download_file_managers.select! { |fm| fm.name == key }.first
+            download_file_managers.reject! { |fm| fm.name == key }
+            
+            config = download_file_manager.config
+            downloader = config.downloader.new(config: config)
+
+            download_did_fail   = false
+
+            begin
+                downloader.run(files_to_download: value)
+            rescue SocketError
+                download_did_fail = true
+            rescue StandardError
+                download_did_fail = true
+            end
+
+            files = download_file_manager.files_of(dir: download_file_manager.dir_path)
+            files.each do |file|
+                if File.empty?(file)
+                    download_did_fail = true
+                    break
+                end
+            end
+            download_file_manager.status = download_did_fail ? 'failure' : 'success'
+            
+            download_file_managers.push(download_file_manager)
+        end
+
+        success = download_file_managers.all? { |fm| fm.status == 'success'}
+        dl_path_public = Pathname.new(NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_NAME)
+        dl_path_hidden = Pathname.new(NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_NAME}")
+        rs_path_public = Pathname.new(result_file_manager.dir_path + DOWNLOAD_INFO_NAME)
+        rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
+        
+        _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers)
+
+        return download_file_managers
+    end
+
     private
+
+    def _get_files_for_group(errors)
+        files_for_group = Hash.new { |h, k| h[k] = [] }
+
+        errors.each do |error_file|
+            group = error_file.dirname.split.last.to_s
+            files_for_group[group].push(error_file)
+        end
+
+        return files_for_group
+    end
+
     def _write_download_info(paths:, success:, download_file_managers:)
         download_file_managers.each do |download_file_manager|
             puts "download_file_manager:"
@@ -245,6 +249,13 @@ class NcbiGenbankJob
     end
 
     def _classify_downloads(download_file_managers:)
+        errors = []
+        ## NEXT
+        ## here i dont knwo if i want to loop through all the files beforehand? do i need to do that
+        ## or is that only good for BOLD?
+        ## errors could be hash with file_manager has key then I dont need to pick and remove in run?
+        
+        error_files_of = Hash.new { |h, k| h[k] =  [] }
             download_file_managers.each do |download_file_manager|
                 next unless download_file_manager.status == 'success'
                 files = download_file_manager.files_with_name_of(dir: download_file_manager.dir_path)
@@ -254,6 +265,7 @@ class NcbiGenbankJob
 
                     classifier = NcbiGenbankImporter.new(fast_run: true, markers: markers, file_name: file, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, taxonomy_params: taxonomy_params, region_params: region_params)
                     errors = classifier.run ## result_file_manager creates new files and will push those into internal array
+                    error_files_of[donload]
                     if errors.any?
                         byebug
                     end
