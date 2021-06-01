@@ -21,8 +21,16 @@ class NcbiGenbankJob
     end
 
     def run
-        already_downloaded_dir = NcbiDownloadCheckHelper.ask_user_about_download_dirs(params)
-        p already_downloaded_dir
+        release_info_struct = NcbiDownloadCheckHelper.ask_user_about_download_dirs(params)
+        # #<OpenStruct name="release243",
+        #     base_dir=#<Pathname:fm_data/NCBIGENBANK/release243>,
+        #     success=true,
+        #     dirs_for_code={"inv"=>#<Pathname:fm_data/NCBIGENBANK/release243/inv>},
+        #     missing_divisions=[],
+        #     has_all_divisions=true,
+        #     is_current_release=true>
+
+        already_downloaded_dir = release_info_struct.base_dir if release_info_struct
 
         ## NEXT
 
@@ -31,9 +39,11 @@ class NcbiGenbankJob
             fm_from_md_name         = already_downloaded_dir + '.download_file_managers.dump'
             fm_from_md              = Marshal.load(File.open(fm_from_md_name, 'rb').read)
             download_file_managers  = fm_from_md
-
             _create_download_info_for_result_dir(already_downloaded_dir)
-          rescue StandardError
+            # if the files will  ot be found it cannot open them and an error is thrown
+            # should ich catch it beforehand or just use my STandarError catching? bat practice?
+          rescue StandardError => e
+            byebug
             puts "Directory could not be used, starting download"
             sleep 2
 
@@ -48,18 +58,26 @@ class NcbiGenbankJob
           DownloadCheckHelper.write_marshal_file(dir: NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
         end
 
-        
-        errors = _classify_downloads(download_file_managers: download_file_managers)
+        ## NEXT TODO:
+        # Problem here is that I dont get erroneous_files if the download file manager already stated
+        # the download was not successfull,
+        # this is good  since I dont want to break all the upcioming bOLD or GBOL dowloads, but it is also bad
+        # since then it wont download anything? another thing is even if I want to download the files,
+        # then I dont know which ones since ther will be no files in the array
+        # dont know how i should do it atm...
+        erroneous_files_of = _classify_downloads(download_file_managers: download_file_managers)
+        p erroneous_files_of
 
-        if errors.empty?
+        p 'here'
+        if erroneous_files_of.empty?
             puts "no errors found"
         else
             ## I could use download_file_managers and the errors array to download the erroneous files again?
 
             puts "got some errors"
-            p errors
+            p erroneous_files_of
             byebug
-            download_file_managers = download_failed_files(download_file_managers: download_file_managers, errors: errors)
+            download_file_managers = download_failed_files(download_file_managers: download_file_managers, erroneous_files_of: erroneous_files_of)
            
         end
 
@@ -121,22 +139,52 @@ class NcbiGenbankJob
         return fmanagers
     end
 
-    def download_failed_files(download_file_managers:, errors:)
+    def download_failed_files(download_file_managers:, erroneous_files_of:)
         @root_download_dir = _get_release_dir unless @root_download_dir
 
-        files_for_group = _get_files_for_group(errors)
+        # files_for_group = _get_files_for_group(erroneous_files_of)
 
-        files_for_group.each do |key, value|
-            download_file_manager = download_file_managers.select! { |fm| fm.name == key }.first
-            download_file_managers.reject! { |fm| fm.name == key }
+        # files_for_group.each do |key, value|
+        #     download_file_manager = download_file_managers.select! { |fm| fm.name == key }.first
+        #     download_file_managers.reject! { |fm| fm.name == key }
             
+        #     config = download_file_manager.config
+        #     downloader = config.downloader.new(config: config)
+
+        #     download_did_fail   = false
+
+        #     begin
+        #         downloader.run(files_to_download: value)
+        #     rescue SocketError
+        #         download_did_fail = true
+        #     rescue StandardError
+        #         download_did_fail = true
+        #     end
+
+        #     files = download_file_manager.files_of(dir: download_file_manager.dir_path)
+        #     files.each do |file|
+        #         if File.empty?(file)
+        #             download_did_fail = true
+        #             break
+        #         end
+        #     end
+        #     download_file_manager.status = download_did_fail ? 'failure' : 'success'
+            
+        #     download_file_managers.push(download_file_manager)
+        # end
+
+
+        erroneous_files_of.each do |download_file_manager, erroneous_files|
+            
+            download_file_managers.reject! { |fm| fm == download_file_manager }
+
             config = download_file_manager.config
             downloader = config.downloader.new(config: config)
 
             download_did_fail   = false
 
             begin
-                downloader.run(files_to_download: value)
+                downloader.run(files_to_download: erroneous_files)
             rescue SocketError
                 download_did_fail = true
             rescue StandardError
@@ -168,15 +216,21 @@ class NcbiGenbankJob
 
     private
 
-    def _get_files_for_group(errors)
-        files_for_group = Hash.new { |h, k| h[k] = [] }
+    def _create_download_info_for_result_dir(already_downloaded_dir)
+        data_dl_info_public_name = already_downloaded_dir + 'download_info.txt'
+        data_dl_info_hidden_name = already_downloaded_dir + '.download_info.txt'
 
-        errors.each do |error_file|
-            group = error_file.dirname.split.last.to_s
-            files_for_group[group].push(error_file)
-        end
+        result_dl_info_public_name = result_file_manager.dir_path + 'download_info.txt'
+        result_dl_info_hidden_name = result_file_manager.dir_path + '.download_info.txt'
 
-        return files_for_group
+        dl_info_public = File.open(data_dl_info_public_name).read
+        dl_info_hidden = File.open(data_dl_info_hidden_name).read
+
+        dl_info_public.gsub!(/^corresponding result directory:.*$/, "corresponding data directory: #{already_downloaded_dir.to_s}")
+        dl_info_hidden.gsub!(/^corresponding result directory:.*$/, "corresponding data directory: #{already_downloaded_dir.to_s}")
+        
+        File.open(result_dl_info_public_name, 'w') { |f| f.write(dl_info_public) }
+        File.open(result_dl_info_hidden_name, 'w') { |f| f.write(dl_info_hidden) }
     end
 
     def _write_download_info(paths:, success:, download_file_managers:)
@@ -249,28 +303,27 @@ class NcbiGenbankJob
     end
 
     def _classify_downloads(download_file_managers:)
-        errors = []
         ## NEXT
         ## here i dont knwo if i want to loop through all the files beforehand? do i need to do that
         ## or is that only good for BOLD?
         ## errors could be hash with file_manager has key then I dont need to pick and remove in run?
         
-        error_files_of = Hash.new { |h, k| h[k] =  [] }
-            download_file_managers.each do |download_file_manager|
-                next unless download_file_manager.status == 'success'
-                files = download_file_manager.files_with_name_of(dir: download_file_manager.dir_path)
-                
-                files.each do |file|
-                    next unless File.file?(file)
+        erroneous_files_of = Hash.new { |h, k| h[k] =  [] }
+        download_file_managers.each do |download_file_manager|
+            byebug
+            next unless download_file_manager.status == 'success'
+            files = download_file_manager.files_with_name_of(dir: download_file_manager.dir_path)
+            
+            files.each do |file|
+                next unless File.file?(file)
 
-                    classifier = NcbiGenbankImporter.new(fast_run: true, markers: markers, file_name: file, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, taxonomy_params: taxonomy_params, region_params: region_params)
-                    errors = classifier.run ## result_file_manager creates new files and will push those into internal array
-                    error_files_of[donload]
-                    if errors.any?
-                        byebug
-                    end
-                end
+                classifier = NcbiGenbankImporter.new(fast_run: true, markers: markers, file_name: file, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, taxonomy_params: taxonomy_params, region_params: region_params)
+                erroneous_files = classifier.run ## result_file_manager creates new files and will push those into internal array
+                erroneous_files_of[download_file_manager].push(erroneous_files) if erroneous_files.any?
             end
+        end
+
+        return erroneous_files_of
     end
 
     def _merge_results

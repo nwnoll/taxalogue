@@ -30,7 +30,7 @@ class NcbiGenbankImporter
         file_names = []
         file_names.push(file_name)
 
-        errors = []
+        erroneous_files = []
 
         file_names.each do |file|
             file_name_match             = file.to_s.match(/gb\w+\d+/)
@@ -64,10 +64,10 @@ class NcbiGenbankImporter
                     end
                 end
             rescue Zlib::Error => e
-                errors.push(file)
                 byebug
+                erroneous_files.push(file)
 
-                return errors
+                return erroneous_files
             end
 
             tsv             = file_manager.create_file("#{query_taxon_name}_#{file_name.basename.sub(/\..*/, '')}_ncbi_fast_#{fast_run}_output.tsv", OutputFormat::Tsv)
@@ -103,9 +103,7 @@ class NcbiGenbankImporter
             comparison_file.close
         end
 
-        byebug
-
-        return errors
+        return erroneous_files
     end
 
     private
