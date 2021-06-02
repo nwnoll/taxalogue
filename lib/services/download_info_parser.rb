@@ -6,10 +6,8 @@ class DownloadInfoParser
         return false unless File.file?(file_path)
         
         file = File.open(file_path, 'r')
-        lines = File.readlines(file)
-        last_line = lines.last
-
-        success = last_line =~ /success: true/ ? true : false
+        first_line = file.first
+        success = first_line =~ /success: true/ ? true : false
 
         file.rewind
 

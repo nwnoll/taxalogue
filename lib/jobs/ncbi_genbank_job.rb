@@ -39,11 +39,19 @@ class NcbiGenbankJob
             fm_from_md_name         = already_downloaded_dir + '.download_file_managers.dump'
             fm_from_md              = Marshal.load(File.open(fm_from_md_name, 'rb').read)
             download_file_managers  = fm_from_md
-            _create_download_info_for_result_dir(already_downloaded_dir)
+            # _create_download_info_for_result_dir(already_downloaded_dir)
+            _create_download_info_for_result_dir(already_downloaded_dir, download_file_managers)
+            
+
+            pub_name = already_downloaded_dir + DOWNLOAD_INFO_NAME
+            hid_name = already_downloaded_dir + ".#{DOWNLOAD_INFO_NAME}"
+            _update_on_new_result_dir([pub_name, hid_name])
+
+
             # if the files will  ot be found it cannot open them and an error is thrown
             # should ich catch it beforehand or just use my STandarError catching? bat practice?
           rescue StandardError => e
-            byebug
+            pp e
             puts "Directory could not be used, starting download"
             sleep 2
 
@@ -76,7 +84,6 @@ class NcbiGenbankJob
 
             puts "got some errors"
             p erroneous_files_of
-            byebug
             download_file_managers = download_failed_files(download_file_managers: download_file_managers, erroneous_files_of: erroneous_files_of)
            
         end
@@ -108,9 +115,9 @@ class NcbiGenbankJob
 
             begin
                 downloader.run
-            rescue SocketError
+            rescue SocketError => e
                 download_did_fail = true
-            rescue StandardError
+            rescue StandardError => e
                 download_did_fail = true
             end
 
@@ -216,43 +223,62 @@ class NcbiGenbankJob
 
     private
 
-    def _create_download_info_for_result_dir(already_downloaded_dir)
-        data_dl_info_public_name = already_downloaded_dir + 'download_info.txt'
-        data_dl_info_hidden_name = already_downloaded_dir + '.download_info.txt'
+    def _create_download_info_for_result_dir(already_downloaded_dir, download_file_managers)
+        data_dl_info_public_name = already_downloaded_dir + 'ncbi_genbank_download_info.txt'
+        data_dl_info_hidden_name = already_downloaded_dir + '.ncbi_genbank_download_info.txt'
 
-        result_dl_info_public_name = result_file_manager.dir_path + 'download_info.txt'
-        result_dl_info_hidden_name = result_file_manager.dir_path + '.download_info.txt'
+        result_dl_info_public_name = result_file_manager.dir_path + 'ncbi_genbank_download_info.txt'
+        result_dl_info_hidden_name = result_file_manager.dir_path + '.ncbi_genbank_download_info.txt'
 
-        dl_info_public = File.open(data_dl_info_public_name).read
-        dl_info_hidden = File.open(data_dl_info_hidden_name).read
+        success = download_file_managers.all? { |fm| fm.status == 'success'}
 
-        dl_info_public.gsub!(/^corresponding result directory:.*$/, "corresponding data directory: #{already_downloaded_dir.to_s}")
-        dl_info_hidden.gsub!(/^corresponding result directory:.*$/, "corresponding data directory: #{already_downloaded_dir.to_s}")
-        
-        File.open(result_dl_info_public_name, 'w') { |f| f.write(dl_info_public) }
-        File.open(result_dl_info_hidden_name, 'w') { |f| f.write(dl_info_hidden) }
+        paths = [result_dl_info_public_name, result_dl_info_hidden_name]
+        paths.each do |path|
+            file = File.open(path, 'w')
+            download_file_managers.each_with_index do |download_file_manager, i|
+                # dl_info_public.puts "corresponding data directory: #{download_file_manager.base_dir.to_s}; success: #{success}"
+                # sub_directory_success = download_file_manager.status == 'success' ?  true : false
+                # dl_info_public.puts "corresponding data sub-directory: #{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}"
+            
+            
+                file.puts "corresponding data directory: #{already_downloaded_dir.to_s}; success: #{success}" if i == 0
+                sub_directory_success = download_file_manager.status == 'success' ?  true : false
+                file.puts "corresponding data sub-directory: #{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}"
+            end
+        end
+    end
+
+    def _update_on_new_result_dir(paths)
+        paths.each do |path|
+            next unless File.file?(path)
+
+            file = File.open(path, 'a')
+            file.puts "corresponding result directory: #{result_file_manager.dir_path.to_s}"
+        end
     end
 
     def _write_download_info(paths:, success:, download_file_managers:)
-        download_file_managers.each do |download_file_manager|
-            puts "download_file_manager:"
-            pp download_file_manager
-            puts
-            paths.each do |path|
-                file = File.open(path, 'w')
-        
-                basename = path.basename.to_s
-        
+
+        paths.each do |path|
+            file = File.open(path, 'w')
+
+            download_file_managers.each_with_index do |download_file_manager, i|
                 if path.descend.first.to_s == 'results'
-                    file.puts "corresponding data directory: #{download_file_manager.dir_path.to_s}"
+                    file.puts "corresponding data directory: #{download_file_manager.base_dir.to_s}; success: #{success}" if i == 0
+                    
+                    sub_directory_success = download_file_manager.status == 'success' ?  true : false
+                    file.puts "corresponding data sub-directory: #{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}"
                 else
-                    file.puts "corresponding result directory: #{result_file_manager.dir_path.to_s}"
+                    file.puts "corresponding data directory: #{download_file_manager.base_dir.to_s}; success: #{success}" if i == 0
+                    sub_directory_success = download_file_manager.status == 'success' ?  true : false
+                    file.puts "corresponding data sub-directory: #{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}"
+                    
+                    file.puts if i == 0
+                    file.puts "corresponding result directory: #{result_file_manager.dir_path.to_s}" if i == 0
                 end
-        
-                file.puts
-                file.puts "success: #{success}"
-                file.rewind
             end
+
+            file.rewind
         end
     end
 
@@ -310,7 +336,6 @@ class NcbiGenbankJob
         
         erroneous_files_of = Hash.new { |h, k| h[k] =  [] }
         download_file_managers.each do |download_file_manager|
-            byebug
             next unless download_file_manager.status == 'success'
             files = download_file_manager.files_with_name_of(dir: download_file_manager.dir_path)
             
