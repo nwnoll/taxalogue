@@ -39,13 +39,32 @@ class NcbiGenbankJob
             fm_from_md_name         = already_downloaded_dir + '.download_file_managers.dump'
             fm_from_md              = Marshal.load(File.open(fm_from_md_name, 'rb').read)
             download_file_managers  = fm_from_md
-            # _create_download_info_for_result_dir(already_downloaded_dir)
+            download_file_managers_for_missing_divisions = []
+
+            unless release_info_struct.has_all_divisions
+                download_file_managers_for_missing_divisions = download_files(missing_divisions: release_info_struct.missing_divisions)
+                download_file_managers_for_missing_divisions.each { |fm| download_file_managers.push(fm) }
+            end
             _create_download_info_for_result_dir(already_downloaded_dir, download_file_managers)
             
-
             pub_name = already_downloaded_dir + DOWNLOAD_INFO_NAME
             hid_name = already_downloaded_dir + ".#{DOWNLOAD_INFO_NAME}"
             _update_on_new_result_dir([pub_name, hid_name])
+
+            # TODO NEXT!!!
+            # 2 main problems:
+            # first is that i dont have taxonomy info in the comparison files -> fix it
+            # other thing is that the donwload info file are wrong when i add  missing divisions
+            # 1) overwrites first sub dir
+            # 2) bad order of other ones
+            # corresponding data directory: fm_data/NCBIGENBANK/release243; success: true
+            # corresponding data sub-directory: fm_data/NCBIGENBANK/release243/mam; success: true
+
+            # corresponding result directory: results/Metazoa-20210602T1448
+            # corresponding data sub-directory: fm_data/NCBIGENBANK/release243/pri; success: true
+            # corresponding data sub-directory: fm_data/NCBIGENBANK/release243/rod; success: true
+            # corresponding data sub-directory: fm_data/NCBIGENBANK/release243/vrt; success: true
+            # corresponding result directory: results/Metazoa-20210602T1448
 
 
             # if the files will  ot be found it cannot open them and an error is thrown
@@ -92,7 +111,7 @@ class NcbiGenbankJob
         # _merge_results
     end
 
-    def download_files
+    def download_files(missing_divisions: nil)
         ## TODO:
         ## maybe switch NcbiApi if taxon is of rank family?
         ## highert taxa might give an incomplete download
@@ -102,7 +121,7 @@ class NcbiGenbankJob
         fmanagers = []
         @root_download_dir = _get_release_dir
 
-        _configs.each do |config|
+        _configs(missing_divisions).each do |config|
             file_manager = config.file_manager
             file_manager.create_dir
             
@@ -148,38 +167,6 @@ class NcbiGenbankJob
 
     def download_failed_files(download_file_managers:, erroneous_files_of:)
         @root_download_dir = _get_release_dir unless @root_download_dir
-
-        # files_for_group = _get_files_for_group(erroneous_files_of)
-
-        # files_for_group.each do |key, value|
-        #     download_file_manager = download_file_managers.select! { |fm| fm.name == key }.first
-        #     download_file_managers.reject! { |fm| fm.name == key }
-            
-        #     config = download_file_manager.config
-        #     downloader = config.downloader.new(config: config)
-
-        #     download_did_fail   = false
-
-        #     begin
-        #         downloader.run(files_to_download: value)
-        #     rescue SocketError
-        #         download_did_fail = true
-        #     rescue StandardError
-        #         download_did_fail = true
-        #     end
-
-        #     files = download_file_manager.files_of(dir: download_file_manager.dir_path)
-        #     files.each do |file|
-        #         if File.empty?(file)
-        #             download_did_fail = true
-        #             break
-        #         end
-        #     end
-        #     download_file_manager.status = download_did_fail ? 'failure' : 'success'
-            
-        #     download_file_managers.push(download_file_manager)
-        # end
-
 
         erroneous_files_of.each do |download_file_manager, erroneous_files|
             
@@ -236,11 +223,6 @@ class NcbiGenbankJob
         paths.each do |path|
             file = File.open(path, 'w')
             download_file_managers.each_with_index do |download_file_manager, i|
-                # dl_info_public.puts "corresponding data directory: #{download_file_manager.base_dir.to_s}; success: #{success}"
-                # sub_directory_success = download_file_manager.status == 'success' ?  true : false
-                # dl_info_public.puts "corresponding data sub-directory: #{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}"
-            
-            
                 file.puts "corresponding data directory: #{already_downloaded_dir.to_s}; success: #{success}" if i == 0
                 sub_directory_success = download_file_manager.status == 'success' ?  true : false
                 file.puts "corresponding data sub-directory: #{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}"
@@ -282,11 +264,18 @@ class NcbiGenbankJob
         end
     end
 
-    def _configs
+    def _configs(missing_divisions = nil)
         configs = []
         release_dir = _get_release_dir
-        _groups.each do |name|
-            configs.push(NcbiGenbankConfig.new(name: name, markers: markers, use_http: use_http, parent_dir: release_dir))
+
+        if missing_divisions
+            missing_divisions.each do |missing_division|
+                configs.push(NcbiGenbankConfig.new(name: missing_division, markers: markers, use_http: use_http, parent_dir: release_dir))
+            end
+        else
+            _groups.each do |name|
+                configs.push(NcbiGenbankConfig.new(name: name, markers: markers, use_http: use_http, parent_dir: release_dir))
+            end
         end
 
         return configs
