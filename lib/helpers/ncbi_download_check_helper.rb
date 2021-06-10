@@ -24,7 +24,7 @@ class NcbiDownloadCheckHelper
             release_name    = dir.basename            
             release         = OpenStruct.new(name: dir.basename.to_s, base_dir: dir, success: success)
             
-            missing_divisions    = []
+            missing_divisions   = []
             has_all_divisions   = true
             division_codes.each do |division_code|
                 division_dirs = FileManager.directories_with_name_of(dir: dir, dir_name:division_code)

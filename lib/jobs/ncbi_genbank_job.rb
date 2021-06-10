@@ -28,6 +28,8 @@ class NcbiGenbankJob
         download_file_managers  = _download_files if download_file_managers.empty?
         erroneous_files_of      = _classify_downloads(download_file_managers: download_file_managers)
         download_file_managers  = _download_failed_files(download_file_managers, erroneous_files_of) if erroneous_files_of.any?
+        
+        _write_marshal_files(download_file_managers)
 
         return result_file_manager
     end
@@ -85,12 +87,12 @@ class NcbiGenbankJob
         ## it might be annoying if there will be searches
         ## for quite small taxa and the prog tries to download
         ## several gigabyte of data
-        fmanagers = []
+        download_file_managers = []
         @root_download_dir = _get_release_dir
 
         _configs(missing_divisions).each do |config|
-            file_manager = config.file_manager
-            file_manager.create_dir
+            download_file_manager = config.file_manager
+            download_file_manager.create_dir
             
             ## TODO: uncomment again, this is because there are some ports not open at the museum...
             ## This might be the case for other institutions too
@@ -107,29 +109,31 @@ class NcbiGenbankJob
                 download_did_fail = true
             end
 
-            files = file_manager.files_of(dir: file_manager.dir_path)
+            files = download_file_manager.files_of(dir: download_file_manager.dir_path)
             files.each do |file|
                 if File.empty?(file)
                     download_did_fail = true
                     break
                 end
             end
-            file_manager.status = download_did_fail ? 'failure' : 'success'
+            download_file_manager.status = download_did_fail ? 'failure' : 'success'
             
-            fmanagers.push(file_manager)
+            download_file_managers.push(download_file_manager)
         end
 
-        success = fmanagers.all? { |fm| fm.status == 'success'}
+        success = download_file_managers.all? { |fm| fm.status == 'success'}
         dl_path_public = Pathname.new(NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_NAME)
         dl_path_hidden = Pathname.new(NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_NAME}")
         rs_path_public = Pathname.new(result_file_manager.dir_path + DOWNLOAD_INFO_NAME)
         rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
         
-        _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: fmanagers)
-        DownloadCheckHelper.write_marshal_file(dir: NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
-        DownloadCheckHelper.write_marshal_file(dir: NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump') 
+        if missing_divisions
+            _update_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers)
+        else
+            _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers)
+        end
         
-        return fmanagers
+        return download_file_managers
     end
 
     def _get_release_dir
@@ -184,8 +188,44 @@ class NcbiGenbankJob
         abort "Could not find #{taxon.canonical_name} in NCBI Genbank please use a different taxon" if id.nil?
     end
 
-    def _write_download_info(paths:, success:, download_file_managers:)
+    def _update_download_info(paths:, success:, download_file_managers:)
+        paths.each do |path|
+            if path.descend.first.to_s == 'results'
+                file = File.open(path, 'w')
+                download_file_managers.each_with_index do |download_file_manager, i|
+                    file.puts 'data:' if i == 0
+                    file.puts "#{RJUST_LEVEL_ONE}#{download_file_manager.base_dir.to_s}; success: #{success}" if i == 0
+                        
+                    sub_directory_success = download_file_manager.status == 'success' ?  true : false
+                    file.puts "#{RJUST_LEVEL_TWO}#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}"
+                end
+            else
+                file = File.open(path, 'r').read
+                new_line_regex = /\r\n?|\n/
+                base_dir_match = /data\:#{new_line_regex}(.*?)#{new_line_regex}/.match(file)
+                base_dir_line = base_dir_match[1]
+                base_dir_line_modified = base_dir_line
+                base_dir_line_modified.gsub!('success: true', "success: #{success}")
+                file.gsub!(base_dir_line, base_dir_line_modified)
 
+                last_sub_dir_match = /#{new_line_regex}(.*?)#{new_line_regex}results\:/.match(file)
+                last_sub_dir_match
+                last_sub_dir_line = last_sub_dir_match[1]
+                last_sub_dir_line_modified = last_sub_dir_line
+                download_file_managers.each do |download_file_manager|
+                    sub_directory_success = download_file_manager.status == 'success' ?  true : false
+                    last_sub_dir_line_modified += "\n#{RJUST_LEVEL_TWO}#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}"
+                end
+                file.gsub!(last_sub_dir_line, last_sub_dir_line_modified)
+                file += "#{RJUST_LEVEL_ONE}#{result_file_manager.dir_path.to_s}"
+
+                out_file = File.open(path, 'w')
+                out_file.puts file
+            end
+        end
+    end
+
+    def _write_download_info(paths:, success:, download_file_managers:)
         paths.each do |path|
             file = File.open(path, 'w')
 
@@ -207,7 +247,6 @@ class NcbiGenbankJob
                     file.puts "#{result_file_manager.dir_path.to_s}".prepend(RJUST_LEVEL_ONE) if i == (download_file_managers.size - 1)
                 end
             end
-
             file.rewind
         end
     end
@@ -245,11 +284,6 @@ class NcbiGenbankJob
     end
 
     def _classify_downloads(download_file_managers:)
-        ## NEXT
-        ## here i dont knwo if i want to loop through all the files beforehand? do i need to do that
-        ## or is that only good for BOLD?
-        ## errors could be hash with file_manager has key then I dont need to pick and remove in run?
-        
         erroneous_files_of = Hash.new
         download_file_managers.each do |download_file_manager|
             next unless download_file_manager.status == 'success'
@@ -308,10 +342,17 @@ class NcbiGenbankJob
         rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
         
         _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers)
+ 
+        return download_file_managers
+    end
+
+    def _write_marshal_files(download_file_managers)
+        @root_download_dir = download_file_managers.first.base_dir.basename if download_file_managers.any? && @root_download_dir.nil?
+        
+        return :no_root_download_dir unless @root_download_dir
+        
         DownloadCheckHelper.write_marshal_file(dir: NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
         DownloadCheckHelper.write_marshal_file(dir: NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump') 
-
-        return download_file_managers
     end
 
     ## UNUSED ATM
@@ -325,6 +366,7 @@ class NcbiGenbankJob
             OutputFormat::DownloadInfo.write_to_file(file: download_info_file, fmanagers: fmanagers)
         end
     end
+    
     ## UNUSED ATM
     def _merge_results
         FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Tsv)
