@@ -22,6 +22,8 @@ class DownloadCheckHelper
         File.open(marshal_dump_file_name, 'wb') { |f| f.write(data_dump) }
     end
 
+    ## TODO:
+    ## might not work anymore
     def self.create_download_info_for_result_dir(already_downloaded_dir:, result_file_manager:, source:)
         download_info_str = source::DOWNLOAD_INFO_NAME
     
@@ -34,8 +36,8 @@ class DownloadCheckHelper
         dl_info_public = File.open(data_dl_info_public_name).read
         dl_info_hidden = File.open(data_dl_info_hidden_name).read
     
-        dl_info_public.gsub!(/^corresponding result directory:.*$/, "corresponding data directory: #{already_downloaded_dir.to_s}")
-        dl_info_hidden.gsub!(/^corresponding result directory:.*$/, "corresponding data directory: #{already_downloaded_dir.to_s}")
+        dl_info_public.gsub!(/^result directory:.*$/, "data directory: #{already_downloaded_dir.to_s}")
+        dl_info_hidden.gsub!(/^result directory:.*$/, "data directory: #{already_downloaded_dir.to_s}")
         
         File.open(result_dl_info_public_name, 'w') { |f| f.write(dl_info_public) }
         File.open(result_dl_info_hidden_name, 'w') { |f| f.write(dl_info_hidden) }

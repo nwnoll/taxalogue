@@ -85,9 +85,9 @@ class GbolJob
             basename = path.basename.to_s
     
             if path.descend.first.to_s == 'results'
-                file.puts "corresponding data directory: #{download_file_manager.dir_path.to_s}"
+                file.puts "data directory: #{download_file_manager.dir_path.to_s}"
             else
-                file.puts "corresponding result directory: #{result_file_manager.dir_path.to_s}"
+                file.puts "result directory: #{result_file_manager.dir_path.to_s}"
             end
     
             file.puts

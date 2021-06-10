@@ -69,8 +69,8 @@ class BoldJob2
         dl_info_public = File.open(data_dl_info_public_name).read
         dl_info_hidden = File.open(data_dl_info_hidden_name).read
 
-        dl_info_public.gsub!(/^corresponding result directory:.*$/, "corresponding data directory: #{already_downloaded_dir.to_s}")
-        dl_info_hidden.gsub!(/^corresponding result directory:.*$/, "corresponding data directory: #{already_downloaded_dir.to_s}")
+        dl_info_public.gsub!(/^ result directory:.*$/, "data directory: #{already_downloaded_dir.to_s}")
+        dl_info_hidden.gsub!(/^ result directory:.*$/, "data directory: #{already_downloaded_dir.to_s}")
         
         File.open(result_dl_info_public_name, 'w') { |f| f.write(dl_info_public) }
         File.open(result_dl_info_hidden_name, 'w') { |f| f.write(dl_info_hidden) }
@@ -284,10 +284,10 @@ class BoldJob2
 
             if path.descend.first.to_s == 'results'
                 file.puts
-                file.puts "corresponding data directory: #{(BOLD_DIR + @root_download_dir).to_s}"
+                file.puts "data directory: #{(BOLD_DIR + @root_download_dir).to_s}"
             else
                 file.puts
-                file.puts "corresponding result directory: #{result_file_manager.dir_path.to_s}"
+                file.puts "result directory: #{result_file_manager.dir_path.to_s}"
             end
 
             file.puts

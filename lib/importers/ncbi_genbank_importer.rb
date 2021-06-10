@@ -64,9 +64,8 @@ class NcbiGenbankImporter
                     end
                 end
             rescue Zlib::Error => e
-                byebug
                 erroneous_files.push(file)
-
+                
                 return erroneous_files
             end
 
