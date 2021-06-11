@@ -16,42 +16,45 @@ class GbolJob
     end
 
     def run
-        already_downloaded_dir = GbolDownloadCheckHelper.ask_user_about_gbol_download_dirs
+        already_existing_download_dir   = _get_already_existing_download_dir
+        download_file_manager           = _get_download_file_manager_from_already_downloaded_dir(already_existing_download_dir)
+        download_file_manager           = download_files if download_file_manager.nil?
+        error_file_name                 = _classify_downloads(download_file_manager)
         
-        if already_downloaded_dir
-            begin
-                fm_from_md_name         = already_downloaded_dir + '.download_file_managers.dump'
-                fm_from_md              = Marshal.load(File.open(fm_from_md_name, 'rb').read)
-                download_file_manager  = fm_from_md
-        
-                DownloadCheckHelper.create_download_info_for_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
-            rescue StandardError => e
-                puts "Release directory could not be used, starting download"
-                sleep 2
-        
-                download_file_manager = download_files
-        
-                DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
-                DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
-            end
-        else
-
-            download_file_manager = download_files
-            DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
-            DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
+        if error_file_name
+            download_file_managers      = download_files
+            error_file_name             = _classify_downloads(download_file_manager)
+            byebug
+            # set result_file_manager status to succes: false?
         end
 
-        begin 
-            _classify_downloads(download_file_manager)
-        rescue Zip::Error => e
-            download_file_manager = download_files
-          
-            DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
-            DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
-        end
-        
+        _write_marshal_files(download_file_manager)
+
         return result_file_manager
+    end
 
+    def _get_already_existing_download_dir
+        GbolDownloadCheckHelper.ask_user_about_gbol_download_dirs
+    end
+
+    def _get_download_file_manager_from_already_downloaded_dir(already_downloaded_dir)
+        return nil unless already_downloaded_dir
+        
+        begin
+            download_file_manager = DownloadCheckHelper.get_object_from_marshal_file(already_downloaded_dir + '.download_file_managers.dump')
+    
+            # DownloadCheckHelper.create_download_info_for_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
+            DownloadCheckHelper.create_download_info_for_result_dir2(download_file_managers:[download_file_manager], result_file_manager: result_file_manager, source: self.class)
+            DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
+            
+            return download_file_manager
+        rescue StandardError => e
+            puts "Release directory could not be used, starting download"
+            pp e
+            sleep 2
+            
+            return nil
+        end
     end
 
     def download_files
@@ -61,16 +64,22 @@ class GbolJob
         success = false
         begin
             _config.downloader.new(config: _config).run
-            success = true
+            if File.empty?(file_manager.file_path)
+                file_manager.status = 'failure'
+            else
+                success = true
+                file_manager.status = 'success'
+            end
         rescue StandardError
             puts "GBOL Download crashed please try again"
+            success = false
         end
 
         dl_path_public = Pathname.new(file_manager.dir_path + DOWNLOAD_INFO_NAME)
         dl_path_hidden = Pathname.new(file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
         rs_path_public = Pathname.new(result_file_manager.dir_path + DOWNLOAD_INFO_NAME)
         rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
-        _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_manager: file_manager)
+        DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: [file_manager], result_file_manager: result_file_manager)
         
         return file_manager
     end
@@ -94,6 +103,11 @@ class GbolJob
             file.puts "success: #{success}"
             file.rewind
         end
+    end
+
+    def _write_marshal_files(download_file_manager)
+        DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
+        DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
     end
 
 

@@ -27,11 +27,12 @@ class GbolImporter
   def run
     specimens_of_taxon  = Hash.new { |hash, key| hash[key] = {} }
 
-    MiscHelper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: [file_name.basename, 'metadata.xml'])
-    ## TODO:
-    ## NEXT:
-    ## whats correct?
-    # MiscHelper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: [file_name.basename.sub_ext('.csv').to_s, 'metadata.xml'])
+    begin
+        MiscHelper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: [file_name.basename.sub_ext('.csv').to_s, 'metadata.xml'])
+    rescue Zip::Error => e
+        pp e
+        return file_name
+    end 
     
     csv_file_name = file_name.sub_ext('.csv')
     csv_file = File.open(csv_file_name, 'r')
@@ -79,6 +80,8 @@ class GbolImporter
     tsv.close
     fasta.close
     comparison_file.close
+
+    return nil
   end
   
   private
