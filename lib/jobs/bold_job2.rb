@@ -458,25 +458,27 @@ class BoldJob2
         syn = Synonym.new(accepted_taxon: node.content.first, sources: [GbifTaxonomy])
         file_manager = nil
 
-        syn.synonyms.each do |synonym|
-            parent_dir      = _get_parentage_as_dir_structure(node)
-            synonym_config  = BoldConfig.new(name: synonym.canonical_name, markers: markers, parent_dir: parent_dir)
-            
-            file_manager    = synonym_config.file_manager
-            file_manager.create_dir
-        
-            synonym_downloader  = synonym_config.downloader.new(config: synonym_config)
-        
-            begin
-                synonym_downloader.run
-                if File.empty?(file_manager.file_path)
+        syn.synonyms_of_taxonomy.each do |taxonomy, synonyms|
+            synonyms.each do |synonym|
+                parent_dir      = _get_parentage_as_dir_structure(node)
+                synonym_config  = BoldConfig.new(name: synonym.canonical_name, markers: markers, parent_dir: parent_dir)
+                
+                file_manager    = synonym_config.file_manager
+                file_manager.create_dir
+                
+                synonym_downloader  = synonym_config.downloader.new(config: synonym_config)
+                
+                begin
+                    synonym_downloader.run
+                    if File.empty?(file_manager.file_path)
+                        file_manager.status = 'failure'
+                    else
+                        file_manager.status = 'success'
+                        break
+                    end
+                rescue Net::ReadTimeout
                     file_manager.status = 'failure'
-                else
-                    file_manager.status = 'success'
-                    break
                 end
-            rescue Net::ReadTimeout
-                file_manager.status = 'failure'
             end
         end
 

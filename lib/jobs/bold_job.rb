@@ -231,38 +231,40 @@ class BoldJob
   end
 
   ## TODO: same for NcbiTaxonomy
-  def _download_synonym(node:)
-    syn = Synonym.new(accepted_taxon: node.content.first, sources: [GbifTaxonomy])
-    file_manager = nil
+    def _download_synonym(node:)
+        syn = Synonym.new(accepted_taxon: node.content.first, sources: [GbifTaxonomy])
+        file_manager = nil
 
-    syn.synonyms.each do |synonym|
-      parent_dir      = _get_parentage_as_dir_structure(node)
-      synonym_config  = BoldConfig.new(name: synonym.canonical_name, markers: markers, parent_dir: parent_dir)
-      
-      file_manager    = synonym_config.file_manager
-      file_manager.create_dir
-      
-      synonym_downloader  = synonym_config.downloader.new(config: synonym_config)
-      
-      begin
-        synonym_downloader.run
-        if File.empty?(file_manager.file_path)
-          file_manager.status = 'failure'
-        else
-          file_manager.status = 'success'
-          break
+        syn.synonyms_of_taxonomy.each do |taxonomy, synonyms|
+            synonyms.each do |synonym|
+                parent_dir      = _get_parentage_as_dir_structure(node)
+                synonym_config  = BoldConfig.new(name: synonym.canonical_name, markers: markers, parent_dir: parent_dir)
+                
+                file_manager    = synonym_config.file_manager
+                file_manager.create_dir
+                
+                synonym_downloader  = synonym_config.downloader.new(config: synonym_config)
+                
+                begin
+                    synonym_downloader.run
+                    if File.empty?(file_manager.file_path)
+                        file_manager.status = 'failure'
+                    else
+                        file_manager.status = 'success'
+                        break
+                    end
+                rescue Net::ReadTimeout
+                    file_manager.status = 'failure'
+                end
+            end
         end
-      rescue Net::ReadTimeout
-        file_manager.status = 'failure'
-      end
-    end
 
-    if file_manager && file_manager.status == 'success'
-      return file_manager
-    else  
-      return nil
+        if file_manager && file_manager.status == 'success'
+            return file_manager
+        else  
+            return nil
+        end
     end
-  end
 
   def _write_result_files(root_node:, fmanagers:)
     root_dir              = fmanagers.select { |m| m.name == root_node.name }.first

@@ -2,16 +2,16 @@
 
 class Synonym
       attr_accessor     :accepted_taxon, :sources
-      attr_reader       :synonyms
+      attr_reader       :synonyms_of_taxonomy
 
       def initialize(accepted_taxon:, sources:)
-            @accepted_taxon   = accepted_taxon
-            @sources          = sources
-            @synonyms         = _get_synonyms
+            @accepted_taxon         = accepted_taxon
+            @sources                = sources
+            @synonyms_of_taxonomy   = _get_synonyms_of_taxonomy
       end
 
       private
-      def _get_synonyms
+      def _get_synonyms_of_taxonomy
             return {} if sources.nil? || sources.empty? || sources.blank?
             return {} unless sources.size == 1 && sources.include?(GbifTaxonomy) || sources.include?(NcbiTaxonomy)
             return {} if accepted_taxon.nil?

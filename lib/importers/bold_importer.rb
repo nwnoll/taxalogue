@@ -53,9 +53,9 @@ class BoldImporter
       next unless taxonomic_info.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
       # Synonym List
-      syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [TaxonomyHelper.latinize_rank(taxonomy_params)])
-      OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms: syn.synonyms[TaxonomyHelper.latinize_rank(taxonomy_params)], used_taxonomy: TaxonomyHelper.latinize_rank(taxonomy_params) )
-      # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms: syn.synonyms)
+      syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [TaxonomyHelper.get_source_db(taxonomy_params)])
+      OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms_of_taxonomy: syn.synonyms_of_taxonomy, used_taxonomy: TaxonomyHelper.get_source_db(taxonomy_params) )
+      # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms_of_taxonomy: syn.synonyms_of_taxonomy)
       
 
       specimens_of_taxon[taxon_name][:data].each do |data|
