@@ -172,7 +172,7 @@ class NcbiGenbankJob
     def _groups
         return division_codes_for(animal_divisions) if taxon.canonical_name  == 'Animalia' || taxon.canonical_name  == 'Metazoa'
         
-        return division_codes_for(division_id)
+        return division_codes_for(division_ids)
     end
 
     def division_codes_for(ids)
@@ -188,13 +188,13 @@ class NcbiGenbankJob
         [1, 2, 5, 6, 10]
     end
 
-    def division_id
-        id = NcbiDivision.get_division_id_by_taxon_name(taxon.canonical_name)
+    def division_ids
+        ids = NcbiDivision.get_division_id_by_taxon_name(taxon.canonical_name)
         
-        return id if id
+        return ids if ids
         
         ## should make multiple searches to find taxon in NCBI Genbank database
-        abort "Could not find #{taxon.canonical_name} in NCBI Genbank please use a different taxon" if id.nil?
+        abort "Could not find #{taxon.canonical_name} in NCBI Genbank please use a different taxon" if ids.nil?
     end
 
     def _update_download_info(paths:, success:, download_file_managers:)
@@ -295,6 +295,8 @@ class NcbiGenbankJob
     def _classify_downloads(download_file_managers:)
         erroneous_files_of = Hash.new
         download_file_managers.each do |download_file_manager|
+            division_codes_for_taxon = division_codes_for(division_ids)
+            next unless division_codes_for_taxon.include?(download_file_manager.name)
             next unless download_file_manager.status == 'success'
             files = download_file_manager.files_with_name_of(dir: download_file_manager.dir_path)
             
