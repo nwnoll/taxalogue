@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 class GbolJob
-    attr_reader   :taxon, :markers, :taxonomy_params, :taxon_name , :result_file_manager, :filter_params, :region_params
+    attr_reader   :taxon, :markers, :taxonomy_params, :taxon_name , :result_file_manager, :filter_params, :region_params, :params
 
     DOWNLOAD_INFO_NAME = 'gbol_download_info.txt'
 
-    def initialize(taxon:, markers: nil, taxonomy_params:, result_file_manager:, filter_params: nil, region_params: nil)
+    def initialize(taxon:, markers: nil, taxonomy_params:, result_file_manager:, filter_params: nil, region_params: nil, params: nil)
         @taxon                = taxon
         @taxon_name           = taxon.canonical_name
         @markers              = markers
@@ -13,6 +13,7 @@ class GbolJob
         @result_file_manager  = result_file_manager
         @filter_params        = filter_params
         @region_params        = region_params
+        @params               = params
     end
 
     def run
@@ -33,7 +34,7 @@ class GbolJob
     end
 
     def _get_already_existing_download_dir
-        GbolDownloadCheckHelper.ask_user_about_gbol_download_dirs
+        GbolDownloadCheckHelper.ask_user_about_gbol_download_dirs(params)
     end
 
     def _get_download_file_manager_from_already_downloaded_dir(already_downloaded_dir)

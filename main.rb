@@ -242,12 +242,39 @@ end
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 
 
+
+if params[:create][:all]
+    file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+    ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+    gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region], params: params)
+    bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+	## TODO: maybe bad, since if one Job does not work there is still the folder
+	## could delte it if exit status is not 0 or some failure in between
+	## catch error with begin except?
+	file_manager.create_dir
+
+	MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
+	multiple_jobs = MultipleJobs.new(jobs: [bold_job, gbol_job, ncbi_genbank_job])
+	multiple_jobs.run
+    sleep 2
+
+	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
+	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
+	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
+end
+
+exit
+
+
+
+
+
 file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 # ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
 # gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
 bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
 file_manager.create_dir
-bold_job.run2
+bold_job.run
 # ncbi_genbank_job.run
 # gbol_job.run
 exit
@@ -436,28 +463,7 @@ exit
 
 
 
-if params[:import][:all_seqs]
-	file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
 
-	bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region])
-	genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region])
-	gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
-
-	## TODO: maybe bad, since if one Job does not work there is still the folder
-	## could delte it if exit status is not 0 or some failure in between
-	## catch error with begin except?
-	file_manager.create_dir
-
-	# MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
-
-
-	multiple_jobs = MultipleJobs.new(jobs: [bold_job, gbol_job, genbank_job])
-	multiple_jobs.run
-
-	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
-	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
-	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
-end
 
 
 exit

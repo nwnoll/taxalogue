@@ -64,6 +64,8 @@ class BoldImporter
       end
     end
 
+    OutputFormat::Tsv.rewind
+
     tsv.close
     fasta.close
     comparison_file.close
