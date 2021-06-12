@@ -23,7 +23,7 @@ class BoldImporter
     specimens_of_taxon = Hash.new { |hash, key| hash[key] = {} }
     
     file = File.file?(file_name) ? File.open(file_name, 'r') : nil
-    abort "#{file_name} is not a valid file" if file.nil?
+    return nil if file.nil?
     
     @@index_by_column_name = MiscHelper.generate_index_by_column_name(file: file, separator: "\t")
 

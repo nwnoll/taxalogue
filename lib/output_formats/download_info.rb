@@ -2,8 +2,8 @@
 
 class OutputFormat::DownloadInfo
       
-      def self.write_to_file(file:, fmanagers:)
-            fmanagers.each_with_index do |file_manager, i|
+      def self.write_to_file(file:, download_file_managers:)
+            download_file_managers.each_with_index do |file_manager, i|
 
                   file.puts "name\tstatus\tversioning\tdir_path\tfile_path" if i == 0
 

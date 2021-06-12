@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 class BoldDownloadCheckHelper
+
+    RJUST_LEVEL_ONE = " " * 6
+    RJUST_LEVEL_TWO = " " * 10
+
     def self.select_from_download_dirs(dirs:)
 
         # precedence:
@@ -137,5 +141,30 @@ class BoldDownloadCheckHelper
         use_latest_download = (user_input =~ /y|yes/i) ? true : false
     
         return use_latest_download ? selected_download_dir : nil
+    end
+
+    def self.create_download_info_for_result_dir(download_file_managers:, result_file_manager:, source:, release_info_struct: nil)
+        download_info_str = source::DOWNLOAD_INFO_NAME
+
+        result_dl_info_public_name = result_file_manager.dir_path + download_info_str
+        result_dl_info_hidden_name = result_file_manager.dir_path + ".#{download_info_str}"
+
+        root_download_dir = download_file_managers.first.base_dir
+        dl_tree_path_hidden = Pathname.new(root_download_dir + ".#{source::DOWNLOAD_INFO_TREE_NAME}")
+        
+        failures = DownloadInfoParser.get_download_failures(dl_tree_path_hidden)
+        success = failures.empty? ? true : false
+
+        paths = [result_dl_info_public_name, result_dl_info_hidden_name]
+        paths.each do |path|
+            file = File.open(path, 'w')
+            download_file_managers.each_with_index do |download_file_manager, i|
+                file.puts 'data:' if i == 0
+                file.puts "#{download_file_manager.base_dir.to_s}; success: #{success}".prepend(RJUST_LEVEL_ONE) if i == 0
+
+                sub_directory_success = download_file_manager.status == 'success' ?  true : false
+                file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".prepend(RJUST_LEVEL_TWO)
+            end
+        end
     end
 end

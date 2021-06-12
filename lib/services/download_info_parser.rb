@@ -33,7 +33,8 @@ class DownloadInfoParser
         file = File.open(file_path, 'r')
         hash = nil
         file.each do |line|
-            if file.lineno == 1
+            if file.lineno == 5
+                p hash
                 hash = JSON.parse(line)
             end
         end

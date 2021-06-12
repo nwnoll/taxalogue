@@ -31,7 +31,6 @@ class NcbiGenbankJob
         if erroneous_files_of.any?
             download_file_managers  = _download_failed_files(download_file_managers, erroneous_files_of)
             erroneous_files_of      = _classify_downloads(download_file_managers: download_file_managers)
-            byebug
             # set result_file_manager status to succes: false?
         end
         

@@ -6,6 +6,7 @@ class BoldJob2
     HEADER_LENGTH = 1
     BOLD_DIR = Pathname.new('fm_data/BOLD')
     DOWNLOAD_INFO_NAME = "bold_download_info.txt"
+    DOWNLOAD_INFO_TREE_NAME = "bold_download_tree_info.txt"
 
     def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil, try_synonyms: false, taxonomy_params:, region_params: nil, params: nil)
         @taxon                = taxon
@@ -29,35 +30,50 @@ class BoldJob2
     end
 
     def run
-        already_downloaded_dir = BoldDownloadCheckHelper.ask_user_about_download_dirs(params)
-        if already_downloaded_dir
-            begin
-                fm_from_md_name         = already_downloaded_dir + '.download_file_managers.dump'
-                fm_from_md              = Marshal.load(File.open(fm_from_md_name, 'rb').read)
-                download_file_managers  = fm_from_md
+        already_downloaded_dir = _get_already_downloaded_dir
+        download_file_managers = _get_download_file_managers_from_already_downloaded_dir(already_downloaded_dir)
 
-                # _create_download_info_for_result_dir(already_downloaded_dir)
-                DownloadCheckHelper.create_download_info_for_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
-            rescue StandardError => e
-                puts "Directory could not be used, starting download"
-                sleep 2
-
-                download_file_managers = download_files
-                DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
-                DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
-            end
+        did_use_marshal_file = false
+        if download_file_managers.empty?
+            download_file_managers  = _download_files
         else
-            download_file_managers  = download_files
-            DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
-            DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
+            did_use_marshal_file =  true
         end
-    
+
         _classify_downloads(download_file_managers: download_file_managers)
-        # _classify_downloads(download_file_managers: nil)
-        
+        _write_marshal_files(download_file_managers) unless did_use_marshal_file
+
         return result_file_manager
-        # _write_result_files(root_node: root_node, fmanagers: fmanagers)
     end
+
+    def _get_already_downloaded_dir
+        BoldDownloadCheckHelper.ask_user_about_download_dirs(params)
+    end
+
+    def _get_download_file_managers_from_already_downloaded_dir(already_downloaded_dir)
+        return [] unless already_downloaded_dir
+        
+        begin
+            download_file_managers = DownloadCheckHelper.get_object_from_marshal_file(already_downloaded_dir + '.download_file_managers.dump')
+            
+            BoldDownloadCheckHelper.create_download_info_for_result_dir(download_file_managers: download_file_managers, result_file_manager: result_file_manager, source: self.class)
+            DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
+        
+            return download_file_managers
+        rescue => e
+            puts "Release directory could not be used, starting download"
+            pp e
+            sleep 2
+            
+            return []
+        end
+    end
+
+    def _write_marshal_files(download_file_managers)
+        DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
+        DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
+    end
+
 
     def _create_download_info_for_result_dir(already_downloaded_dir)
         data_dl_info_public_name = already_downloaded_dir + 'download_info.txt'
@@ -94,13 +110,13 @@ class BoldJob2
         return :success
     end
 
-    def download_files
-        root_node           = Tree::TreeNode.new(taxon_name, [taxon, @pending, 'pending'])
-        num_of_ranks        = GbifTaxonomy.possible_ranks.size
-        reached_genus_level = false
-        fmanagers           = []
-        rest_taxa           = Hash.new
-        num_threads         = 5
+    def _download_files
+        root_node               = Tree::TreeNode.new(taxon_name, [taxon, @pending, 'pending'])
+        num_of_ranks            = GbifTaxonomy.possible_ranks.size
+        reached_genus_level     = false
+        download_file_managers  = []
+        rest_taxa               = Hash.new
+        num_threads             = 5
 
         num_of_ranks.times do |i|
             _print_download_progress_report(root_node: root_node, rank_level: i)
@@ -131,7 +147,7 @@ class BoldJob2
                     node.content[1] = @failure
                     node.content[2] = rank_status.to_s
                     file_manager.status = 'failure'
-                    fmanagers.push(file_manager)
+                    download_file_managers.push(file_manager)
                     _print_download_progress_report(root_node: root_node, rank_level: i)
                     next
                 end
@@ -196,7 +212,7 @@ class BoldJob2
                     end
                 end
 
-                fmanagers.push(file_manager)
+                download_file_managers.push(file_manager)
 
                 _print_download_progress_report(root_node: root_node, rank_level: i)
             end
@@ -242,21 +258,28 @@ class BoldJob2
             end
         end
 
-        # _write_result_files(root_node: root_node, fmanagers: fmanagers)
+        # _write_result_files(root_node: root_node, download_file_managers: download_file_managers)
 
         dl_path_public = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_NAME)
         dl_path_hidden = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_NAME}")
         rs_path_public = Pathname.new(result_file_manager.dir_path + DOWNLOAD_INFO_NAME)
         rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
-        _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], root_node: root_node)
+        
+        dl_tree_path_hidden = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_TREE_NAME}")
+        dl_tree_path_public = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_TREE_NAME)
+        
+        _write_download_info(paths: [dl_tree_path_hidden, dl_tree_path_public], root_node: root_node)
+        
+        failures = DownloadInfoParser.get_download_failures(dl_tree_path_hidden)
+        success = failures.empty? ? true : false
+        DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers, result_file_manager: result_file_manager)
 
-        failures = DownloadInfoParser.get_download_failures(dl_path_hidden)
         
         unless failures.empty?
             ## maybe directly try to download again?
         end
 
-        return fmanagers
+        return download_file_managers
     end
 
     def _write_download_info(paths:, root_node:)
@@ -269,6 +292,13 @@ class BoldJob2
                 node.content = node.content.last
             end
 
+            real_failed_nodes = root_node.find_all { |node| node.is_leaf? && _real_failure(node.content[2]) }
+            success = real_failed_nodes.empty? ? 'true' : 'false'
+            file.puts 'data:'
+            file.puts "success: #{success}"
+            file.puts
+            file.puts 'tree:'
+
             basename = path.basename.to_s
             if basename.starts_with?('.')
                 hash = root_node_copy.to_h
@@ -279,19 +309,6 @@ class BoldJob2
                 root_node_copy.print_tree(level = root_node.node_depth, max_depth = nil, block = lambda { |node, prefix| file.puts "#{prefix} #{node.name}".ljust(30) + " #{node.content}" })
             end
 
-            real_failed_nodes = root_node.find_all { |node| node.is_leaf? && _real_failure(node.content[2]) }
-            success = real_failed_nodes.empty? ? 'true' : 'false'
-
-            if path.descend.first.to_s == 'results'
-                file.puts
-                file.puts "data directory: #{(BOLD_DIR + @root_download_dir).to_s}"
-            else
-                file.puts
-                file.puts "result directory: #{result_file_manager.dir_path.to_s}"
-            end
-
-            file.puts
-            file.puts "success: #{success}"
             file.rewind
         end
     end
@@ -375,7 +392,7 @@ class BoldJob2
             file_manager.status = 'failure'
         end
 
-        fmanagers.push(file_manager)
+        download_file_managers.push(file_manager)
         _print_download_progress_report(root_node: root_node, rank_level: i)
     end
 
@@ -489,14 +506,14 @@ class BoldJob2
         end
     end
 
-    def _write_result_files(root_node:, fmanagers:)
-        root_dir              = fmanagers.select { |m| m.name == root_node.name }.first
+    def _write_result_files(root_node:, download_file_managers:)
+        root_dir              = download_file_managers.select { |m| m.name == root_node.name }.first
         # merged_download_file  = File.open(root_dir.dir_path + "#{root_dir.name}_merged.tsv", 'w') 
         download_info_file    = File.open(root_dir.dir_path + "#{root_dir.name}_download_info.tsv", 'w') 
-        # download_successes    = fmanagers.select { |m| m.status == 'success' }
+        # download_successes    = download_file_managers.select { |m| m.status == 'success' }
 
         # OutputFormat::MergedBoldDownload.write_to_file(file: merged_download_file, data: download_successes, header_length: HEADER_LENGTH, include_header: true)
-        OutputFormat::DownloadInfo.write_to_file(file: download_info_file, fmanagers: fmanagers)
+        OutputFormat::DownloadInfo.write_to_file(file: download_info_file, download_file_managers: download_file_managers)
     end
 
     def _classify_downloads(download_file_managers:)
