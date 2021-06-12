@@ -254,7 +254,7 @@ if params[:create][:all]
 	file_manager.create_dir
 
 	MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
-	multiple_jobs = MultipleJobs.new(jobs: [gbol_job, ncbi_genbank_job, bold_job])
+	multiple_jobs = MultipleJobs.new(jobs: [ncbi_genbank_job, gbol_job, bold_job])
 	multiple_jobs.run
     sleep 2
 
