@@ -111,9 +111,12 @@ class NcbiGenbankJob
 
             begin
                 downloader.run
-            rescue SocketError => e
-                download_did_fail = true
+            # rescue SocketError => e
+            #     download_did_fail = true
+            # rescue Net::ReadTimeout => e
+            #     download_did_fail = true
             rescue StandardError => e
+                byebug
                 download_did_fail = true
             end
 

@@ -34,9 +34,10 @@ class BoldConfig
     FileStructure.new(config: self)
   end
 
-  def file_manager
+  def file_manager(from_already_existing_dirs = nil)
     if is_root
       versioned_file_name = FileManager.get_versioned_file_name(name)
+      versioned_file_name = from_already_existing_dirs if from_already_existing_dirs
       base_dir_path = Pathname.new("fm_data/#{_source_name}/#{versioned_file_name.to_s}/")
       FileManager.new(name: name, versioning: false, base_dir: base_dir_path, config: self)
     else

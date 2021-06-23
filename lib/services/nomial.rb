@@ -114,6 +114,8 @@ class Monomial
       record  = _gbif_taxonomy_object(records: records)
       return record unless record.nil?
     end
+    
+    return nil
   end
 
   def gbif_taxonomy_backbone(first_specimen_info:, importer:)
@@ -131,6 +133,8 @@ class Monomial
       record  = _gbif_taxonomy_object(records: records)
       return record unless record.nil?
     end
+
+    return nil
   end
 
   def ncbi_taxonomy(first_specimen_info:, importer:)
@@ -166,6 +170,8 @@ class Monomial
       record  = _ncbi_taxonomy_object(records: records)
       return record unless record.nil?
     end
+
+    return nil
   end
 
   def unmapped_taxonomy(first_specimen_info:, importer:)

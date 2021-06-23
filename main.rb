@@ -74,7 +74,7 @@ subcommands = {
 		opts.on('-a', '--all', 'creates a reference database with sequences from BOLD, GenBank and GBOL')
 		opts.on('-g', '--gbol', 'creates a reference database with sequences from GBOL')
 		opts.on('-b', '--bold', 'creates a reference database with sequences from BOLD')
-		opts.on('-k', '--gbol', 'creates a reference database with sequences from Genbank')
+		opts.on('-k', '--genbank', 'creates a reference database with sequences from Genbank')
 	end,
 	classify: OptionParser.new do |opts|
 		opts.banner = "Usage: classify [options]"
@@ -82,6 +82,7 @@ subcommands = {
 		opts.on('-g GBOL', String, '--gbol')
 		opts.on('-o BOLD', String, '--bold')
 		opts.on('-k GENBANK', String, '--genbank')
+		opts.on('-d DIRECTORY', String, '--directory')
 	end,
 	import: OptionParser.new do |opts|
 		opts.banner = "Usage: import [options]"
@@ -241,20 +242,61 @@ end
 ## object is also not set in opts.on
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 
+# if params[:create][:all]
+#     file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+#     ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+#     gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region], params: params)
+#     bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+	
+#     file_manager.create_dir
 
+# 	MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
+# 	multiple_jobs = MultipleJobs.new(jobs: [ncbi_genbank_job, gbol_job, bold_job])
+# 	multiple_jobs.run
+#     sleep 2
 
-if params[:create][:all]
+# 	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
+# 	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
+# 	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
+# end
+
+if params[:create].any?
+    jobs = []
     file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-    ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
-    gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region], params: params)
-    bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
-	## TODO: maybe bad, since if one Job does not work there is still the folder
-	## could delte it if exit status is not 0 or some failure in between
-	## catch error with begin except?
-	file_manager.create_dir
 
-	MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
-	multiple_jobs = MultipleJobs.new(jobs: [ncbi_genbank_job, gbol_job, bold_job])
+    params[:create].each do |key, value|
+        if key == :all
+            ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+            gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region], params: params)
+            bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+            
+            jobs.push(ncbi_genbank_job, gbol_job, bold_job)
+        end
+
+        if key == :bold && jobs.none? { |e| e.class == BoldJob2 }
+            bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+            
+            jobs.push(bold_job)
+        end
+
+        if key == :gbol && jobs.none? { |e| e.class == GbolJob }
+            gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region], params: params)
+            
+            jobs.push(gbol_job)
+        end
+
+        if key == :genbank && jobs.none? { |e| e.class == NcbiGenbankJob }
+            ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+            
+            jobs.push(ncbi_genbank_job)
+        end
+    end
+
+    file_manager.create_dir
+
+    MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
+	
+    multiple_jobs = MultipleJobs.new(jobs: jobs)
 	multiple_jobs.run
     sleep 2
 
@@ -263,21 +305,105 @@ if params[:create][:all]
 	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
 end
 
-exit
-
-
 
 
 
 file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-# ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
 # gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
-bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+# bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
 file_manager.create_dir
-bold_job.run
-# ncbi_genbank_job.run
+# bold_job.run
+ncbi_genbank_job.run
 # gbol_job.run
 exit
+
+# <a href="gbbct10.seq.gz">gbbct10.seq.gz</a>          2021-05-26 18:20  149M
+HttpDownloader2.new(address: 'https://ftp.ncbi.nlm.nih.gov/genbank/', destination: 'gb_test.txt' )
+gb_test_file = File.open('gb_test.txt')
+matches = gb_test_file.match(/<a href="(.*?)">/)
+byebug
+
+exit
+
+if params[:classify][:directory]
+
+    ## TODO: refactor and maybe implement into FileMerger?
+    ## whats the problem?
+
+    # i want to classify but here i nee
+    # 
+
+    dir = Pathname.new(params[:classify][:directory])
+
+    tsv_files = dir.glob("*_output.tsv")
+    fas_files = dir.glob("*_output.fas")
+    cmp_files = dir.glob("*_comparison.tsv")
+
+
+    merged_tsv_file_name  = dir + "merged_output.tsv"
+    merged_fas_file_name  = dir + "merged_output.fas"
+    merged_cmp_file_name  = dir + "merged_comparison.tsv"
+
+    merged_tsv_file = File.open(merged_tsv_file_name, 'w')
+    merged_fas_file = File.open(merged_fas_file_name, 'w')
+    merged_cmp_file = File.open(merged_cmp_file_name, 'w')
+    
+    tsv_files.each_with_index do |file, i|
+          next unless File.file?(file)
+          file_in = File.open(file, 'r')
+          file_in.each_line do |line|
+                next if file_in.lineno == 1 && i != 0 ## header only once
+                merged_tsv_file.write line
+          end
+          file_in.close
+    end
+    merged_tsv_file.close
+
+    fas_files.each_with_index do |file, i|
+        next unless File.file?(file)
+        file_in = File.open(file, 'r')
+        file_in.each_line do |line|
+            merged_fas_file.write line
+        end
+        file_in.close
+    end
+    merged_fas_file.close
+
+    cmp_files.each_with_index do |file, i|
+        next unless File.file?(file)
+        file_in = File.open(file, 'r')
+        file_in.each_line do |line|
+            next if file_in.lineno == 1 && i != 0 ## header only once
+            merged_cmp_file.write line
+        end
+        file_in.close
+    end
+    merged_cmp_file.close
+end
+
+exit
+
+if params[:classify][:bold]
+    result_file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+	result_file_manager.create_dir
+    file_managers = DownloadInfoParser.get_file_managers_from_download_info_tree(params[:classify][:bold])
+    # DownloadInfoParser.get_file_managers_from_download_info_tree('/home/nnoll/phd/db_merger/fm_data/BOLD/Arthropoda-20210613T1754/.bold_download_tree_info.txt')
+    # pp file_managers
+    DownloadInfoParser.classify_with_already_downloaded_dirs(file_managers, params, result_file_manager)
+end
+
+exit
+
+
+
+
+exit
+
+
+
+
+
 
 
 bold_job = BoldJob2.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
