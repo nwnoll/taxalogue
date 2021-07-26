@@ -2,7 +2,7 @@
 
 class GbifHomonym < ActiveRecord::Base
 
-      def self.possible_ranks
-            GbifHomonym.all.pluck(:rank).uniq
-      end
+    def self.possible_ranks
+        GbifHomonym.all.pluck(:rank).uniq
+    end
 end

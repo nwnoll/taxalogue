@@ -38,15 +38,6 @@ module Printing
         end
     end
 
-
-
-    module FileStructure
-        def create_directory
-            puts _directory_exists? ? "... tried to create #{directory_path}, but it already exists" : "... creating directory #{directory_path}"
-            super
-        end
-    end
-
     module HttpDownloader
         def run
             puts "... downloading data for #{config.name}"

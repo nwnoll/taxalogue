@@ -32,8 +32,8 @@ class SpecimensOfTaxon
 
     def self.find_lowest_ranking_taxon(specimen_data, index_by_column_name)
         _possible_taxa.each do |taxon|
-          return specimen_data[index_by_column_name[taxon]] unless specimen_data[index_by_column_name[taxon]].blank?
-          return nil if specimen_data[index_by_column_name[taxon]] == _possible_taxa.last
+            return specimen_data[index_by_column_name[taxon]] unless specimen_data[index_by_column_name[taxon]].blank?
+            return nil if specimen_data[index_by_column_name[taxon]] == _possible_taxa.last
         end
     end
 

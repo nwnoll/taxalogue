@@ -12,8 +12,8 @@ class TaxonomyHelper
         downloader.run
     
         unless File.exists?('downloads/NCBI_TAXONOMY/NCBI_TAXONOMY.zip')
-          puts "The NCBI Taxonomy has not been setup yet, please use setup --ncbi_taxonomy"
-          return true
+            puts "The NCBI Taxonomy has not been setup yet, please use setup --ncbi_taxonomy"
+            return true
         end
     
         md5_sum_download    = Digest::MD5.hexdigest(File.read('downloads/NCBI_TAXONOMY/NCBI_TAXONOMY.zip'))
@@ -22,17 +22,17 @@ class TaxonomyHelper
         md5_sum_check_file  = $1
     
         if md5_sum_download == md5_sum_check_file
-          return false
+            return false
         else
-          return true
+            return true
         end
     end
 
     def self.new_gbif_taxonomy_available?
 
         unless File.exists?('downloads/GBIF_TAXONOMY/eml.xml') || File.exists?('downloads/GBIF_TAXONOMY/Taxon.tsv')
-          puts "The GBIF Taxonomy has not been setup yet, please use setup --gbif_taxonomy"
-          return true
+            puts "The GBIF Taxonomy has not been setup yet, please use setup --gbif_taxonomy"
+            return true
         end
     
     
@@ -51,9 +51,9 @@ class TaxonomyHelper
         datetime_remote               = DateTime.parse(gbif_backbone_modified_at,     "%Y-%m-%dT%H:%M:%S")
     
         if datetime_remote > datetime_local
-          return true
+            return true
         else
-          return false
+            return false
         end
     end
 

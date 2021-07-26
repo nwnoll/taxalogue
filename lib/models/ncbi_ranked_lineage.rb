@@ -4,5 +4,4 @@ class NcbiRankedLineage < ActiveRecord::Base
 end
 
 class GuaranteedNcbiRankeLineage
-
 end

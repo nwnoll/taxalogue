@@ -15,6 +15,7 @@ class NcbiDivision
 				end
 			end
         end
+        
         return divisions
     end
 
@@ -48,19 +49,19 @@ class NcbiDivision
     
         division_codes = []
         if params[:taxonomy][:ncbi]
-          division_ids = NcbiDivision.get_division_id_by_taxon_id(taxon_obj.taxon_id)
-          division_ids.each do |division_id|
-            division_code = NcbiDivision.code_for[division_id]
-            division_codes.push(division_code)
-          end
+            division_ids = NcbiDivision.get_division_id_by_taxon_id(taxon_obj.taxon_id)
+            division_ids.each do |division_id|
+                division_code = NcbiDivision.code_for[division_id]
+                division_codes.push(division_code)
+            end
         else
-          division_ids = NcbiDivision.get_division_id_by_taxon_name(taxon_obj.canonical_name)
-          division_ids.each do |division_id|
-            division_code = NcbiDivision.code_for[division_id]
-            division_codes.push(division_code)
-          end
+            division_ids = NcbiDivision.get_division_id_by_taxon_name(taxon_obj.canonical_name)
+            division_ids.each do |division_id|
+                division_code = NcbiDivision.code_for[division_id]
+                division_codes.push(division_code)
+            end
         end
     
         return division_codes
-      end
+    end
 end

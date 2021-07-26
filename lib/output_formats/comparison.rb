@@ -31,6 +31,6 @@ class OutputFormat::Comparison
 
         file.puts source_taxon_name + "\t" + accepted_taxon_name + "\t" + accepted_full_taxon_name + "\t" + accepted_taxonomic_status + "\t" + used_taxonomy.to_s + "\t" + synonyms_str
     end
-  end
+end
 
 class OutputFormat::MergedComparison; end

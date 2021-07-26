@@ -6,7 +6,7 @@ class FtpDownloader
     @@count_restarts = 0
 
     def initialize(config:)
-      @config = config
+        @config = config
     end
 
     def self.rewind
@@ -85,17 +85,17 @@ class FtpDownloader
         transferred = 0
         filesize = ftp.size(file)
         ftp.get(file, local_path, 32768) do |data|
-          transferred  += data.size
-          percent       = ((transferred.to_f/filesize.to_f)*100).to_i
-          finished      = ((transferred.to_f/filesize.to_f)*30).to_i
-          not_finished  = 30 - finished
-          print "\r"
-          print "#{"%3i" % percent}%"
-          print "["
-          finished.downto(1) { |n| print "=" }
-          print ">"
-          not_finished.downto(1) { |n| print " " }
-          print "]"
+            transferred  += data.size
+            percent       = ((transferred.to_f/filesize.to_f)*100).to_i
+            finished      = ((transferred.to_f/filesize.to_f)*30).to_i
+            not_finished  = 30 - finished
+            print "\r"
+            print "#{"%3i" % percent}%"
+            print "["
+            finished.downto(1) { |n| print "=" }
+            print ">"
+            not_finished.downto(1) { |n| print " " }
+            print "]"
         end
         print "\n"
       end

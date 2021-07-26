@@ -72,5 +72,5 @@ class TestFilterHelper < Test::Unit::TestCase
         assert_equal 'ANNNNNNNNNNA', FilterHelper.filter_seq(seq10, criteria2)
         assert_equal nil, FilterHelper.filter_seq(seq11, criteria2)
         assert_equal nil, FilterHelper.filter_seq(seq12, criteria2)
-  end
+    end
 end

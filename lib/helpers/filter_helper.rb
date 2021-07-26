@@ -15,20 +15,20 @@ class FilterHelper
         return seq unless criteria
     
         if criteria[:max_N]
-          return nil if seq.count('N') > criteria[:max_N]
+            return nil if seq.count('N') > criteria[:max_N]
         end
     
         if criteria[:max_G]
-          return nil if seq.count('-') > criteria[:max_G]
+            return nil if seq.count('-') > criteria[:max_G]
         end
     
         seq_length = seq.size
         if criteria[:min_length]
-          return nil if seq_length < criteria[:min_length]
+            return nil if seq_length < criteria[:min_length]
         end
     
         if criteria[:max_length]
-          return nil if seq_length > criteria[:max_length]
+            return nil if seq_length > criteria[:max_length]
         end
     
         return seq
@@ -39,11 +39,11 @@ class FilterHelper
         # char_pos_to_start = 0
     
         seq.each_char do |char|
-          if char =~ /[ACGT]/
-            return char_pos
-          end
+            if char =~ /[ACGT]/
+                return char_pos
+            end
     
-          char_pos += 1
+            char_pos += 1
         end
     
         return 0

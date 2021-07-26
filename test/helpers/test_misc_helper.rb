@@ -31,7 +31,6 @@ class TestMiscHelper < Test::Unit::TestCase
         assert_same OutputFormat::Fasta,          MiscHelper.constantize('OutputFormat::Fasta')
         assert_same OutputFormat,                 MiscHelper.constantize('OutputFormat')
         assert_same OutputFormat::Tsv,            MiscHelper.constantize('OutputFormat::Tsv')
-        assert_same FileStructure,                MiscHelper.constantize('FileStructure')
         assert_same GbifApi,                      MiscHelper.constantize('GbifApi')
         assert_same Marker,                       MiscHelper.constantize('Marker')
         assert_same NcbiApi,                      MiscHelper.constantize('NcbiApi')
@@ -65,7 +64,7 @@ class TestMiscHelper < Test::Unit::TestCase
         assert_equal nucs, specimen_data[index_by_column_name['nucleotides']]
         assert_equal lat, specimen_data[index_by_column_name['lat']]
         assert_equal lon, specimen_data[index_by_column_name['lon']]
-  end
+    end
 
     def test_extract_zip
         tmp_dir     = Dir.mktmpdir
