@@ -32,7 +32,7 @@ class BoldDownloadCheckHelper
         
         sorted = dirs.sort_by do |dir_and_state|
             dir, state  = dir_and_state
-            file_path   = dir + ".#{BoldJob2::DOWNLOAD_INFO_NAME}"
+            file_path   = dir + ".#{BoldJob::DOWNLOAD_INFO_NAME}"
         
             success = DownloadInfoParser.download_was_successful?(file_path)
         
@@ -59,7 +59,7 @@ class BoldDownloadCheckHelper
         if only_successful
             successful_downloads = taxon_dirs.select do |dir_and_state|
                 dir, state = dir_and_state
-            file_path   = dir + ".#{BoldJob2::DOWNLOAD_INFO_NAME}"
+            file_path   = dir + ".#{BoldJob::DOWNLOAD_INFO_NAME}"
                 
         
                 DownloadInfoParser.download_was_successful?(file_path)

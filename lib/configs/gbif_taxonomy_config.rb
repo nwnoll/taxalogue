@@ -25,7 +25,7 @@ class GbifTaxonomyConfig
     end
 
     def file_manager
-        FileManager.new(name: name, versioning: false, base_dir: 'fm_data/', config: self)
+        FileManager.new(name: name, versioning: false, base_dir: 'downloads/', config: self)
       end
   end
   

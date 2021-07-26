@@ -114,7 +114,7 @@ class GbolJob
     def _classify_downloads(download_file_manager)
         return nil unless File.file?(download_file_manager.file_path)
 
-        gbol_classifier   = GbolImporter.new(fast_run: true, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, taxonomy_params: taxonomy_params, region_params: region_params)
+        gbol_classifier   = GbolClassifier.new(fast_run: true, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, taxonomy_params: taxonomy_params, region_params: region_params)
         error_file = gbol_classifier.run ## result_file_manager creates new files and will push those into internal array
     
         return error_file

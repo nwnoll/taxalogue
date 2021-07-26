@@ -57,15 +57,15 @@ class Marker
     end
 
     def _ncbi_classes
-        [NcbiGenbankImporter, NcbiGenbankJob, NcbiGenbankConfig, NcbiApi, NcbiGenbankExtractor]
+        [NcbiGenbankClassifier, NcbiGenbankJob, NcbiGenbankConfig, NcbiApi, NcbiGenbankExtractor]
     end
 
     def _gbol_classes
-        [GbolImporter, GbolJob, GbolConfig]
+        [GbolClassifier, GbolJob, GbolConfig]
     end
 
     def _bold_classes
-        [BoldImporter, BoldJob, BoldConfig]
+        [BoldClassifier, BoldJob, BoldConfig]
     end
 
     def _to_regex(array_of_searchterms)

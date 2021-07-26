@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class NcbiGenbankImporter
+class NcbiGenbankClassifier
     include StringFormatting
     include GeoUtils
 

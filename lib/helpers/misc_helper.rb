@@ -71,7 +71,7 @@ class MiscHelper
 
     def self.get_inv_contaminants(file_manager, marker_objects)
         # contaminants_dir_path = file_manager.dir_path + 'contaminants/'
-        contaminants_dir_path = Pathname.new('fm_data/NCBIGENBANK/inv_contaminants/')
+        contaminants_dir_path = Pathname.new('downloads/NCBIGENBANK/inv_contaminants/')
         FileUtils.mkdir_p(contaminants_dir_path)
         
         wolbachia_contaminants_file_path = contaminants_dir_path + 'Wolbachia.gb'
@@ -94,5 +94,58 @@ class MiscHelper
         human_result_contaminants_file_path = result_contaminants_dir_path + 'Homo_sapiens_output.out'
         ncbi_genbank_extractor = NcbiGenbankExtractor.new(file_name: human_contaminants_file_path, taxon_name: 'Homo sapiens', markers: marker_objects, result_file_name: human_result_contaminants_file_path)
         ncbi_genbank_extractor.run
+    end
+
+    def merge_files_in_dir(dir_name)
+        ## TODO: refactor and maybe implement into FileMerger?
+    
+        dir = Pathname.new(dir_name)
+    
+        tsv_files = dir.glob("*_output.tsv")
+        fas_files = dir.glob("*_output.fas")
+        cmp_files = dir.glob("*_comparison.tsv")
+    
+    
+        merged_tsv_file_name  = dir + "merged_output.tsv"
+        merged_fas_file_name  = dir + "merged_output.fas"
+        merged_cmp_file_name  = dir + "merged_comparison.tsv"
+    
+        merged_tsv_file = File.open(merged_tsv_file_name, 'w')
+        merged_fas_file = File.open(merged_fas_file_name, 'w')
+        merged_cmp_file = File.open(merged_cmp_file_name, 'w')
+        
+        tsv_files.each_with_index do |file, i|
+                next unless File.file?(file)
+                file_in = File.open(file, 'r')
+                file_in.each_line do |line|
+                    next if file_in.lineno == 1 && i != 0 ## header only once
+                    merged_tsv_file.write line
+                end
+                file_in.close
+        end
+        merged_tsv_file.close
+    
+        fas_files.each_with_index do |file, i|
+            next unless File.file?(file)
+            file_in = File.open(file, 'r')
+            file_in.each_line do |line|
+                merged_fas_file.write line
+            end
+            file_in.close
+        end
+        merged_fas_file.close
+    
+        cmp_files.each_with_index do |file, i|
+            next unless File.file?(file)
+            file_in = File.open(file, 'r')
+            file_in.each_line do |line|
+                next if file_in.lineno == 1 && i != 0 ## header only once
+                merged_cmp_file.write line
+            end
+            file_in.close
+        end
+        merged_cmp_file.close
+
+        return nil
     end
 end

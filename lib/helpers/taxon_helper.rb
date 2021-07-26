@@ -3,7 +3,7 @@
 class TaxonHelper
     def self.is_extinct?(taxon_name)
 
-        file_name = Pathname.new('fm_data/GBIF_ZOOLOGIAL_NAMES/names.txt')
+        file_name = Pathname.new('downloads/GBIF_ZOOLOGIAL_NAMES/names.txt')
     
         unless File.exists?(file_name)
     

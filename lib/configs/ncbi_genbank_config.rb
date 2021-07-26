@@ -3,7 +3,7 @@
 class NcbiGenbankConfig
   attr_reader :name, :markers, :file_manager, :use_http, :parent_dir
 
-  DOWNLOAD_DIR = Pathname.new("fm_data/NCBIGENBANK/")
+  DOWNLOAD_DIR = Pathname.new("downloads/NCBIGENBANK/")
   CURRENT_RELEASE_ADDRESS = 'https://ftp.ncbi.nlm.nih.gov/genbank/GB_Release_Number'
 
   def initialize(name:, markers: nil, use_http: false, parent_dir:)

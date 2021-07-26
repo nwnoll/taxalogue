@@ -9,6 +9,6 @@
         "NcbiNodeImporter": "nodes.dmp"
     },
     "versioning": false,
-    "base_dir": "fm_data/",
+    "base_dir": "downloads/",
     "multiple_files_per_dir": false
 }

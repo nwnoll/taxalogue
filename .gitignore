@@ -3,6 +3,6 @@
 **/db/database.db
 **/db/db_setup.db
 /data
-/fm_data
+/downloads
 /results*
 /.tool-versions

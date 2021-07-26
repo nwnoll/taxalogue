@@ -71,7 +71,7 @@ class DownloadInfoParser
             next unless File.file?(file_manager.file_path)
             # puts file_manager.file_path
             # puts
-            bold_classifier = BoldImporter.new(fast_run: false, file_name: file_manager.file_path, query_taxon_object: params[:taxon_object], file_manager: result_file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region])
+            bold_classifier = BoldClassifier.new(fast_run: false, file_name: file_manager.file_path, query_taxon_object: params[:taxon_object], file_manager: result_file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region])
             bold_classifier
             bold_classifier.run ## result_file_manager creates new files and will push those into internal array
         end

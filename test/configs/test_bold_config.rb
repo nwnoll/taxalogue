@@ -53,7 +53,7 @@ class TestBoldConfig < Test::Unit::TestCase
 
       def test_file_manager
             assert_kind_of FileManager, @file_manager
-            assert_equal Pathname.new("fm_data/#{@source_name}/#{@name}"), @file_manager.dir_path
-            assert_equal Pathname.new("fm_data/#{@source_name}/#{@parent_dir_name}/#{@name}"), @file_manager_pd.dir_path
+            assert_equal Pathname.new("downloads/#{@source_name}/#{@name}"), @file_manager.dir_path
+            assert_equal Pathname.new("downloads/#{@source_name}/#{@parent_dir_name}/#{@name}"), @file_manager_pd.dir_path
       end
 end

@@ -3,7 +3,7 @@
 class GbolConfig
     attr_reader :name, :releases
 
-    DOWNLOAD_DIR = Pathname.new("fm_data/GBOL/")
+    DOWNLOAD_DIR = Pathname.new("downloads/GBOL/")
     RELEASES = { 
         :current    => 'GBOL_Dataset_Release-20210128',
         :previous   => []
@@ -30,7 +30,7 @@ class GbolConfig
     end
 
     def file_manager
-        FileManager.new(name: name, versioning: false, base_dir: "fm_data/#{_source_name}/", config: self)
+        FileManager.new(name: name, versioning: false, base_dir: "downloads/#{_source_name}/", config: self)
     end
   
     def _join_markers(markers)

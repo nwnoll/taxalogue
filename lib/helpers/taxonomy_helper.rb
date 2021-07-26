@@ -11,12 +11,12 @@ class TaxonomyHelper
         downloader = HttpDownloader2.new(address: config.address, destination: config.file_manager.file_path)
         downloader.run
     
-        unless File.exists?('fm_data/NCBI_TAXONOMY/NCBI_TAXONOMY.zip')
+        unless File.exists?('downloads/NCBI_TAXONOMY/NCBI_TAXONOMY.zip')
           puts "The NCBI Taxonomy has not been setup yet, please use setup --ncbi_taxonomy"
           return true
         end
     
-        md5_sum_download    = Digest::MD5.hexdigest(File.read('fm_data/NCBI_TAXONOMY/NCBI_TAXONOMY.zip'))
+        md5_sum_download    = Digest::MD5.hexdigest(File.read('downloads/NCBI_TAXONOMY/NCBI_TAXONOMY.zip'))
         check_file          = File.read(config.file_manager.file_path)
         check_file          =~ /^(.*?)\s/
         md5_sum_check_file  = $1
@@ -30,13 +30,13 @@ class TaxonomyHelper
 
     def self.new_gbif_taxonomy_available?
 
-        unless File.exists?('fm_data/GBIF_TAXONOMY/eml.xml') || File.exists?('fm_data/GBIF_TAXONOMY/Taxon.tsv')
+        unless File.exists?('downloads/GBIF_TAXONOMY/eml.xml') || File.exists?('downloads/GBIF_TAXONOMY/Taxon.tsv')
           puts "The GBIF Taxonomy has not been setup yet, please use setup --gbif_taxonomy"
           return true
         end
     
     
-        file                          = File.new("fm_data/GBIF_TAXONOMY/eml.xml")
+        file                          = File.new("downloads/GBIF_TAXONOMY/eml.xml")
         doc                           = Document.new(file)
         timestamp_local_gbif_backbone = doc.get_elements('//dateStamp').first.to_s
         timestamp_local_gbif_backbone =~ />(.*?)</

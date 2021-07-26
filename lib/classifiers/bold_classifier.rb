@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class BoldImporter
+class BoldClassifier
   include StringFormatting
   attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :markers, :regexes_for_markers, :taxonomy_params, :region_params
 

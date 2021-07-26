@@ -3,7 +3,7 @@
 class NcbiDivision
     def self.code_for
         divisions = Hash.new
-        Zip::File.open('fm_data/NCBI_TAXONOMY/NCBI_TAXONOMY.zip') do |zip_file|
+        Zip::File.open('downloads/NCBI_TAXONOMY/NCBI_TAXONOMY.zip') do |zip_file|
 			entry = zip_file.find_entry('division.dmp')
 
 			entry.get_input_stream do |input|

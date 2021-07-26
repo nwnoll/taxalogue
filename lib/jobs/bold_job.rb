@@ -1,236 +1,476 @@
 # frozen_string_literal: true
 
-# /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:25:in `initialize': execution expired (Net::OpenTimeout)
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:25:in `initialize'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `open'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `block in connect'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/timeout.rb:107:in `timeout'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:985:in `connect'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:970:in `do_start'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:959:in `start'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:621:in `start'
-# 	from /home/nnoll/phd/db_merger/lib/downloaders/http_downloader.rb:20:in `run'
-# 	from /home/nnoll/phd/db_merger/lib/jobs/bold_job.rb:63:in `block (2 levels) in download_files'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:508:in `call_with_index'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:361:in `block (2 levels) in work_in_threads'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:519:in `with_instrumentation'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:360:in `block in work_in_threads'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:211:in `block (4 levels) in in_threads'
-
-
-
-
 class BoldJob
-  attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params, :try_synonyms, :taxonomy_params, :region_params
+    attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params, :try_synonyms, :taxonomy_params, :region_params, :params
 
-  HEADER_LENGTH = 1
+    HEADER_LENGTH = 1
+    BOLD_DIR = Pathname.new('downloads/BOLD')
+    DOWNLOAD_INFO_NAME = "bold_download_info.txt"
+    DOWNLOAD_INFO_TREE_NAME = "bold_download_tree_info.txt"
 
-  def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil, try_synonyms: false, taxonomy_params:, region_params: nil)
-    @taxon                = taxon
-    @taxon_name           = taxon.canonical_name
-    @markers              = markers
-    @taxonomy             = taxonomy
-    @result_file_manager  = result_file_manager
-    @filter_params        = filter_params
-    @try_synonyms         = try_synonyms
-    @taxonomy_params      = taxonomy_params
-    @region_params        = region_params
+    def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil, try_synonyms: false, taxonomy_params:, region_params: nil, params: nil)
+        @taxon                = taxon
+        @taxon_name           = taxon.canonical_name
+        @markers              = markers
+        @taxonomy             = taxonomy
+        @result_file_manager  = result_file_manager
+        @filter_params        = filter_params
+        @try_synonyms         = try_synonyms
+        @taxonomy_params      = taxonomy_params
+        @region_params        = region_params
+        @root_download_dir    = nil
+        @params               = params
 
-    @pending = Pastel.new.white.on_yellow('pending')
-    @failure = Pastel.new.white.on_red('failure')
-    @success = Pastel.new.white.on_green('success')
-    @loading = Pastel.new.white.on_blue('loading')
-    @loading_color_char_num = (@loading.size) -'loading'.size
+        @pending = Pastel.new.white.on_yellow('pending')
+        @failure = Pastel.new.white.on_red('failure')
+        @success = Pastel.new.white.on_green('success')
+        @loading = Pastel.new.white.on_blue('loading')
+        @loading_color_char_num = (@loading.size) -'loading'.size
 
-  end
+    end
 
-  def run
-    download_file_managers = download_files
+    def run
+        already_downloaded_dir = _get_already_downloaded_dir
+        download_file_managers = _get_download_file_managers_from_already_downloaded_dir(already_downloaded_dir)
 
-    _classify_downloads(download_file_managers: download_file_managers)
-    # _classify_downloads(download_file_managers: nil)
-    
-    return result_file_manager
-    # _write_result_files(root_node: root_node, fmanagers: fmanagers)
-  end
+        did_use_marshal_file = false
+        if download_file_managers.empty?
+            download_file_managers  = _download_files
+        else
+            did_use_marshal_file =  true
+        end
 
-  def download_files
-    root_node                           = Tree::TreeNode.new(taxon_name, [taxon, @pending])
-    ## TODO: same for NcbiTaxonomy
-    num_of_ranks                        = GbifTaxonomy.possible_ranks.size
-    reached_family_level                = false
-    reached_genus_level                = false
-    fmanagers                           = []
-    num_threads = 2
-    
-    num_of_ranks.times do |i|
-      
-      _print_download_progress_report(root_node: root_node, rank_level: i)
-      
-      Parallel.map(root_node.entries, in_threads: num_threads) do |node|
-        next unless node.content.last == @pending
+        _classify_downloads(download_file_managers: download_file_managers)
+        _write_marshal_files(download_file_managers) unless did_use_marshal_file
 
-        config = _create_config(node: node)
+        return result_file_manager
+    end
 
-        file_manager = config.file_manager
-        file_manager.create_dir
+    def _get_already_downloaded_dir
+        BoldDownloadCheckHelper.ask_user_about_download_dirs(params)
+    end
 
-        downloader = config.downloader.new(config: config)
-        # downloader.extend(MiscHelper.constantize("Printing::#{downloader.class}"))
-
+    def _get_download_file_managers_from_already_downloaded_dir(already_downloaded_dir)
+        return [] unless already_downloaded_dir
+        
         begin
-          node.content[1] = @loading
-          file_manager.status = 'loading'
-          _print_download_progress_report(root_node: root_node, rank_level: i)
-          downloader.run
-          if File.empty?(file_manager.file_path)
-            if try_synonyms
-              synonym_file_manager = _download_synonym(node: node)
-              if synonym_file_manager && synonym_file_manager.status == 'success'
-                file_manager = synonym_file_manager 
-                node.content[1] = @success
-              else
+            download_file_managers = DownloadCheckHelper.get_object_from_marshal_file(already_downloaded_dir + '.download_file_managers.dump')
+            
+            BoldDownloadCheckHelper.create_download_info_for_result_dir(download_file_managers: download_file_managers, result_file_manager: result_file_manager, source: self.class)
+            DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
+        
+            return download_file_managers
+        rescue => e
+            puts "Release directory could not be used, starting download"
+            pp e
+            sleep 2
+            
+            return []
+        end
+    end
+
+    def _write_marshal_files(download_file_managers)
+        DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
+        DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
+    end
+
+
+    def _create_download_info_for_result_dir(already_downloaded_dir)
+        data_dl_info_public_name = already_downloaded_dir + 'download_info.txt'
+        data_dl_info_hidden_name = already_downloaded_dir + '.download_info.txt'
+
+        result_dl_info_public_name = result_file_manager.dir_path + 'download_info.txt'
+        result_dl_info_hidden_name = result_file_manager.dir_path + '.download_info.txt'
+
+        dl_info_public = File.open(data_dl_info_public_name).read
+        dl_info_hidden = File.open(data_dl_info_hidden_name).read
+
+        dl_info_public.gsub!(/^ result directory:.*$/, "data directory: #{already_downloaded_dir.to_s}")
+        dl_info_hidden.gsub!(/^ result directory:.*$/, "data directory: #{already_downloaded_dir.to_s}")
+        
+        File.open(result_dl_info_public_name, 'w') { |f| f.write(dl_info_public) }
+        File.open(result_dl_info_hidden_name, 'w') { |f| f.write(dl_info_hidden) }
+    end
+
+    def _download_response(downloader:, file_path:)
+        begin 
+            downloader.run
+            return :empty_file if File.empty?(file_path)
+            return :server_offline if _server_is_offline(file_path)
+        rescue Net::ReadTimeout
+            return :read_timeout
+        rescue Net::OpenTimeout
+            return :open_timeout
+        rescue SocketError
+            return :socket_error
+        rescue StandardError
+            return :other_error
+        end
+
+        return :success
+    end
+
+    def _download_files
+        root_node               = Tree::TreeNode.new(taxon_name, [taxon, @pending, 'pending'])
+        num_of_ranks            = GbifTaxonomy.possible_ranks.size
+        reached_genus_level     = false
+        download_file_managers  = []
+        rest_taxa               = Hash.new
+        num_threads             = 5
+
+        num_of_ranks.times do |i|
+            _print_download_progress_report(root_node: root_node, rank_level: i)
+
+            Parallel.map(root_node.entries, in_threads: num_threads) do |node|
+                next unless node.content[1] == @pending
+
+                config = _create_config(node: node)
+
+                file_manager = config.file_manager
+                file_manager.create_dir
+                
+                @root_download_dir = file_manager.base_dir.basename if node.is_root?
+
+                stats_file_path = file_manager.dir_path + "#{node.name}_stats.json"
+                stats_downloader = HttpDownloader2.new(address: _bold_stats_api(node.name), destination: stats_file_path)
+                no_stats_file = nil
+
+                stats_file_path = file_manager.dir_path + "#{node.name}_stats.json"
+                rank_status = _get_rank_status(node.name, stats_file_path, reached_genus_level)
+
+                node.content[1] = @loading
+                node.content[2] = 'loading'
+                file_manager.status = 'loading'
+
+                ## skip since download never succeeds due to too many records or other reasons
+                if rank_status == :no_records || rank_status == :too_many_records || rank_status == :failing_taxon
+                    node.content[1] = @failure
+                    node.content[2] = rank_status.to_s
+                    file_manager.status = 'failure'
+                    download_file_managers.push(file_manager)
+                    _print_download_progress_report(root_node: root_node, rank_level: i)
+                    next
+                end
+
+
+                downloader = config.downloader.new(config: config)
+                _print_download_progress_report(root_node: root_node, rank_level: i)
+                download_response = _download_response(downloader: downloader, file_path: file_manager.file_path)
+        
+                if download_response == :success
+                    node.content[1] = @success
+                    node.content[2] = download_response.to_s
+                    file_manager.status = 'success'
+                    sleep 1
+
+                elsif download_response == :empty_file
+                    node.content[1] = @failure
+                    node.content[2] = download_response.to_s
+                    file_manager.status = 'failure'
+                    sleep 5
+
+                elsif download_response == :read_timeout
+                    if reached_genus_level
+                        3.times do
+                            sleep 5
+                            download_response = _download_response(downloader: downloader, file_path: file_manager.file_path)
+              
+                            break if download_response == :success
+                        end
+  
+                        if download_response == :success
+                            node.content[1] = @success
+                            node.content[2] = download_response.to_s
+                            file_manager.status = 'success'
+                        else
+                            node.content[1] = @failure
+                            node.content[2] = download_response.to_s
+                            file_manager.status = 'failure'
+                        end
+                    else
+                        node.content[1] = @failure
+                        node.content[2] = download_response.to_s
+                        file_manager.status = 'failure'
+                    end
+
+                elsif download_response == :open_timeout || download_response == :server_offline || download_response == :socket_error || download_response == :other_error 
+                    3.times do
+                        sleep 120
+                        download_response = _download_response(downloader: downloader, file_path: file_manager.file_path)
+                        
+                        break if download_response == :success
+                    end
+
+                    if download_response == :success
+                        node.content[1] = @success
+                        node.content[2] = download_response.to_s
+                        file_manager.status = 'success'
+                    else
+                        node.content[1] = @failure
+                        node.content[2] = download_response.to_s
+                        file_manager.status = 'failure'
+                    end
+                end
+
+                download_file_managers.push(file_manager)
+
+                _print_download_progress_report(root_node: root_node, rank_level: i)
+            end
+
+            break if reached_genus_level
+            # break if i == 2
+
+            failed_nodes = root_node.find_all { |node| node.content[1] == @failure && node.is_leaf? }
+            failed_nodes.each do |failed_node|
+                node_record                     = failed_node.content.first
+                node_name                       = failed_node.name
+                index_of_rank                   = GbifTaxonomy.possible_ranks.index(node_record.taxon_rank)
+                index_of_lower_rank             = index_of_rank - 1
+                reached_genus_level             = true if index_of_lower_rank == 1
+                taxon_rank_to_try               = GbifTaxonomy.possible_ranks[index_of_lower_rank]
+                
+                taxa_records_and_names_to_try = nil
+                if taxonomy_params[:gbif] || taxonomy_params[:gbif_backbone]
+                    taxa_records_and_names_to_try   = GbifTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
+        
+                elsif taxonomy_params[:ncbi]
+                    taxa_records_and_names_to_try   = NcbiTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
+        
+                else
+                    taxa_records_and_names_to_try   = NcbiTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
+                
+                end
+
+                next if taxa_records_and_names_to_try.nil?
+
+                added_names = []
+                taxa_records_and_names_to_try.each do |record_and_name|
+
+                    record  = record_and_name.first
+                    name    = record_and_name.last
+                    
+                    next if TaxonHelper.is_extinct?(name)
+                    next if added_names.include?(name) # prevent breaking if name occurs multiple times maybe due to wrong backbone
+
+                    failed_node << Tree::TreeNode.new(name, [record, @pending, 'pending'])
+                    added_names.push(name)
+                end
+            end
+        end
+
+        # _write_result_files(root_node: root_node, download_file_managers: download_file_managers)
+
+        dl_path_public = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_NAME)
+        dl_path_hidden = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_NAME}")
+        rs_path_public = Pathname.new(result_file_manager.dir_path + DOWNLOAD_INFO_NAME)
+        rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
+        
+        dl_tree_path_hidden = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_TREE_NAME}")
+        dl_tree_path_public = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_TREE_NAME)
+        
+        _write_download_info(paths: [dl_tree_path_hidden, dl_tree_path_public], root_node: root_node)
+        
+        failures = DownloadInfoParser.get_download_failures(dl_tree_path_hidden)
+        success = failures.empty? ? true : false
+        DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers, result_file_manager: result_file_manager)
+
+        
+        unless failures.empty?
+            ## maybe directly try to download again?
+        end
+
+        return download_file_managers
+    end
+
+    def _write_download_info(paths:, root_node:)
+
+        paths.each do |path|
+            file = File.open(path, 'w')
+
+            root_node_copy = root_node.detached_subtree_copy
+            root_node_copy.each do |node|
+                node.content = node.content.last
+            end
+
+            real_failed_nodes = root_node.find_all { |node| node.is_leaf? && _real_failure(node.content[2]) }
+            success = real_failed_nodes.empty? ? 'true' : 'false'
+            file.puts 'data:'
+            file.puts "success: #{success}"
+            file.puts
+            file.puts 'tree:'
+
+            basename = path.basename.to_s
+            if basename.starts_with?('.')
+                hash = root_node_copy.to_h
+                json_hash = hash.to_json
+
+                file.puts(json_hash)
+            else
+                root_node_copy.print_tree(level = root_node.node_depth, max_depth = nil, block = lambda { |node, prefix| file.puts "#{prefix} #{node.name}".ljust(30) + " #{node.content}" })
+            end
+
+            file.rewind
+        end
+    end
+
+    def _real_failure(node_content)
+        node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' 
+    end
+
+    def _needs_rest_download(node_content)
+        node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' || node_content == 'too_many_records' || node_content == 'failing_taxon'
+    end
+
+    def _rest_query(failed_taxon, taxa_to_exclude)
+
+        base = 'http://www.boldsystems.org/index.php/API_Public/combined?'
+        
+
+        max_query_size = 8190 ## apache default
+        max_query_size -= 120 ## minus base + additional query
+        taxa = []
+        taxa_to_exclude.each_with_index do |taxon, i|
+            taxon_name = taxon.last
+            excluded_taxon_name = taxon_name.split.unshift('-').join('')
+            taxa.push(excluded_taxon_name)
+            char_count = taxa.join.size + (i+1) ## add # | delimiter
+            if char_count >= max_query_size
+                taxa.pop
+                break
+            end
+        end
+
+        excluded_taxa_string = taxa.join('|')
+        query = excluded_taxa_string.prepend("taxon=")
+        query = query.concat("|#{failed_taxon}")
+        query = query.concat('&format=tsv')
+        
+        if query.size >= max_query_size
+        ## TODO:
+        end
+        query = base.dup.concat(query)
+
+        return query
+    end
+
+    def _safe_download(node:, file_manager:, root_node:, i:)
+        begin
+            node.content[1] = @loading
+            file_manager.status = 'loading'
+            _print_download_progress_report(root_node: root_node, rank_level: i)
+            downloader.run
+        
+            if File.empty?(file_manager.file_path)
                 node.content[1] = @failure
                 file_manager.status = 'failure'
-              end
             else
-              node.content[1] = @failure
-              file_manager.status = 'failure'
+                if _server_is_offline(file_manager.file_path)
+                    succesfull_try_after_offline_server = false
+                    3.times do
+                        sleep(2.minutes)
+                        downloader.run
+                        unless _server_is_offline(file_manager.file_path)
+                            succesfull_try_after_offline_server =  true
+                            break
+                        end
+                    end
+
+                    if succesfull_try_after_offline_server
+                        node.content[1] = @success
+                        file_manager.status = 'success'
+                    else 
+                        node.content[1] = @failure
+                        file_manager.status = 'failure'
+                    end
+                else
+                    node.content[1] = @success
+                    file_manager.status = 'success'
+                end
             end
-          else
-            if File.open(file_manager.file_path, &:gets) =~ /<!DOCTYPE html>/
-              node.content[1] = @failure
-              file_manager.status = 'failure'
-            else
-              node.content[1] = @success
-              file_manager.status = 'success'
-            end
-          end
         rescue Net::ReadTimeout
-          node.content[1] = @failure
-          file_manager.status = 'failure'
+            node.content[1] = @failure
+            file_manager.status = 'failure'
         end
 
-        fmanagers.push(file_manager)
+        download_file_managers.push(file_manager)
         _print_download_progress_report(root_node: root_node, rank_level: i)
-      end
-      
-      break if reached_family_level
-      # break if i == 2
+    end
 
-      failed_nodes = root_node.find_all { |node| node.content.last == @failure && node.is_leaf? }
-      failed_nodes.each do |failed_node|
-        node_record                     = failed_node.content.first
-        node_name                       = failed_node.name
-        index_of_rank                   = GbifTaxonomy.possible_ranks.index(node_record.taxon_rank)
-        index_of_lower_rank             = index_of_rank - 1
-        # reached_family_level            = true if index_of_lower_rank == 2
-        reached_genus_level             = true if index_of_lower_rank == 1
-        taxon_rank_to_try               = GbifTaxonomy.possible_ranks[index_of_lower_rank]
+    def _print_download_progress_report(root_node:, rank_level:)
+        root_copy = root_node.detached_subtree_copy
+
+        system("clear") || system("cls")
+        puts
+
+        nodes_currently_loading = root_copy.find_all { |node| node.content[1] == @loading && node.is_leaf? }
+        return if nodes_currently_loading.nil?
         
-        taxa_records_and_names_to_try = nil
-        if taxonomy_params[:gbif] || taxonomy_params[:gbif_backbone]
-          taxa_records_and_names_to_try   = GbifTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
+        if rank_level <= 1
+            root_copy.print_tree(level = root_copy.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content[1]}" })
+            _print_legend
+            return
+        end
+
+        already_printed_parents = []
+        loading_parent_nodes    = []
+        nodes_currently_loading.each { |node| loading_parent_nodes.push(node.parentage); loading_parent_nodes.flatten! }
         
-        elsif taxonomy_params[:ncbi]
-          taxa_records_and_names_to_try   = NcbiTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
+        root_copy.print_tree(level = root_copy.node_depth, max_depth = 1, block = lambda { |node, prefix| puts loading_parent_nodes.include?(node) ? "#{prefix} #{Pastel.new.white.on_blue(node.name)}".ljust(30 + @loading_color_char_num) + " #{node.content[1]}" : "#{prefix} #{node.name}".ljust(30) + " #{node.content[1]}" })
         
+        puts
+        puts "currently loading:"
+        nodes_currently_loading.each do |loading_node|
+        not_loading_nodes = loading_node.parent.find_all { |node| node.content[1] != @loading && node.is_leaf? }
+            not_loading_nodes.each do |not_loading_node|
+                loading_node.parent.remove!(not_loading_node)
+            end
+
+            if already_printed_parents.include?(loading_node.parent.name)
+                next
+            else
+                loading_node.parent.print_tree(level = loading_node.parent.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content[1]}" })
+            end
+
+            already_printed_parents.push(loading_node.parent.name)
+        end
+        _print_legend
+    end
+
+    def _print_legend
+        puts
+        puts @pending.ljust(20) + "waits until a downloader is avalaible"
+        puts @loading.ljust(20) + "downloads records"
+        puts @failure.ljust(20) + "download was not successful, often due to too many records, tries lower ranks soon"
+        puts @success.ljust(20) + "download was successful"
+        puts
+    end
+
+    def _create_config(node:)
+        if node.parentage
+            parent_dir    = _get_parentage_as_dir_structure(node)
+            config        = BoldConfig.new(name: node.name, markers: markers, parent_dir: parent_dir)
         else
-          taxa_records_and_names_to_try   = NcbiTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
-        
+            config        = BoldConfig.new(name: node.name, markers: markers, is_root: true)
         end
+    end
 
-        next if taxa_records_and_names_to_try.nil?
-        added_names = []
-        taxa_records_and_names_to_try.each do |record_and_name|
-
-          record  = record_and_name.first
-          name    = record_and_name.last
-          
-          next if TaxonHelper.is_extinct?(name)
-          next if added_names.include?(name) # prevent breaking if name occurs multiple times maybe due to wrong backbone
-
-          failed_node << Tree::TreeNode.new(name, [record, @pending])
-          added_names.push(name)
+    def _get_parentage_as_dir_structure(node)
+        if node.parentage
+            parent_names  = []
+            node.parentage.each do |parent_node|
+                parent_node.is_root? ? parent_names.push((@root_download_dir + parent_node.name)) : parent_names.push(Pathname.new(parent_node.name))
+            end
+            # parent_dir = parent_names.reverse.join('/')
+            begin
+                parent_dir = parent_names.reverse.inject(:+)
+            rescue TypeError
+            end
+            
+            return parent_dir
         end
-      end
     end
 
-    _write_result_files(root_node: root_node, fmanagers: fmanagers)
-
-
-    return fmanagers
-  end
-
-  def _print_download_progress_report(root_node:, rank_level:)
-    root_copy = root_node.detached_subtree_copy
-
-    system("clear") || system("cls")
-    puts
-
-    nodes_currently_loading = root_copy.find_all { |node| node.content.last == @loading && node.is_leaf? }
-    return if nodes_currently_loading.nil?
-    
-    if rank_level <= 1
-      root_copy.print_tree(level = root_copy.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
-      _print_legend
-      return
-    end
-
-    already_printed_parents = []
-    loading_parent_nodes    = []
-    nodes_currently_loading.each { |node| loading_parent_nodes.push(node.parentage); loading_parent_nodes.flatten! }
-    
-    root_copy.print_tree(level = root_copy.node_depth, max_depth = 1, block = lambda { |node, prefix| puts loading_parent_nodes.include?(node) ? "#{prefix} #{Pastel.new.white.on_blue(node.name)}".ljust(30 + @loading_color_char_num) + " #{node.content.last}" : "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
-    
-    puts
-    puts "currently loading:"
-    nodes_currently_loading.each do |loading_node|
-      not_loading_nodes = loading_node.parent.find_all { |node| node.content.last != @loading && node.is_leaf? }
-      not_loading_nodes.each do |not_loading_node|
-        loading_node.parent.remove!(not_loading_node)
-      end
-
-      if already_printed_parents.include?(loading_node.parent.name)
-        next
-      else
-        loading_node.parent.print_tree(level = loading_node.parent.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content.last}" })
-      end
-
-      already_printed_parents.push(loading_node.parent.name)
-    end
-    _print_legend
-  end
-
-  def _print_legend
-    puts
-    puts @pending.ljust(20) + "waits until a downloader is avalaible"
-    puts @loading.ljust(20) + "downloads records"
-    puts @failure.ljust(20) + "download was not successful, often due to too many records, tries lower ranks soon"
-    puts @success.ljust(20) + "download was successful"
-    puts
-  end
-
-  def _create_config(node:)
-    if node.parentage
-      parent_dir    = _get_parentage_as_dir_structure(node)
-      config        = BoldConfig.new(name: node.name, markers: markers, parent_dir: parent_dir)
-    else
-      config        = BoldConfig.new(name: node.name, markers: markers)
-    end
-  end
-
-  def _get_parentage_as_dir_structure(node)
-    if node.parentage
-      parent_names  = []
-      node.parentage.each { |parent| parent_names.push(parent.name) } 
-      parent_dir    = parent_names.reverse.join('/')
-      
-      return parent_dir
-    end
-  end
-
-  ## TODO: same for NcbiTaxonomy
+    ## TODO: same for NcbiTaxonomy
     def _download_synonym(node:)
         syn = Synonym.new(accepted_taxon: node.content.first, sources: [GbifTaxonomy])
         file_manager = nil
@@ -266,32 +506,81 @@ class BoldJob
         end
     end
 
-  def _write_result_files(root_node:, fmanagers:)
-    root_dir              = fmanagers.select { |m| m.name == root_node.name }.first
-    # merged_download_file  = File.open(root_dir.dir_path + "#{root_dir.name}_merged.tsv", 'w') 
-    download_info_file    = File.open(root_dir.dir_path + "#{root_dir.name}_download_info.tsv", 'w') 
-    # download_successes    = fmanagers.select { |m| m.status == 'success' }
+    def _write_result_files(root_node:, download_file_managers:)
+        root_dir              = download_file_managers.select { |m| m.name == root_node.name }.first
+        # merged_download_file  = File.open(root_dir.dir_path + "#{root_dir.name}_merged.tsv", 'w') 
+        download_info_file    = File.open(root_dir.dir_path + "#{root_dir.name}_download_info.tsv", 'w') 
+        # download_successes    = download_file_managers.select { |m| m.status == 'success' }
 
-    # OutputFormat::MergedBoldDownload.write_to_file(file: merged_download_file, data: download_successes, header_length: HEADER_LENGTH, include_header: true)
-    OutputFormat::DownloadInfo.write_to_file(file: download_info_file, fmanagers: fmanagers)
-  end
-
-  def _classify_downloads(download_file_managers:)
-    # bold_classifier   = BoldImporter.new(fast_run: false, file_name: Pathname.new('/home/nnoll/phd/trait_db/notes/coll.tsv'), query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, markers: markers, taxonomy_params: taxonomy_params, region_params: region_params)
-    # bold_classifier.run ## result_file_manager creates new files and will push those into internal array
-    
-    download_file_managers.each do |download_file_manager|
-      next unless download_file_manager.status == 'success'
-      next unless File.file?(download_file_manager.file_path)
-
-	    bold_classifier   = BoldImporter.new(fast_run: false, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, markers: markers, taxonomy_params: taxonomy_params, region_params: region_params)
-      bold_classifier.run ## result_file_manager creates new files and will push those into internal array
+        # OutputFormat::MergedBoldDownload.write_to_file(file: merged_download_file, data: download_successes, header_length: HEADER_LENGTH, include_header: true)
+        OutputFormat::DownloadInfo.write_to_file(file: download_info_file, download_file_managers: download_file_managers)
     end
-  end
 
-  def _merge_results
-    FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Tsv)
-    FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Fasta)
-    FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Comparison)
-  end
+    def _classify_downloads(download_file_managers:)
+        # bold_classifier   = BoldClassifier.new(fast_run: false, file_name: Pathname.new('/home/nnoll/phd/trait_db/notes/coll.tsv'), query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, markers: markers, taxonomy_params: taxonomy_params, region_params: region_params)
+        # bold_classifier.run ## result_file_manager creates new files and will push those into internal array
+        
+        download_file_managers.each do |download_file_manager|
+            next unless download_file_manager.status == 'success'
+            next unless File.file?(download_file_manager.file_path)
+
+            bold_classifier   = BoldClassifier.new(fast_run: false, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, markers: markers, taxonomy_params: taxonomy_params, region_params: region_params)
+            bold_classifier.run ## result_file_manager creates new files and will push those into internal array
+        end
+    end
+
+    def _merge_results
+        FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Tsv)
+        FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Fasta)
+        FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Comparison)
+    end
+
+    def _server_is_offline(file_path)
+        File.open(file_path, &:gets) =~ /<!DOCTYPE html>/
+    end
+
+    def _bold_stats_api(name)
+        "http://www.boldsystems.org/index.php/API_Public/stats?taxon=#{name}&format=json"
+    end
+
+    def _get_rank_status(name, file_path, reached_genus_level)
+        failing_taxa = ['Arthropoda', 'Insecta', 'Arachnida', 'Collembola', 'Malacostraca', 'Carabidae']#, 'Insecta', 'Arachnida', 'Malacostraca', 'Collembola']
+        stats_downloader = HttpDownloader2.new(address: _bold_stats_api(name), destination: file_path)
+        no_stats_file = nil
+
+        if failing_taxa.include?(name)
+            no_stats_file = true
+        else
+            begin
+                stats_downloader.run
+            rescue StandardError
+                no_stats_file = true
+            end
+        end
+
+        rank_status = nil
+        if no_stats_file
+            if reached_genus_level
+                rank_status = :genus_rank
+            else
+                rank_status = :failing_taxon
+            end
+        else
+            if reached_genus_level
+                rank_status = :genus_rank
+            else
+                stats = MiscHelper.json_file_to_hash(file_path)
+                num_total_records = stats["total_records"]
+                if !num_total_records.nil? && num_total_records == 0
+                    rank_status = :no_records
+                elsif !num_total_records.nil? && num_total_records <= 90_000
+                    rank_status = :suitable_records_num
+                else
+                    rank_status = :too_many_records
+                end
+            end
+        end
+
+        return rank_status
+    end
 end

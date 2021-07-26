@@ -78,7 +78,7 @@ class RegionHelper
     
       def self.get_shape_fada_regions
         address = 'http://geo.vliz.be/geoserver/wfs?request=getfeature&service=wfs&version=1.0.0&typename=MarineRegions:fadaregions&outputformat=SHAPE-ZIP'
-        destination_dir = Pathname.new('fm_data/SHAPEFILES/fada_regions/')
+        destination_dir = Pathname.new('downloads/SHAPEFILES/fada_regions/')
         FileUtils.mkdir_p(destination_dir)
         destination_file = destination_dir + Pathname.new('fada_regions.zip')
         downloader = HttpDownloader2.new(address: address, destination: destination_file)
@@ -89,7 +89,7 @@ class RegionHelper
     
       def self.get_shape_terreco_regions
         address = 'http://assets.worldwildlife.org/publications/15/files/original/official_teow.zip'
-        destination_dir = Pathname.new('fm_data/SHAPEFILES/terreco_regions/')
+        destination_dir = Pathname.new('downloads/SHAPEFILES/terreco_regions/')
         FileUtils.mkdir_p(destination_dir)
         destination_file = destination_dir + Pathname.new('terreco_regions.zip')
         downloader = HttpDownloader2.new(address: address, destination: destination_file)
@@ -100,7 +100,7 @@ class RegionHelper
     
     
       def self.check_fada(params)
-        terrecos_shapefile_pathname = Pathname.new('fm_data/SHAPEFILES/terreco_regions/wwf_terr_ecos.shp')
+        terrecos_shapefile_pathname = Pathname.new('downloads/SHAPEFILES/terreco_regions/wwf_terr_ecos.shp')
     
         if File.file?(terrecos_shapefile_pathname) && File.file?(terrecos_shapefile_pathname.sub_ext('.dbf')) && File.file?(terrecos_shapefile_pathname.sub_ext('.shx'))
           $eco_zones_of = get_areas_of_shapefiles(file_name: terrecos_shapefile_pathname, attr_name: 'ECO_NAME')
@@ -121,16 +121,16 @@ class RegionHelper
             puts "try the option setup --terrestrial_ecoregions"
             puts
             puts "or download the zip folder manually from http://assets.worldwildlife.org/publications/15/files/original/official_teow.zip"
-            puts "put it into the folder fm_data/SHAPEFILES/terreco_regions/ and extract the following files:"
+            puts "put it into the folder downloads/SHAPEFILES/terreco_regions/ and extract the following files:"
             puts 'official/wwf_terr_ecos.shp'
             puts 'official/wwf_terr_ecos.dbf'
             puts 'official/wwf_terr_ecos.shx'
             puts "without the official directory"
             puts
             puts "these files need to be available:"
-            puts "fm_data/SHAPEFILES/terreco_regions/wwf_terr_ecos.shp"
-            puts "fm_data/SHAPEFILES/terreco_regions/wwf_terr_ecos.dbf"
-            puts "fm_data/SHAPEFILES/terreco_regions/wwf_terr_ecos.shx"
+            puts "downloads/SHAPEFILES/terreco_regions/wwf_terr_ecos.shp"
+            puts "downloads/SHAPEFILES/terreco_regions/wwf_terr_ecos.dbf"
+            puts "downloads/SHAPEFILES/terreco_regions/wwf_terr_ecos.shx"
             puts 
             puts "if these files are present, start the program again with region -e 'ecoregion of your choice'"
             puts
@@ -148,7 +148,7 @@ class RegionHelper
     
       def self.check_biogeo(params)
     
-            fada_regions_shapefile_pathname = Pathname.new('fm_data/SHAPEFILES/fada_regions/fadaregions.shp')
+            fada_regions_shapefile_pathname = Pathname.new('downloads/SHAPEFILES/fada_regions/fadaregions.shp')
     
             if File.file?(fada_regions_shapefile_pathname) && File.file?(fada_regions_shapefile_pathname.sub_ext('.dbf')) && File.file?(fada_regions_shapefile_pathname.sub_ext('.shx'))
           $fada_regions_of = get_areas_of_shapefiles(file_name: fada_regions_shapefile_pathname, attr_name: 'name')
@@ -169,15 +169,15 @@ class RegionHelper
             puts "try the option setup --biogeographic_realm"
             puts
             puts "or download the zip folder manually from http://geo.vliz.be/geoserver/wfs?request=getfeature&service=wfs&version=1.0.0&typename=MarineRegions:fadaregions&outputformat=SHAPE-ZIP"
-            puts "put it into the folder fm_data/SHAPEFILES/fada_regions/ and extract the following files:"
+            puts "put it into the folder downloads/SHAPEFILES/fada_regions/ and extract the following files:"
             puts 'fadaregions.shp'
             puts 'fadaregions.dbf'
             puts 'fadaregions.shx'
             puts
             puts "these files need to be available:"
-            puts "fm_data/SHAPEFILES/fadaregions/fadaregions.shp"
-            puts "fm_data/SHAPEFILES/fadaregions/fadaregions.dbf"
-            puts "fm_data/SHAPEFILES/fadaregions/fadaregions.shx"
+            puts "downloads/SHAPEFILES/fadaregions/fadaregions.shp"
+            puts "downloads/SHAPEFILES/fadaregions/fadaregions.dbf"
+            puts "downloads/SHAPEFILES/fadaregions/fadaregions.shx"
             puts 
             puts "if these files are present, start the program again with region -b 'biogeographic realm of your choice'"
             puts

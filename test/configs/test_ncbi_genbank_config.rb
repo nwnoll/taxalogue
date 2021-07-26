@@ -30,7 +30,7 @@ class TestNcbiGenbankConfig < Test::Unit::TestCase
 
       def test_file_manager
             assert_kind_of FileManager, @file_manager
-            assert_equal Pathname.new("fm_data/#{@source_name}/#{@name}"), @file_manager.dir_path
+            assert_equal Pathname.new("downloads/#{@source_name}/#{@name}"), @file_manager.dir_path
       end
 
       def test_parent_dir

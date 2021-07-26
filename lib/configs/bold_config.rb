@@ -3,7 +3,7 @@
 class BoldConfig
   attr_reader :markers, :name, :parent_dir, :is_root
 
-  DOWNLOAD_DIR = Pathname.new('fm_data/BOLD/')
+  DOWNLOAD_DIR = Pathname.new('downloads/BOLD/')
   
   def initialize(name:, markers: nil, parent_dir: nil, is_root: false)
     @name            = name
@@ -38,10 +38,10 @@ class BoldConfig
     if is_root
       versioned_file_name = FileManager.get_versioned_file_name(name)
       versioned_file_name = from_already_existing_dirs if from_already_existing_dirs
-      base_dir_path = Pathname.new("fm_data/#{_source_name}/#{versioned_file_name.to_s}/")
+      base_dir_path = Pathname.new("downloads/#{_source_name}/#{versioned_file_name.to_s}/")
       FileManager.new(name: name, versioning: false, base_dir: base_dir_path, config: self)
     else
-      base_dir_path = Pathname.new("fm_data/#{_source_name}/")
+      base_dir_path = Pathname.new("downloads/#{_source_name}/")
       base_dir_path = base_dir_path + parent_dir if parent_dir
       FileManager.new(name: name, versioning: false, base_dir: base_dir_path, config: self)
     end

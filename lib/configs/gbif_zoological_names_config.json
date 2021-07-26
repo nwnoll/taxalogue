@@ -5,6 +5,6 @@
     "file_type": "zip",
     "importers": {},
     "versioning" : false,
-    "base_dir": "fm_data/",
+    "base_dir": "downloads/",
     "multiple_files_per_dir": false
 }

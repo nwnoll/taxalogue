@@ -36,9 +36,9 @@ class TestMarker < Test::Unit::TestCase
       end
 
       def test_regexes
-            ncbi_regexes = Marker.regexes(db: NcbiGenbankImporter, markers: [@marker])
-            bold_regexes = Marker.regexes(db: BoldImporter, markers: [@marker])
-            gbol_regexes = Marker.regexes(db: GbolImporter, markers: [@marker])
+            ncbi_regexes = Marker.regexes(db: NcbiGenbankClassifier, markers: [@marker])
+            bold_regexes = Marker.regexes(db: BoldClassifier, markers: [@marker])
+            gbol_regexes = Marker.regexes(db: GbolClassifier, markers: [@marker])
 
             assert_match ncbi_regexes, 'cytochrome oxidase 1'
             assert_match bold_regexes, 'COI-5P'
@@ -53,16 +53,16 @@ class TestMarker < Test::Unit::TestCase
       end
 
       def test_regex
-            assert_equal /^cox1$|^co1$|^coi$|^cytochrome oxidase 1$|^cytochrome oxidase I$|^cytochrome oxidase one$|^cytochrome oxidase subunit 1$|^cytochrome oxidase subunit I$|^cytochrome oxidase subunit one$/i, @marker.regex(db: NcbiGenbankImporter)
+            assert_equal /^cox1$|^co1$|^coi$|^cytochrome oxidase 1$|^cytochrome oxidase I$|^cytochrome oxidase one$|^cytochrome oxidase subunit 1$|^cytochrome oxidase subunit I$|^cytochrome oxidase subunit one$/i, @marker.regex(db: NcbiGenbankClassifier)
             assert_equal /^cox1$|^co1$|^coi$|^cytochrome oxidase 1$|^cytochrome oxidase I$|^cytochrome oxidase one$|^cytochrome oxidase subunit 1$|^cytochrome oxidase subunit I$|^cytochrome oxidase subunit one$/i, @marker.regex(db: NcbiGenbankJob)
             assert_equal /^cox1$|^co1$|^coi$|^cytochrome oxidase 1$|^cytochrome oxidase I$|^cytochrome oxidase one$|^cytochrome oxidase subunit 1$|^cytochrome oxidase subunit I$|^cytochrome oxidase subunit one$/i, @marker.regex(db: NcbiGenbankConfig)
             assert_equal /^cox1$|^co1$|^coi$|^cytochrome oxidase 1$|^cytochrome oxidase I$|^cytochrome oxidase one$|^cytochrome oxidase subunit 1$|^cytochrome oxidase subunit I$|^cytochrome oxidase subunit one$/i, @marker.regex(db: NcbiApi)
             
-            assert_equal /.*/i, @marker.regex(db: GbolImporter)
+            assert_equal /.*/i, @marker.regex(db: GbolClassifier)
             assert_equal /.*/i, @marker.regex(db: GbolJob)
             assert_equal /.*/i, @marker.regex(db: GbolConfig)
             
-            assert_equal /COI-5P/i, @marker.regex(db: BoldImporter)
+            assert_equal /COI-5P/i, @marker.regex(db: BoldClassifier)
             assert_equal /COI-5P/i, @marker.regex(db: BoldJob)
             assert_equal /COI-5P/i, @marker.regex(db: BoldConfig)
       end

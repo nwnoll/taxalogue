@@ -305,7 +305,7 @@ class NcbiGenbankJob
             files.each do |file|
                 next unless File.file?(file)
 
-                classifier = NcbiGenbankImporter.new(fast_run: true, markers: markers, file_name: file, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, taxonomy_params: taxonomy_params, region_params: region_params)
+                classifier = NcbiGenbankClassifier.new(fast_run: true, markers: markers, file_name: file, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, taxonomy_params: taxonomy_params, region_params: region_params)
                 erroneous_files = classifier.run ## result_file_manager creates new files and will push those into internal array
                 erroneous_files_of[download_file_manager] = erroneous_files if erroneous_files.any?
             end

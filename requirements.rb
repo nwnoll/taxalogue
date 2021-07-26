@@ -44,7 +44,7 @@ else
 	DatabaseSchema.create_db
 end
 
-sections = ['helpers', 'decorators', 'services', 'models', 'importers', 'jobs', 'downloaders', 'configs', 'output_formats']
+sections = ['helpers', 'decorators', 'services', 'models', 'importers', 'classifiers', 'jobs', 'downloaders', 'configs', 'output_formats']
 sections.each do |section|
 	Dir[File.dirname(__FILE__) + "/lib/#{section}/*.rb"].each do |file|
 		# puts File.basename(file, File.extname(file))
