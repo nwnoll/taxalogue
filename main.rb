@@ -88,15 +88,10 @@ subcommands = {
 
 	import: OptionParser.new do |opts|
 		opts.banner = "Usage: import [options]"
-		opts.on('-f FASTA', String, '--fasta')
-		opts.on('-g GBOL', String, '--gbol')
-		opts.on('-o BOLD', String, '--bold')
-		opts.on('-k GENBANK', String, '--genbank')
-		opts.on('-b GBIF', String, '--gbif')
-		opts.on('-n NODES', String, '--nodes')
-		opts.on('-s NAMES', String, '--names')
-		opts.on('-l LINEAGE', String, '--lineage')
-		opts.on('-a', '--all_seqs') 
+		opts.on('-g GBIF', String, '--gbif')
+		opts.on('-n NCBI_NODES', String, '--nodes')
+		opts.on('-s NCBI_NAMES', String, '--names')
+		opts.on('-l NCBI_LINEAGE', String, '--lineage')
    	end,
 
    	download: OptionParser.new do |opts|
@@ -246,6 +241,23 @@ loop do
 	subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
 end
 
+if MiscHelper.more_than_action?(params)
+    puts "You specified more than one action"
+    puts "Never use create, download, or classify simultaneously"
+    puts
+    puts "create is used to download and classify at the same time"
+    puts "e.g: bundle exec ruby main.rb -t Trichoptera create --all filter -N 5"
+    puts
+    puts "download is used to only download sequences without classifying"
+    puts "e.g: bundle exec ruby main.rb -t Trichoptera download --all"
+    puts
+    puts "classify is used to only classify already downloaded sequences"
+    puts "e.g: bundle exec ruby main.rb -t Trichoptera download --all filter -N 5 taxonomy --gbif_backbone"
+    puts
+
+    exit
+end
+
 ## if taxonomy was chosen by user, it needs to be updated
 ## object is also not set in opts.on
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
@@ -295,7 +307,60 @@ if params[:create].any?
 	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
 	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
 	FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
+
+    exit
 end
+
+
+if params[:download].any?
+    jobs = []
+    file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+
+    params[:download].each do |key, value|
+        if key == :all
+            ncbi_genbank_job = NcbiGenbankJob.new(params: params, result_file_manager: file_manager)
+            gbol_job = GbolJob.new(result_file_manager: file_manager, params: params)
+            bold_job = BoldJob.new(result_file_manager: file_manager, params: params)
+            
+            jobs.push(ncbi_genbank_job, gbol_job, bold_job)
+        end
+
+        if key == :bold && jobs.none? { |e| e.class == BoldJob }
+            bold_job = BoldJob.new(result_file_manager: file_manager, params: params)
+            
+            jobs.push(bold_job)
+        end
+
+        if key == :gbol && jobs.none? { |e| e.class == GbolJob }
+            gbol_job = GbolJob.new(result_file_manager: file_manager, params: params)
+            
+            jobs.push(gbol_job)
+        end
+
+        if key == :genbank && jobs.none? { |e| e.class == NcbiGenbankJob }
+            ncbi_genbank_job = NcbiGenbankJob.new(params: params, result_file_manager: file_manager)
+            
+            jobs.push(ncbi_genbank_job)
+        end
+    end
+
+    # file_manager.create_dir
+
+    # MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
+	
+    multiple_jobs = MultipleJobs.new(jobs: jobs, params: params)
+	multiple_jobs.run
+    sleep 2
+
+	# FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
+	# FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
+	# FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
+
+    exit
+end
+
+
+
 
 byebug
 

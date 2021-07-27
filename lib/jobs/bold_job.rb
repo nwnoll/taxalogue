@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class BoldJob
-    attr_reader :taxon, :markers, :taxon_name, :result_file_manager, :try_synonyms, :taxonomy_params, :params
+    attr_reader :taxon, :markers, :taxon_name, :result_file_manager, :try_synonyms, :taxonomy_params, :params, :download_only
 
     HEADER_LENGTH = 1
     BOLD_DIR = Pathname.new('downloads/BOLD')
@@ -16,6 +16,7 @@ class BoldJob
         @taxon_name           = taxon.canonical_name
         @markers              = params[:marker_objects]
         @taxonomy_params      = params[:taxonomy]
+        @download_only        = params[:download][:bold]
         @root_download_dir    = nil
 
         @pending = Pastel.new.white.on_yellow('pending')
@@ -29,18 +30,17 @@ class BoldJob
     def run
         already_downloaded_dir = _get_already_downloaded_dir
         download_file_managers = _get_download_file_managers_from_already_downloaded_dir(already_downloaded_dir)
-
-        did_use_marshal_file = false
         if download_file_managers.empty?
             download_file_managers  = _download_files
+            did_use_marshal_file    = false
         else
-            did_use_marshal_file =  true
+            did_use_marshal_file    =  true
         end
 
-        _classify_downloads(download_file_managers: download_file_managers)
-        _write_marshal_files(download_file_managers) unless did_use_marshal_file
+        _classify_downloads(download_file_managers)     unless download_only
+        _write_marshal_files(download_file_managers)    unless did_use_marshal_file
 
-        return result_file_manager
+        return [result_file_manager, download_file_managers]
     end
 
     def _get_already_downloaded_dir
@@ -53,9 +53,11 @@ class BoldJob
         begin
             download_file_managers = DownloadCheckHelper.get_object_from_marshal_file(already_downloaded_dir + '.download_file_managers.dump')
             
-            BoldDownloadCheckHelper.create_download_info_for_result_dir(download_file_managers: download_file_managers, result_file_manager: result_file_manager, source: self.class)
-            DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
-        
+            unless download_only
+                BoldDownloadCheckHelper.create_download_info_for_result_dir(download_file_managers: download_file_managers, result_file_manager: result_file_manager, source: self.class)
+                DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
+            end
+            
             return download_file_managers
         rescue => e
             puts "Release directory could not be used, starting download"
@@ -265,12 +267,16 @@ class BoldJob
         dl_tree_path_hidden = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_TREE_NAME}")
         dl_tree_path_public = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_TREE_NAME)
         
-        _write_download_info(paths: [dl_tree_path_hidden, dl_tree_path_public], root_node: root_node)
+        _write_download_info_tree(paths: [dl_tree_path_hidden, dl_tree_path_public], root_node: root_node)
         
         failures = DownloadInfoParser.get_download_failures(dl_tree_path_hidden)
         success = failures.empty? ? true : false
-        DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers, result_file_manager: result_file_manager)
-
+        
+        if download_only
+            DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden], success: success, download_file_managers: download_file_managers, result_file_manager: result_file_manager)
+        else
+            DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers, result_file_manager: result_file_manager)
+        end
         
         unless failures.empty?
             ## maybe directly try to download again?
@@ -279,7 +285,7 @@ class BoldJob
         return download_file_managers
     end
 
-    def _write_download_info(paths:, root_node:)
+    def _write_download_info_tree(paths:, root_node:)
 
         paths.each do |path|
             file = File.open(path, 'w')
@@ -473,7 +479,7 @@ class BoldJob
         OutputFormat::DownloadInfo.write_to_file(file: download_info_file, download_file_managers: download_file_managers)
     end
 
-    def _classify_downloads(download_file_managers:)
+    def _classify_downloads(download_file_managers)
         download_file_managers.each do |download_file_manager|
             next unless download_file_manager.status == 'success'
             next unless File.file?(download_file_manager.file_path)
