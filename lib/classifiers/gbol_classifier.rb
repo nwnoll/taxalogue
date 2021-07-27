@@ -3,7 +3,7 @@
 class GbolClassifier
     include StringFormatting
     include GeoUtils
-    attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :taxonomy_params, :region_params
+    attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :taxonomy_params, :region_params, :params
 
     def self.get_source_lineage(row)
         OpenStruct.new(
@@ -12,16 +12,17 @@ class GbolClassifier
         )
     end
 
-    def initialize(file_name:, query_taxon_object:, fast_run: false, file_manager:, filter_params: nil, taxonomy_params:, region_params: nil)
-        @file_name                = file_name
-        @query_taxon_object       = query_taxon_object
-        @query_taxon_name         = query_taxon_object.canonical_name
-        @query_taxon_rank         = query_taxon_object.taxon_rank
-        @fast_run                 = fast_run
-        @file_manager             = file_manager
-        @filter_params            = filter_params
-        @taxonomy_params          = taxonomy_params
-        @region_params            = region_params
+    def initialize(params:, file_name:, fast_run: false, file_manager:)
+        @file_name          = file_name
+        @params             = params
+        @query_taxon_object = params[:taxon_object]
+        @query_taxon_name   = query_taxon_object.canonical_name
+        @query_taxon_rank   = query_taxon_object.taxon_rank
+        @fast_run           = fast_run
+        @file_manager       = file_manager
+        @filter_params      = params[:filter]
+        @taxonomy_params    = params[:taxonomy]
+        @region_params      = params[:region]
     end
 
     def run

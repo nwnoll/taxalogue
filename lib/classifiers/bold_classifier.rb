@@ -2,21 +2,22 @@
 
 class BoldClassifier
     include StringFormatting
-    attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :markers, :regexes_for_markers, :taxonomy_params, :region_params
+    attr_reader :file_name, :params, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :markers, :regexes_for_markers, :taxonomy_params, :region_params
 
     @@index_by_column_name = nil
-    def initialize(file_name:, query_taxon_object:, fast_run: true, file_manager:, filter_params: nil, markers:, taxonomy_params:, region_params: nil)
+    def initialize(file_name:, params:, fast_run: true, file_manager:)
         @file_name            = file_name
-        @query_taxon_object   = query_taxon_object
+        @params               = params
+        @query_taxon_object   = params[:taxon_object]
         @query_taxon_name     = query_taxon_object.canonical_name
         @query_taxon_rank     = query_taxon_object.taxon_rank
         @fast_run             = fast_run
-        @markers              = markers
+        @markers              = params[:marker_objects]
         @regexes_for_markers  = Marker.regexes(db: self.class, markers: markers)
         @file_manager         = file_manager
-        @filter_params        = filter_params
-        @taxonomy_params      = taxonomy_params
-        @region_params        = region_params
+        @filter_params        = params[:filter]
+        @taxonomy_params      = params[:taxonomy]
+        @region_params        = params[:region]
     end
 
     def run

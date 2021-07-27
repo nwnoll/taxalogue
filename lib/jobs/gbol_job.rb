@@ -1,19 +1,14 @@
 # frozen_string_literal: true
 
 class GbolJob
-    attr_reader   :taxon, :markers, :taxonomy_params, :taxon_name , :result_file_manager, :filter_params, :region_params, :params
+    attr_reader :taxon, :result_file_manager, :params
 
     DOWNLOAD_INFO_NAME = 'gbol_download_info.txt'
 
-    def initialize(taxon:, markers: nil, taxonomy_params:, result_file_manager:, filter_params: nil, region_params: nil, params: nil)
-        @taxon                = taxon
-        @taxon_name           = taxon.canonical_name
-        @markers              = markers
-        @taxonomy_params      = taxonomy_params
+    def initialize(result_file_manager:, params:)
         @result_file_manager  = result_file_manager
-        @filter_params        = filter_params
-        @region_params        = region_params
         @params               = params
+        @taxon                = params[:taxon_object]
     end
 
     def run
@@ -114,7 +109,7 @@ class GbolJob
     def _classify_downloads(download_file_manager)
         return nil unless File.file?(download_file_manager.file_path)
 
-        gbol_classifier   = GbolClassifier.new(fast_run: true, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, taxonomy_params: taxonomy_params, region_params: region_params)
+        gbol_classifier   = GbolClassifier.new(params: params, fast_run: true, file_name: download_file_manager.file_path, file_manager: result_file_manager)
         error_file = gbol_classifier.run ## result_file_manager creates new files and will push those into internal array
     
         return error_file

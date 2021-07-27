@@ -1,25 +1,22 @@
 # frozen_string_literal: true
 
 class BoldJob
-    attr_reader   :taxon, :markers, :taxonomy, :taxon_name , :result_file_manager, :filter_params, :try_synonyms, :taxonomy_params, :region_params, :params
+    attr_reader :taxon, :markers, :taxon_name, :result_file_manager, :try_synonyms, :taxonomy_params, :params
 
     HEADER_LENGTH = 1
     BOLD_DIR = Pathname.new('downloads/BOLD')
     DOWNLOAD_INFO_NAME = "bold_download_info.txt"
     DOWNLOAD_INFO_TREE_NAME = "bold_download_tree_info.txt"
 
-    def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, filter_params: nil, try_synonyms: false, taxonomy_params:, region_params: nil, params: nil)
-        @taxon                = taxon
-        @taxon_name           = taxon.canonical_name
-        @markers              = markers
-        @taxonomy             = taxonomy
+    def initialize(result_file_manager:, try_synonyms: false, params: nil)
         @result_file_manager  = result_file_manager
-        @filter_params        = filter_params
         @try_synonyms         = try_synonyms
-        @taxonomy_params      = taxonomy_params
-        @region_params        = region_params
-        @root_download_dir    = nil
         @params               = params
+        @taxon                = params[:taxon_object]
+        @taxon_name           = taxon.canonical_name
+        @markers              = params[:marker_objects]
+        @taxonomy_params      = params[:taxonomy]
+        @root_download_dir    = nil
 
         @pending = Pastel.new.white.on_yellow('pending')
         @failure = Pastel.new.white.on_red('failure')
@@ -317,10 +314,12 @@ class BoldJob
         node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' 
     end
 
+    ## UNUSED
     def _needs_rest_download(node_content)
         node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' || node_content == 'too_many_records' || node_content == 'failing_taxon'
     end
 
+    ## UNUSED
     def _rest_query(failed_taxon, taxa_to_exclude)
 
         base = 'http://www.boldsystems.org/index.php/API_Public/combined?'
@@ -351,49 +350,6 @@ class BoldJob
         query = base.dup.concat(query)
 
         return query
-    end
-
-    def _safe_download(node:, file_manager:, root_node:, i:)
-        begin
-            node.content[1] = @loading
-            file_manager.status = 'loading'
-            _print_download_progress_report(root_node: root_node, rank_level: i)
-            downloader.run
-        
-            if File.empty?(file_manager.file_path)
-                node.content[1] = @failure
-                file_manager.status = 'failure'
-            else
-                if _server_is_offline(file_manager.file_path)
-                    succesfull_try_after_offline_server = false
-                    3.times do
-                        sleep(2.minutes)
-                        downloader.run
-                        unless _server_is_offline(file_manager.file_path)
-                            succesfull_try_after_offline_server =  true
-                            break
-                        end
-                    end
-
-                    if succesfull_try_after_offline_server
-                        node.content[1] = @success
-                        file_manager.status = 'success'
-                    else 
-                        node.content[1] = @failure
-                        file_manager.status = 'failure'
-                    end
-                else
-                    node.content[1] = @success
-                    file_manager.status = 'success'
-                end
-            end
-        rescue Net::ReadTimeout
-            node.content[1] = @failure
-            file_manager.status = 'failure'
-        end
-
-        download_file_managers.push(file_manager)
-        _print_download_progress_report(root_node: root_node, rank_level: i)
     end
 
     def _print_download_progress_report(root_node:, rank_level:)
@@ -471,6 +427,7 @@ class BoldJob
     end
 
     ## TODO: same for NcbiTaxonomy
+    ## UNUSED
     def _download_synonym(node:)
         syn = Synonym.new(accepted_taxon: node.content.first, sources: [GbifTaxonomy])
         file_manager = nil
@@ -517,18 +474,16 @@ class BoldJob
     end
 
     def _classify_downloads(download_file_managers:)
-        # bold_classifier   = BoldClassifier.new(fast_run: false, file_name: Pathname.new('/home/nnoll/phd/trait_db/notes/coll.tsv'), query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, markers: markers, taxonomy_params: taxonomy_params, region_params: region_params)
-        # bold_classifier.run ## result_file_manager creates new files and will push those into internal array
-        
         download_file_managers.each do |download_file_manager|
             next unless download_file_manager.status == 'success'
             next unless File.file?(download_file_manager.file_path)
 
-            bold_classifier   = BoldClassifier.new(fast_run: false, file_name: download_file_manager.file_path, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, markers: markers, taxonomy_params: taxonomy_params, region_params: region_params)
+            bold_classifier   = BoldClassifier.new(params: params, fast_run: false, file_name: download_file_manager.file_path, file_manager: result_file_manager)
             bold_classifier.run ## result_file_manager creates new files and will push those into internal array
         end
     end
 
+    ## UNUSED
     def _merge_results
         FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Tsv)
         FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Fasta)
