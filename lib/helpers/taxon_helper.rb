@@ -28,6 +28,7 @@ class TaxonHelper
     
         csv.each do |row|
             taxon_without_author = row[3].split(' ')[0]
+            
             return true if taxon_without_author == taxon_name && row[2] == 'true'
         end
     

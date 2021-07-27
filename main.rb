@@ -241,6 +241,7 @@ global.order!
 
 loop do 
 	break if ARGV.empty?
+
 	command = ARGV.shift.to_sym
 	subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
 end
@@ -248,6 +249,8 @@ end
 ## if taxonomy was chosen by user, it needs to be updated
 ## object is also not set in opts.on
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
+
+MiscHelper.print_params(params)
 
 if params[:create].any?
     jobs = []

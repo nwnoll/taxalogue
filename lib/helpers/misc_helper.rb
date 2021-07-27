@@ -148,4 +148,16 @@ class MiscHelper
 
         return nil
     end
+
+    def self.print_params(params)
+        puts "You used the following parameters:"
+        params.each do |key, value|
+            next if value.empty? || value.nil?
+            next if key.to_s.match?("_object")
+
+            puts "\t#{key}: #{value}"
+        end
+
+        puts
+    end
 end

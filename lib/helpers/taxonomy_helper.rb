@@ -13,6 +13,7 @@ class TaxonomyHelper
     
         unless File.exists?('downloads/NCBI_TAXONOMY/NCBI_TAXONOMY.zip')
             puts "The NCBI Taxonomy has not been setup yet, please use setup --ncbi_taxonomy"
+            
             return true
         end
     
