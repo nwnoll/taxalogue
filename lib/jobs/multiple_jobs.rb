@@ -16,20 +16,24 @@ class MultipleJobs
             results_of[job.class] = job.run
         end
 
+        puts
         puts "Output locations:"
+        result_file_manager = nil
         results_of.each do |key, value|
             result_file_manager     = value.first
             download_file_managers  = value.last
-            
-            if download_only
-                puts download_file_managers.first.base_dir
-            else
-                puts download_file_managers.first.base_dir
-                puts result_file_manager.dir_path
-            end
-            puts
-        end
-    end
 
-    
+
+            # pp download_file_managers
+            if key == BoldJob
+                download_dir_path = download_file_managers.first.base_dir
+            else
+                download_dir_path = download_file_managers.first.dir_path
+            end
+
+            puts download_dir_path
+        end
+
+        puts result_file_manager.dir_path unless download_only
+    end
 end

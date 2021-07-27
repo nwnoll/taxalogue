@@ -241,7 +241,7 @@ loop do
 	subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
 end
 
-if MiscHelper.more_than_action?(params)
+if MiscHelper.multiple_actions?(params)
     puts "You specified more than one action"
     puts "Never use create, download, or classify simultaneously"
     puts
@@ -300,7 +300,7 @@ if params[:create].any?
 
     MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
 	
-    multiple_jobs = MultipleJobs.new(jobs: jobs)
+    multiple_jobs = MultipleJobs.new(jobs: jobs, params: params)
 	multiple_jobs.run
     sleep 2
 

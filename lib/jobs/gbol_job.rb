@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class GbolJob
-    attr_reader :taxon, :result_file_manager, :params
+    attr_reader :taxon, :result_file_manager, :params, :download_only
 
     DOWNLOAD_INFO_NAME = 'gbol_download_info.txt'
 
@@ -9,23 +9,32 @@ class GbolJob
         @result_file_manager  = result_file_manager
         @params               = params
         @taxon                = params[:taxon_object]
+        @download_only        = params[:download][:gbol]
     end
 
     def run
         already_existing_download_dir   = _get_already_existing_download_dir
         download_file_manager           = _get_download_file_manager_from_already_downloaded_dir(already_existing_download_dir)
-        download_file_manager           = download_files if download_file_manager.nil?
-        error_file_name                 = _classify_downloads(download_file_manager)
         
-        if error_file_name
-            download_file_managers      = download_files
-            error_file_name             = _classify_downloads(download_file_manager)
-            # set result_file_manager status to succes: false?
+        if download_file_manager.nil?
+            download_file_manager   = _download_files
+            did_use_marshal_file    = false
+        else
+            did_use_marshal_file    = true
         end
 
-        _write_marshal_files(download_file_manager)
+        unless download_only
+            error_file_name  = _classify_downloads(download_file_manager)
+            if error_file_name
+                download_file_managers  = _download_files
+                error_file_name         = _classify_downloads(download_file_manager)
+                # set result_file_manager status to succes: false?
+            end
+        end
 
-        return result_file_manager
+        _write_marshal_files(download_file_manager) unless did_use_marshal_file
+
+        return [result_file_manager, [download_file_manager]]
     end
 
     def _get_already_existing_download_dir
@@ -38,10 +47,11 @@ class GbolJob
         begin
             download_file_manager = DownloadCheckHelper.get_object_from_marshal_file(already_downloaded_dir + '.download_file_managers.dump')
     
-            # DownloadCheckHelper.create_download_info_for_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
-            DownloadCheckHelper.create_download_info_for_result_dir2(download_file_managers:[download_file_manager], result_file_manager: result_file_manager, source: self.class)
-            DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
-            
+            unless download_only
+                DownloadCheckHelper.create_download_info_for_result_dir(download_file_managers:[download_file_manager], result_file_manager: result_file_manager, source: self.class)
+                DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: already_downloaded_dir, result_file_manager: result_file_manager, source: self.class)
+            end
+
             return download_file_manager
         rescue StandardError => e
             puts "Release directory could not be used, starting download"
@@ -52,7 +62,7 @@ class GbolJob
         end
     end
 
-    def download_files
+    def _download_files
         file_manager = _config.file_manager
         file_manager.create_dir
 
@@ -74,8 +84,13 @@ class GbolJob
         dl_path_hidden = Pathname.new(file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
         rs_path_public = Pathname.new(result_file_manager.dir_path + DOWNLOAD_INFO_NAME)
         rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
-        DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: [file_manager], result_file_manager: result_file_manager)
         
+        if download_only
+            DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden], success: success, download_file_managers: [file_manager], result_file_manager: result_file_manager)
+        else
+            DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: [file_manager], result_file_manager: result_file_manager)
+        end
+
         return file_manager
     end
 

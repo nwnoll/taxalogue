@@ -114,6 +114,7 @@ class MiscHelper
                 puts "download failure"
                 puts "restarting..."
                 puts
+                sleep 10
             end
         end
     end
@@ -183,7 +184,7 @@ class MiscHelper
         puts
     end
 
-    def self.more_than_action?(params)
+    def self.multiple_actions?(params)
         has_create_action   = params[:create].any? ? 1 : 0
         has_download_action = params[:download].any? ? 1 : 0
         has_classify_action = params[:classify].any? ? 1 : 0

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class NcbiGenbankJob
-    attr_reader :taxon, :markers, :taxonomy, :result_file_manager, :use_http, :filter_params, :taxonomy_params, :region_params, :params
+    attr_reader :taxon, :markers, :taxonomy, :result_file_manager, :use_http, :filter_params, :taxonomy_params, :region_params, :params, :download_only
 
     FILE_DESCRIPTION_PART = 10
     RJUST_LEVEL_ONE = " " * 6
@@ -16,27 +16,35 @@ class NcbiGenbankJob
         @taxon                = params[:taxon_object]
         @markers              = params[:marker_objects]
         @root_download_dir    = nil
+        @download_only        = params[:download][:genbank]
     end
 
     def run
         release_info_struct     = _get_already_existing_download_dirs
         download_file_managers  = _get_download_file_managers_from_already_downloaded_dir(release_info_struct)
-        download_file_managers  = _download_files if download_file_managers.empty?
         
-        erroneous_files_of      = _classify_downloads(download_file_managers: download_file_managers)
-        if erroneous_files_of.any?
-            download_file_managers  = _download_failed_files(download_file_managers, erroneous_files_of)
-            erroneous_files_of      = _classify_downloads(download_file_managers: download_file_managers)
-            # set result_file_manager status to succes: false?
+        if download_file_managers.empty?
+            download_file_managers  = _download_files
+            did_use_marshal_file    = false
+        else
+            did_use_marshal_file    = true
         end
         
-        _write_marshal_files(download_file_managers)
+        unless download_only
+            erroneous_files_of      = _classify_downloads(download_file_managers: download_file_managers)
+            if erroneous_files_of.any?
+                download_file_managers  = _download_failed_files(download_file_managers, erroneous_files_of)
+                erroneous_files_of      = _classify_downloads(download_file_managers: download_file_managers)
+                # set result_file_manager status to succes: false?
+            end
+        end
+        
+        _write_marshal_files(download_file_managers) unless did_use_marshal_file
 
-        return result_file_manager
+        return [result_file_manager, download_file_managers]
     end
 
     private
-    
     def _get_already_existing_download_dirs
         NcbiDownloadCheckHelper.ask_user_about_download_dirs(params)
     end
@@ -49,11 +57,14 @@ class NcbiGenbankJob
             download_file_managers = _get_download_file_managers_from_marshal_dump(release_info_struct)
             download_file_managers = _update_download_file_managers_with_missing_divisions(download_file_managers, release_info_struct) unless release_info_struct.has_all_divisions
             
-            # replace with download check helper func
-            _create_download_info_for_result_dir(release_info_struct, download_file_managers)
-            # replace with download check helper func
-            _update_already_downloaded_dir_on_new_result_dir(release_info_struct)
-    
+
+            unless download_only
+                # replace with download check helper func
+                _create_download_info_for_result_dir(release_info_struct, download_file_managers)
+                # replace with download check helper func
+                _update_already_downloaded_dir_on_new_result_dir(release_info_struct)
+            end
+
             return download_file_managers
         rescue StandardError => e
             puts "Directory could not be used, starting download"
@@ -127,9 +138,17 @@ class NcbiGenbankJob
         rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
         
         if missing_divisions
-            _update_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers)
+            if download_only
+                _update_download_info(paths: [dl_path_public, dl_path_hidden], success: success, download_file_managers: download_file_managers)
+            else
+                _update_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers)
+            end
         else
-            _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers)
+            if download_only
+                _write_download_info(paths: [dl_path_public, dl_path_hidden], success: success, download_file_managers: download_file_managers)
+            else
+                _write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers)
+            end
         end
         
         return download_file_managers
@@ -208,7 +227,6 @@ class NcbiGenbankJob
                 file.gsub!(base_dir_line, base_dir_line_modified)
 
                 last_sub_dir_match = /#{new_line_regex}(.*?)#{new_line_regex}results\:/.match(file)
-                last_sub_dir_match
                 last_sub_dir_line = last_sub_dir_match[1]
                 last_sub_dir_line_modified = last_sub_dir_line
                 download_file_managers.each do |download_file_manager|
@@ -216,7 +234,7 @@ class NcbiGenbankJob
                     last_sub_dir_line_modified += "\n#{RJUST_LEVEL_TWO}#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}"
                 end
                 file.gsub!(last_sub_dir_line, last_sub_dir_line_modified)
-                file += "#{RJUST_LEVEL_ONE}#{result_file_manager.dir_path.to_s}"
+                file += "#{RJUST_LEVEL_ONE}#{result_file_manager.dir_path.to_s}" unless download_only
 
                 out_file = File.open(path, 'w')
                 out_file.puts file
