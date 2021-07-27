@@ -75,14 +75,12 @@ class MiscHelper
         FileUtils.mkdir_p(contaminants_dir_path)
         
         wolbachia_contaminants_file_path = contaminants_dir_path + 'Wolbachia.gb'
-        
         ncbi_api = NcbiApi.new(markers: marker_objects, taxon_name: 'Wolbachia', max_seq: 100, file_name: wolbachia_contaminants_file_path)
-        ncbi_api.efetch
+        _download_inv_contaminants(ncbi_api)
         
         human_contaminants_file_path = contaminants_dir_path + 'Homo_sapiens.gb'
-        
         ncbi_api = NcbiApi.new(markers: marker_objects, taxon_name: 'Homo sapiens', max_seq: 10, file_name: human_contaminants_file_path)
-        ncbi_api.efetch
+        _download_inv_contaminants(ncbi_api)
     
         result_contaminants_dir_path = file_manager.dir_path + 'contaminants/'
         FileUtils.mkdir_p(result_contaminants_dir_path)
@@ -94,6 +92,29 @@ class MiscHelper
         human_result_contaminants_file_path = result_contaminants_dir_path + 'Homo_sapiens_output.out'
         ncbi_genbank_extractor = NcbiGenbankExtractor.new(file_name: human_contaminants_file_path, taxon_name: 'Homo sapiens', markers: marker_objects, result_file_name: human_result_contaminants_file_path)
         ncbi_genbank_extractor.run
+    end
+
+    def self._download_inv_contaminants(ncbi_api)
+        3.times do |i| 
+            begin
+                puts "downloading contaminants: #{ncbi_api.taxon_name}"
+                ncbi_api.efetch
+
+                return nil
+            rescue => e
+                if i == 2
+                    puts "download failed"
+                    puts "please download #{ncbi_api.taxon_name} sequences manually"
+                    puts
+
+                    return nil
+                end 
+
+                puts "download failure"
+                puts "restarting..."
+                puts
+            end
+        end
     end
 
     def merge_files_in_dir(dir_name)
