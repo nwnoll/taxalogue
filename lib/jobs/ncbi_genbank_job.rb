@@ -9,16 +9,12 @@ class NcbiGenbankJob
 
     DOWNLOAD_INFO_NAME = 'ncbi_genbank_download_info.txt'
 
-    def initialize(taxon:, markers: nil, taxonomy:, result_file_manager:, use_http: false, filter_params: nil, taxonomy_params:, region_params: nil, params: nil)
-        @taxon                = taxon
-        @markers              = markers
-        @taxonomy             = taxonomy
+    def initialize(result_file_manager:, use_http: false, params:)
+        @params               = params
         @result_file_manager  = result_file_manager
         @use_http             = use_http
-        @filter_params        = filter_params
-        @taxonomy_params      = taxonomy_params
-        @region_params        = region_params
-        @params               = params
+        @taxon                = params[:taxon_object]
+        @markers              = params[:marker_objects]
         @root_download_dir    = nil
     end
 
@@ -91,7 +87,7 @@ class NcbiGenbankJob
     def _download_files(missing_divisions: nil)
         ## TODO:
         ## maybe switch NcbiApi if taxon is of rank family?
-        ## highert taxa might give an incomplete download
+        ## higher taxa might give an incomplete download
         ## it might be annoying if there will be searches
         ## for quite small taxa and the prog tries to download
         ## several gigabyte of data
@@ -102,21 +98,12 @@ class NcbiGenbankJob
             download_file_manager = config.file_manager
             download_file_manager.create_dir
             
-            ## TODO: uncomment again, this is because there are some ports not open at the museum...
-            ## This might be the case for other institutions too
-            ## if ftp is usdownload_did_failed then I might catch that exception and try to download via http
-            
             downloader          = config.downloader.new(config: config)
             download_did_fail   = false
 
             begin
                 downloader.run
-            # rescue SocketError => e
-            #     download_did_fail = true
-            # rescue Net::ReadTimeout => e
-            #     download_did_fail = true
             rescue StandardError => e
-                byebug
                 download_did_fail = true
             end
 
@@ -124,6 +111,7 @@ class NcbiGenbankJob
             files.each do |file|
                 if File.empty?(file)
                     download_did_fail = true
+                    
                     break
                 end
             end
@@ -305,7 +293,7 @@ class NcbiGenbankJob
             files.each do |file|
                 next unless File.file?(file)
 
-                classifier = NcbiGenbankClassifier.new(fast_run: true, markers: markers, file_name: file, query_taxon_object: taxon, file_manager: result_file_manager, filter_params: filter_params, taxonomy_params: taxonomy_params, region_params: region_params)
+                classifier = NcbiGenbankClassifier.new(fast_run: true, file_name: file, file_manager: result_file_manager, params: params)
                 erroneous_files = classifier.run ## result_file_manager creates new files and will push those into internal array
                 erroneous_files_of[download_file_manager] = erroneous_files if erroneous_files.any?
             end

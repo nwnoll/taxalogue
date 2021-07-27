@@ -15,8 +15,8 @@ class FtpDownloader
 
     def run(files_to_download: [])
         puts 'ftp_downloader started'
-        puts "count_restarts: #{@@count_restarts}"
-        pp files_to_download
+        puts "count_restarts: #{@@count_restarts}" if files_to_download.any?
+        
         ftp = Net::FTP.new(config.address)
         ftp.login
         files = ftp.chdir(config.target_directory) if config.target_directory
@@ -31,56 +31,47 @@ class FtpDownloader
         files.reverse.each_with_index do |file, i|
             # next if files_to_download.any? && !files_to_download.include?(file.to_s)
             local_path = File.join(config.file_manager.dir_path, file)
+            
             ## exclude later
             # next if File.file?(local_path) && !File.zero?(local_path) && !files_to_download.include?(file.to_s)
+            
             begin
                 puts "downloading #{file}"
+                # break if i == 1 # useful for short tests
+                
                 ftp.get(file, local_path, 32768)
                 sleep 2
-                if i == 1
-                    raise Net::ReadTimeout
-                end
             rescue => e
-                puts "error while downloading file: #{file}"
-                puts e.inspect
-                puts "restarting soon"
+                puts "error while downloading file: #{file} => #{e.inspect}"
                 @@count_restarts += 1
-                puts "restart num: #{@@count_restarts}"
-                # run_out_file.puts
-                # run_out_file.puts 'already downloaded:'
-                # already_downloaded = files - missing_files
-                # already_downloaded.each { |f| run_out_file.puts f }
-                # run_out_file.puts (files - missing_files)
-                # run_out_file.puts
-                # run_out_file.puts 'files to download:'
-                # run_out_file.puts missing_files
-                # run_out_file.puts
-                # sleep 5
+                puts "restart #{@@count_restarts} starts in 60 seconds"
+                
+                
                 if @@count_restarts > 20
                     FtpDownloader.rewind
+                    
                     return files
                 end
+                
                 ftp.close
-                print 'ftp.closed?'
-                puts ftp.closed?
-                puts 'waiting 60 seconds'
 
                 needs_restart = true
                 sleep 60
+
                 break
             end
+
             files.delete(file)
         end
 
         if needs_restart
-            puts 'restart!'
-
             ftp_downloader = FtpDownloader.new(config: config)
             ftp_downloader.run(files_to_download: files)
         end
     end
 
     private
+    ## UNUSED
     def _get_with_progress(ftp,file,local_path)
         transferred = 0
         filesize = ftp.size(file)

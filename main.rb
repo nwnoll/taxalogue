@@ -258,7 +258,7 @@ if params[:create].any?
 
     params[:create].each do |key, value|
         if key == :all
-            ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+            ncbi_genbank_job = NcbiGenbankJob.new(params: params, result_file_manager: file_manager)
             gbol_job = GbolJob.new(result_file_manager: file_manager, params: params)
             bold_job = BoldJob.new(result_file_manager: file_manager, params: params)
             
@@ -278,7 +278,7 @@ if params[:create].any?
         end
 
         if key == :genbank && jobs.none? { |e| e.class == NcbiGenbankJob }
-            ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
+            ncbi_genbank_job = NcbiGenbankJob.new(params: params, result_file_manager: file_manager)
             
             jobs.push(ncbi_genbank_job)
         end

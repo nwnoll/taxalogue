@@ -81,6 +81,7 @@ class MiscHelper
         human_contaminants_file_path = contaminants_dir_path + 'Homo_sapiens.gb'
         ncbi_api = NcbiApi.new(markers: marker_objects, taxon_name: 'Homo sapiens', max_seq: 10, file_name: human_contaminants_file_path)
         _download_inv_contaminants(ncbi_api)
+        puts
     
         result_contaminants_dir_path = file_manager.dir_path + 'contaminants/'
         FileUtils.mkdir_p(result_contaminants_dir_path)
@@ -97,7 +98,7 @@ class MiscHelper
     def self._download_inv_contaminants(ncbi_api)
         3.times do |i| 
             begin
-                puts "downloading contaminants: #{ncbi_api.taxon_name}"
+                puts "downloading possible invertebrate contaminants: #{ncbi_api.taxon_name}"
                 ncbi_api.efetch
 
                 return nil
