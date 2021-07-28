@@ -5,6 +5,10 @@ class GbolClassifier
     include GeoUtils
     attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :taxonomy_params, :region_params, :params
 
+    INCLUDED_TAXA = {
+        'Hemiptera' => ['Auchenorrhyncha', 'Heteroptera', 'Sternorrhyncha']
+    }
+
     def self.get_source_lineage(row)
         OpenStruct.new(
             name:     row["Species"],
@@ -90,11 +94,12 @@ class GbolClassifier
         identifier                    = row["CatalogueNumber"]
         source_taxon_name             = row["Species"]
         sequence                      = row['BarcodeSequence']
+        return nil if sequence.nil? || sequence.blank?
+
         location                      = row["Location"]
         lat                           = row["Latitude"]
         long                          = row["Longitude"]
         sequence                      = FilterHelper.filter_seq(sequence, filter_params)
-
         return nil if sequence.nil?
 
         nomial                        = Nomial.generate(name: source_taxon_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
@@ -114,6 +119,16 @@ class GbolClassifier
     end
 
     def _matches_query_taxon(row)
-        /#{query_taxon_name}/.match?(row["HigherTaxa"]) || /#{query_taxon_name}/.match?(row["Species"])
+        if INCLUDED_TAXA.key?(query_taxon_name)
+            INCLUDED_TAXA[query_taxon_name].each do |included_name|
+                matched = /#{included_name}/.match?(row["HigherTaxa"]) || /#{included_name}/.match?(row["Species"])
+                
+                return true if matched
+            end
+
+            return false
+        else
+            /#{query_taxon_name}/.match?(row["HigherTaxa"]) || /#{query_taxon_name}/.match?(row["Species"])
+        end
     end
 end

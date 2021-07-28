@@ -9,8 +9,8 @@ class BoldDownloadCheckHelper
 
         # precedence:
         ## only :same_taxon_found && :higher_taxon_found
-        ## successfull highest precendence, after that comes most recent version and
-        ## and after that comes distinction between same_taxon and higher_taxon
+        ## successfull highest precendence, after that comes distinction between same_taxon and higher_taxon
+        ## after that comes most recent version and
     
         precedence_of = {
             ## 0 higher precedence
@@ -40,7 +40,7 @@ class BoldDownloadCheckHelper
             datetime = precedence_of[datetime] if precedence_of.key?(datetime)
             
             ## defines precedence
-            ## success | datetime of dir | download_state
+            ## success | download_state | datetime of di
             [precedence_of[success.to_s], precedence_of[state.to_s], desc_dirs_by_datetime.index(dir)]
         end
     
@@ -125,7 +125,7 @@ class BoldDownloadCheckHelper
         selected_download_dir, selected_download_state = selected_download_dir_and_state
         last_download_days = FileManager.is_how_old?(dir: selected_download_dir)
         return nil if last_download_days.nil?
-    
+
         puts "You have already downloaded data for the taxon #{params[:taxon]}"
         puts "Sequences for #{params[:taxon]} are available in: #{selected_download_dir.to_s}"
         puts "The latest already downloaded version is #{last_download_days} days old"

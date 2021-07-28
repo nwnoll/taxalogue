@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class NcbiGenbankJob
-    attr_reader :taxon, :markers, :taxonomy, :result_file_manager, :use_http, :filter_params, :taxonomy_params, :region_params, :params, :download_only
+    attr_reader :taxon, :markers, :taxonomy, :result_file_manager, :use_http, :filter_params, :taxonomy_params, :region_params, :params, :download_only, :classify_only
 
     FILE_DESCRIPTION_PART = 10
     RJUST_LEVEL_ONE = " " * 6
@@ -16,7 +16,8 @@ class NcbiGenbankJob
         @taxon                = params[:taxon_object]
         @markers              = params[:marker_objects]
         @root_download_dir    = nil
-        @download_only        = params[:download][:genbank]
+        @download_only        = params[:download][:genbank] || params[:download][:all]
+        @classify_only        = params[:classify][:genbank] || params[:classify][:all]
     end
 
     def run
@@ -24,20 +25,33 @@ class NcbiGenbankJob
         old_download_file_managers  = _get_download_file_managers_from_already_downloaded_dir(release_info_struct)
         new_download_file_managers  = old_download_file_managers.select { |dm| division_codes_for(division_ids).include?(dm.name) }
 
-        new_download_file_managers  = _download_files if new_download_file_managers.empty?
+        if new_download_file_managers.empty?
+            if classify_only
+                MiscHelper.message_for_missing_download_file_managers("NCBI GenBank", taxon_name)
+
+                return [result_file_manager, :cant_classify]
+            else
+                new_download_file_managers  = _download_files 
+            end
+        end
         
         unless download_only
             erroneous_files_of = _classify_downloads(download_file_managers: new_download_file_managers)
             if erroneous_files_of.any?
-                new_download_file_managers  = _download_failed_files(new_download_file_managers, erroneous_files_of)
-                erroneous_files_of          = _classify_downloads(download_file_managers: new_download_file_managers)
-                # set result_file_manager status to succes: false?
+                if classify_only
+                    MiscHelper.message_for_malformed_downloads("NCBI GenBank", taxon_name)
+    
+                    return [result_file_manager, :cant_classify]
+                else
+                    new_download_file_managers  = _download_failed_files(new_download_file_managers, erroneous_files_of)
+                    erroneous_files_of          = _classify_downloads(download_file_managers: new_download_file_managers)
+                end
             end
         end
 
         download_file_managers = old_download_file_managers | new_download_file_managers
-        
-        _write_marshal_files(download_file_managers)
+
+        _write_marshal_files(download_file_managers) unless classify_only
 
         used_download_file_managers  = download_file_managers.select { |dm| division_codes_for(division_ids).include?(dm.name) }
         

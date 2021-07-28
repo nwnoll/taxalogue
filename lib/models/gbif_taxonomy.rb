@@ -9,7 +9,7 @@ class GbifTaxonomy < ActiveRecord::Base
 
     def self.rank_mappings
         {
-            'species' => 'species',
+            'species' => 'canonical_name',
             'genus'   => 'genus',
             'family'   => 'familia',
             'order'   => 'ordo',

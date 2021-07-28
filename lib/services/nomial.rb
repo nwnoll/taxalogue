@@ -379,7 +379,14 @@ class Monomial
             ## TODO:
         else
             # ncbi
-            record.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name || record.name == query_taxon_name
+
+            ## NcbiRankedLineage does not have the canonical_name attribute
+            ## therefore I need to use species
+            if query_taxon_rank == "species"
+                record.public_send("species") == query_taxon_name || record.name == query_taxon_name
+            else
+                record.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name || record.name == query_taxon_name
+            end
         end
     end
 

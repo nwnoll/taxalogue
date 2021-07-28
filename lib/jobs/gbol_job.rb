@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class GbolJob
-    attr_reader :taxon, :result_file_manager, :params, :download_only
+    attr_reader :taxon, :result_file_manager, :params, :download_only, :classify_only
 
     DOWNLOAD_INFO_NAME = 'gbol_download_info.txt'
 
@@ -9,25 +9,39 @@ class GbolJob
         @result_file_manager  = result_file_manager
         @params               = params
         @taxon                = params[:taxon_object]
-        @download_only        = params[:download][:gbol]
+        @download_only        = params[:download][:gbol] || params[:download][:all]
+        @classify_only        = params[:classify][:gbol] || params[:classify][:all]
     end
 
     def run
         already_existing_download_dir   = _get_already_existing_download_dir
         download_file_manager           = _get_download_file_manager_from_already_downloaded_dir(already_existing_download_dir)
         
-        download_file_manager   = _download_files if download_file_manager.nil?
+        if download_file_manager.nil?
+            if classify_only
+                MiscHelper.message_for_missing_download_file_managers("GBOL", taxon_name)
+
+                return [result_file_manager, :cant_classify]
+            else
+                download_file_manager   = _download_files 
+            end
+        end
 
         unless download_only
             error_file_name  = _classify_downloads(download_file_manager)
             if error_file_name
-                download_file_managers  = _download_files
-                error_file_name         = _classify_downloads(download_file_manager)
-                # set result_file_manager status to succes: false?
+                if classify_only
+                    MiscHelper.message_for_malformed_downloads("GBOL", taxon_name)
+    
+                    return [result_file_manager, :cant_classify]
+                else
+                    download_file_managers  = _download_files
+                    error_file_name         = _classify_downloads(download_file_manager)
+                end
             end
         end
 
-        _write_marshal_files(download_file_manager)
+        _write_marshal_files(download_file_manager) unless classify_only
 
         return [result_file_manager, [download_file_manager]]
     end

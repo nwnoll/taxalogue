@@ -175,8 +175,8 @@ class MiscHelper
     def self.print_params(params)
         puts "You used the following parameters:"
         params.each do |key, value|
-            next if value.empty? || value.nil?
             next if key.to_s.match?("_object")
+            next if value.empty? || value.nil?
 
             puts "\t#{key}: #{value}"
         end
@@ -185,14 +185,29 @@ class MiscHelper
     end
 
     def self.multiple_actions?(params)
-        has_create_action   = params[:create].any? ? 1 : 0
-        has_download_action = params[:download].any? ? 1 : 0
-        has_classify_action = params[:classify].any? ? 1 : 0
+        has_create_action   = params[:create].any?      ? 1 : 0
+        has_download_action = params[:download].any?    ? 1 : 0
+        has_classify_action = params[:classify].any?    ? 1 : 0
+        has_merge_action    = params[:merge].any?       ? 1 : 0
 
-        if (has_create_action + has_download_action + has_classify_action) > 1
+        if (has_create_action + has_download_action + has_classify_action + has_merge_action) > 1
             return true
         else
             return false
         end
+    end
+
+    def self.message_for_missing_download_file_managers(db_source, taxon)
+        puts "Cannot classify #{db_source} downloads, since no downloads are available for #{taxon}."
+        puts "Please use download command before you classify."
+        puts "Or do it all at once with the create command."
+        puts
+    end
+
+    def self.message_for_malformed_downloads(db_source, taxon)
+        puts "Cannot classify #{db_source} downloads, since the downloaded files for #{taxon} are malformed."
+        puts "Please use download again."
+        puts "Or do it all at once with the create command."
+        puts
     end
 end

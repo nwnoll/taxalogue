@@ -19,11 +19,18 @@ class MultipleJobs
         puts
         puts "Output locations:"
         result_file_manager = nil
+        count_cant_classify = 0
         results_of.each do |key, value|
             result_file_manager     = value.first
             download_file_managers  = value.last
+            
+            if value.last == :cant_classify
+                count_cant_classify += 1
+                next
+            end
 
             download_file_managers.each_with_index do |download_file_manager, i|
+                byebug
                 if key == BoldJob
                     download_dir_path = download_file_manager.base_dir
                     puts download_dir_path if i == 0
@@ -32,9 +39,18 @@ class MultipleJobs
                     puts download_dir_path
                 end
             end
-            # pp download_file_managers
         end
 
-        puts result_file_manager.dir_path unless download_only
+        if count_cant_classify == results_of.keys.size
+            puts 'No results' unless download_only
+            pp result_file_manager
+            FileUtils.rmdir(result_file_manager.dir_path)
+
+            return :failure
+        else
+            puts result_file_manager.dir_path unless download_only
+
+            return :success
+        end
     end
 end

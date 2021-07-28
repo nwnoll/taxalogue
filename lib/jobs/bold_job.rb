@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class BoldJob
-    attr_reader :taxon, :markers, :taxon_name, :result_file_manager, :try_synonyms, :taxonomy_params, :params, :download_only
+    attr_reader :taxon, :markers, :taxon_name, :result_file_manager, :try_synonyms, :taxonomy_params, :params, :download_only, :classify_only
 
     HEADER_LENGTH = 1
     BOLD_DIR = Pathname.new('downloads/BOLD')
@@ -16,7 +16,8 @@ class BoldJob
         @taxon_name           = taxon.canonical_name
         @markers              = params[:marker_objects]
         @taxonomy_params      = params[:taxonomy]
-        @download_only        = params[:download][:bold]
+        @download_only        = params[:download][:bold] || params[:download][:all]
+        @classify_only        = params[:classify][:bold] || params[:classify][:all]
         @root_download_dir    = nil
 
         @pending = Pastel.new.white.on_yellow('pending')
@@ -30,15 +31,26 @@ class BoldJob
     def run
         already_downloaded_dir = _get_already_downloaded_dir
         download_file_managers = _get_download_file_managers_from_already_downloaded_dir(already_downloaded_dir)
+        ## TODO:
+        # Problem could be if the program chose a higher taxon
+        # and the query taxon had no success
+        # does it choose that dir, in general only dirs are selected that are successfull
         if download_file_managers.empty?
-            download_file_managers  = _download_files
+            if classify_only
+                MiscHelper.message_for_missing_download_file_managers("BOLD", taxon_name)
+
+                return [result_file_manager, :cant_classify]
+            else
+                download_file_managers  = _download_files
+            end
+
             did_use_marshal_file    = false
         else
             did_use_marshal_file    =  true
         end
 
         _classify_downloads(download_file_managers)     unless download_only
-        _write_marshal_files(download_file_managers)    unless did_use_marshal_file
+        _write_marshal_files(download_file_managers)    unless did_use_marshal_file || classify_only
 
         return [result_file_manager, download_file_managers]
     end
