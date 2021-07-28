@@ -16,7 +16,6 @@ class GbolJob
         already_existing_download_dir   = _get_already_existing_download_dir
         download_file_manager           = _get_download_file_manager_from_already_downloaded_dir(already_existing_download_dir)
         
-        
         download_file_manager   = _download_files if download_file_manager.nil?
 
         unless download_only

@@ -20,23 +20,28 @@ class NcbiGenbankJob
     end
 
     def run
-        release_info_struct     = _get_already_existing_download_dirs
-        download_file_managers  = _get_download_file_managers_from_already_downloaded_dir(release_info_struct)
-        
-        download_file_managers  = _download_files if download_file_managers.empty?
+        release_info_struct         = _get_already_existing_download_dirs
+        old_download_file_managers  = _get_download_file_managers_from_already_downloaded_dir(release_info_struct)
+        new_download_file_managers  = old_download_file_managers.select { |dm| division_codes_for(division_ids).include?(dm.name) }
+
+        new_download_file_managers  = _download_files if new_download_file_managers.empty?
         
         unless download_only
-            erroneous_files_of      = _classify_downloads(download_file_managers: download_file_managers)
+            erroneous_files_of = _classify_downloads(download_file_managers: new_download_file_managers)
             if erroneous_files_of.any?
-                download_file_managers  = _download_failed_files(download_file_managers, erroneous_files_of)
-                erroneous_files_of      = _classify_downloads(download_file_managers: download_file_managers)
+                new_download_file_managers  = _download_failed_files(new_download_file_managers, erroneous_files_of)
+                erroneous_files_of          = _classify_downloads(download_file_managers: new_download_file_managers)
                 # set result_file_manager status to succes: false?
             end
         end
+
+        download_file_managers = old_download_file_managers | new_download_file_managers
         
         _write_marshal_files(download_file_managers)
+
+        used_download_file_managers  = download_file_managers.select { |dm| division_codes_for(division_ids).include?(dm.name) }
         
-        return [result_file_manager, download_file_managers]
+        return [result_file_manager, used_download_file_managers]
     end
 
     private
@@ -341,6 +346,7 @@ class NcbiGenbankJob
             files.each do |file|
                 if File.empty?(file)
                     download_did_fail = true
+
                     break
                 end
             end

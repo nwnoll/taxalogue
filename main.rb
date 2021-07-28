@@ -298,7 +298,7 @@ if params[:create].any?
 
     file_manager.create_dir
 
-    MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
+    # MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
 	
     multiple_jobs = MultipleJobs.new(jobs: jobs, params: params)
 	multiple_jobs.run
