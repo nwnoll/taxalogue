@@ -23,15 +23,16 @@ class MultipleJobs
             result_file_manager     = value.first
             download_file_managers  = value.last
 
-
-            # pp download_file_managers
-            if key == BoldJob
-                download_dir_path = download_file_managers.first.base_dir
-            else
-                download_dir_path = download_file_managers.first.dir_path
+            download_file_managers.each_with_index do |download_file_manager, i|
+                if key == BoldJob
+                    download_dir_path = download_file_manager.base_dir
+                    puts download_dir_path if i == 0
+                else
+                    download_dir_path = download_file_manager.dir_path
+                    puts download_dir_path
+                end
             end
-
-            puts download_dir_path
+            # pp download_file_managers
         end
 
         puts result_file_manager.dir_path unless download_only

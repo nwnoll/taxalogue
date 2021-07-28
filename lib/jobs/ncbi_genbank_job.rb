@@ -23,12 +23,7 @@ class NcbiGenbankJob
         release_info_struct     = _get_already_existing_download_dirs
         download_file_managers  = _get_download_file_managers_from_already_downloaded_dir(release_info_struct)
         
-        if download_file_managers.empty?
-            download_file_managers  = _download_files
-            did_use_marshal_file    = false
-        else
-            did_use_marshal_file    = true
-        end
+        download_file_managers  = _download_files if download_file_managers.empty?
         
         unless download_only
             erroneous_files_of      = _classify_downloads(download_file_managers: download_file_managers)
@@ -39,8 +34,8 @@ class NcbiGenbankJob
             end
         end
         
-        _write_marshal_files(download_file_managers) unless did_use_marshal_file
-
+        _write_marshal_files(download_file_managers)
+        
         return [result_file_manager, download_file_managers]
     end
 

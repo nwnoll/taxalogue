@@ -2,11 +2,6 @@
 
 class GbolDownloadCheckHelper
     def self.ask_user_about_gbol_download_dirs(params)
-        ## TODO:
-        ## disable search temporarily to always download
-        ## delete after dataset download
-        return nil if params[:create][:all]
-        ##
 
         dirs = FileManager.directories_of(dir: GbolConfig::DOWNLOAD_DIR)
         current_release = nil

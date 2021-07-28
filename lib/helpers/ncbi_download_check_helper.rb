@@ -12,12 +12,6 @@ class NcbiDownloadCheckHelper
     }
     def self.ask_user_about_download_dirs(params, only_successful = true)
 
-        ## TODO:
-        ## disable search temporarily to always download
-        ## delete after dataset download
-        return nil if params[:create][:all]
-        ##
-        
         dirs = FileManager.directories_with_name_of(dir: NcbiGenbankConfig::DOWNLOAD_DIR, dir_name: 'release')
         return nil if DownloadCheckHelper.is_nil_or_empty?(dirs)
     

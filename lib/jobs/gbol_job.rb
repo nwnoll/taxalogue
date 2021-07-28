@@ -16,12 +16,8 @@ class GbolJob
         already_existing_download_dir   = _get_already_existing_download_dir
         download_file_manager           = _get_download_file_manager_from_already_downloaded_dir(already_existing_download_dir)
         
-        if download_file_manager.nil?
-            download_file_manager   = _download_files
-            did_use_marshal_file    = false
-        else
-            did_use_marshal_file    = true
-        end
+        
+        download_file_manager   = _download_files if download_file_manager.nil?
 
         unless download_only
             error_file_name  = _classify_downloads(download_file_manager)
@@ -32,7 +28,7 @@ class GbolJob
             end
         end
 
-        _write_marshal_files(download_file_manager) unless did_use_marshal_file
+        _write_marshal_files(download_file_manager)
 
         return [result_file_manager, [download_file_manager]]
     end
