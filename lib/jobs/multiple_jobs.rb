@@ -30,7 +30,6 @@ class MultipleJobs
             end
 
             download_file_managers.each_with_index do |download_file_manager, i|
-                byebug
                 if key == BoldJob
                     download_dir_path = download_file_manager.base_dir
                     puts download_dir_path if i == 0
@@ -42,8 +41,7 @@ class MultipleJobs
         end
 
         if count_cant_classify == results_of.keys.size
-            puts 'No results' unless download_only
-            pp result_file_manager
+            puts 'No output' unless download_only
             FileUtils.rmdir(result_file_manager.dir_path)
 
             return :failure

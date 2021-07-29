@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class NcbiGenbankJob
-    attr_reader :taxon, :markers, :taxonomy, :result_file_manager, :use_http, :filter_params, :taxonomy_params, :region_params, :params, :download_only, :classify_only
+    attr_reader :taxon, :markers, :taxonomy, :result_file_manager, :use_http, :filter_params, :taxonomy_params, :region_params, :params, :download_only, :classify_only, :classify_dir
 
     FILE_DESCRIPTION_PART = 10
     RJUST_LEVEL_ONE = " " * 6
@@ -18,6 +18,7 @@ class NcbiGenbankJob
         @root_download_dir    = nil
         @download_only        = params[:download][:genbank] || params[:download][:all]
         @classify_only        = params[:classify][:genbank] || params[:classify][:all]
+        @classify_dir         = params[:classify][:classify_dir]
     end
 
     def run
@@ -30,6 +31,10 @@ class NcbiGenbankJob
                 MiscHelper.message_for_missing_download_file_managers("NCBI GenBank", taxon_name)
 
                 return [result_file_manager, :cant_classify]
+            elsif classify_dir
+                ## TODO:
+                ## here i shoul call functions for user provided dirs that have not been
+                ## downloaded by taxalogue
             else
                 new_download_file_managers  = _download_files 
             end
@@ -38,7 +43,7 @@ class NcbiGenbankJob
         unless download_only
             erroneous_files_of = _classify_downloads(download_file_managers: new_download_file_managers)
             if erroneous_files_of.any?
-                if classify_only
+                if classify_only || classify_dir
                     MiscHelper.message_for_malformed_downloads("NCBI GenBank", taxon_name)
     
                     return [result_file_manager, :cant_classify]
@@ -51,7 +56,7 @@ class NcbiGenbankJob
 
         download_file_managers = old_download_file_managers | new_download_file_managers
 
-        _write_marshal_files(download_file_managers) unless classify_only
+        _write_marshal_files(download_file_managers) unless classify_only || classify_dir
 
         used_download_file_managers  = download_file_managers.select { |dm| division_codes_for(division_ids).include?(dm.name) }
         

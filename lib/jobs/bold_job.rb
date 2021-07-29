@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class BoldJob
-    attr_reader :taxon, :markers, :taxon_name, :result_file_manager, :try_synonyms, :taxonomy_params, :params, :download_only, :classify_only
+    attr_reader :taxon, :markers, :taxon_name, :result_file_manager, :try_synonyms, :taxonomy_params, :params, :download_only, :classify_only, :classify_dir
 
     HEADER_LENGTH = 1
     BOLD_DIR = Pathname.new('downloads/BOLD')
@@ -18,6 +18,7 @@ class BoldJob
         @taxonomy_params      = params[:taxonomy]
         @download_only        = params[:download][:bold] || params[:download][:all]
         @classify_only        = params[:classify][:bold] || params[:classify][:all]
+        @classify_dir         = params[:classify][:bold_dir]
         @root_download_dir    = nil
 
         @pending = Pastel.new.white.on_yellow('pending')
@@ -40,6 +41,10 @@ class BoldJob
                 MiscHelper.message_for_missing_download_file_managers("BOLD", taxon_name)
 
                 return [result_file_manager, :cant_classify]
+            elsif classify_dir
+                ## TODO:
+                ## here i shoul call functions for user provided dirs that have not been
+                ## downloaded by taxalogue
             else
                 download_file_managers  = _download_files
             end
@@ -50,7 +55,7 @@ class BoldJob
         end
 
         _classify_downloads(download_file_managers)     unless download_only
-        _write_marshal_files(download_file_managers)    unless did_use_marshal_file || classify_only
+        _write_marshal_files(download_file_managers)    unless did_use_marshal_file || classify_only || classify_dir
 
         return [result_file_manager, download_file_managers]
     end

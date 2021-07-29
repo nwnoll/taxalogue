@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class GbolJob
-    attr_reader :taxon, :result_file_manager, :params, :download_only, :classify_only
+    attr_reader :taxon, :result_file_manager, :params, :download_only, :classify_only, :classify_dir
 
     DOWNLOAD_INFO_NAME = 'gbol_download_info.txt'
 
@@ -11,6 +11,7 @@ class GbolJob
         @taxon                = params[:taxon_object]
         @download_only        = params[:download][:gbol] || params[:download][:all]
         @classify_only        = params[:classify][:gbol] || params[:classify][:all]
+        @classify_dir         = params[:classify][:gbol_dir]
     end
 
     def run
@@ -22,6 +23,10 @@ class GbolJob
                 MiscHelper.message_for_missing_download_file_managers("GBOL", taxon_name)
 
                 return [result_file_manager, :cant_classify]
+            elsif classify_dir
+                ## TODO:
+                ## here i shoul call functions for user provided dirs that have not been
+                ## downloaded by taxalogue
             else
                 download_file_manager   = _download_files 
             end
@@ -30,7 +35,7 @@ class GbolJob
         unless download_only
             error_file_name  = _classify_downloads(download_file_manager)
             if error_file_name
-                if classify_only
+                if classify_only || classify_dir
                     MiscHelper.message_for_malformed_downloads("GBOL", taxon_name)
     
                     return [result_file_manager, :cant_classify]
@@ -41,7 +46,7 @@ class GbolJob
             end
         end
 
-        _write_marshal_files(download_file_manager) unless classify_only
+        _write_marshal_files(download_file_manager) unless classify_only || classify_dir
 
         return [result_file_manager, [download_file_manager]]
     end

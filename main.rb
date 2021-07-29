@@ -80,6 +80,15 @@ subcommands = {
 		opts.on('-k', '--genbank', 'creates a reference database with sequences from Genbank')
 	end,
 
+    download: OptionParser.new do |opts|
+		opts.banner = "Usage: download [options]"
+		opts.on('-g', '--gbol')
+		opts.on('-o', '--bold')
+		opts.on('-k', '--genbank')
+		opts.on('-a', '--all')
+		opts.on('-i', '--inv_contaminants', 'Download possible invertebrate contaminants')
+   	end,
+
 	classify: OptionParser.new do |opts|
 		opts.banner = "Usage: classify [options]"
 		opts.on('-a', '--all', 'Latest downloads of all source databases will be classified')
@@ -92,21 +101,20 @@ subcommands = {
 		opts.on('-M', '--no_merge', 'results are not merged')
 	end,
 
+    merge: OptionParser.new do |opts|
+        opts.banner = "Usage: merge [options]"
+        opts.on('-a', '--all', 'Merges output of all source databases')
+        opts.on('-g', '--gbol', 'Merges output of GBOL source database')
+        opts.on('-b', '--bold', 'Merges output of BOLD source database')
+        opts.on('-k', '--genbank', 'Merges output of NCBI GenBank source database')
+    end,
+
 	import: OptionParser.new do |opts|
 		opts.banner = "Usage: import [options]"
 		opts.on('-g GBIF', String, '--gbif')
 		opts.on('-n NCBI_NODES', String, '--nodes')
 		opts.on('-s NCBI_NAMES', String, '--names')
 		opts.on('-l NCBI_LINEAGE', String, '--lineage')
-   	end,
-
-   	download: OptionParser.new do |opts|
-		opts.banner = "Usage: download [options]"
-		opts.on('-g', '--gbol')
-		opts.on('-o', '--bold')
-		opts.on('-k', '--genbank')
-		opts.on('-a', '--all')
-		opts.on('-i', '--inv_contaminants', 'Download possible invertebrate contaminants')
    	end,
 
    	setup: OptionParser.new do |opts|
@@ -374,19 +382,19 @@ if params[:classify].any?
             jobs.push(ncbi_genbank_job, gbol_job, bold_job)
         end
 
-        if key == :bold && jobs.none? { |e| e.class == BoldJob }
+        if (key == :bold || key == :bold_dir) && jobs.none? { |e| e.class == BoldJob }
             bold_job = BoldJob.new(result_file_manager: file_manager, params: params)
             
             jobs.push(bold_job)
         end
 
-        if key == :gbol && jobs.none? { |e| e.class == GbolJob }
+        if (key == :gbol || key == :gbol_dir) && jobs.none? { |e| e.class == GbolJob }
             gbol_job = GbolJob.new(result_file_manager: file_manager, params: params)
             
             jobs.push(gbol_job)
         end
 
-        if key == :genbank && jobs.none? { |e| e.class == NcbiGenbankJob }
+        if (key == :genbank || key == :genbank_dir) && jobs.none? { |e| e.class == NcbiGenbankJob }
             ncbi_genbank_job = NcbiGenbankJob.new(params: params, result_file_manager: file_manager)
             
             jobs.push(ncbi_genbank_job)
@@ -410,10 +418,15 @@ if params[:classify].any?
     exit
 end
 
+if params[:merge].any?
+    FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
+    FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
+    FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
+    
+    exit
+end
 
 
-
-byebug
 
 
 # file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
