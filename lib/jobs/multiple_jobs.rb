@@ -46,8 +46,11 @@ class MultipleJobs
 
             return :failure
         else
-            puts result_file_manager.dir_path unless download_only
-
+            unless download_only
+                DownloadCheckHelper.write_marshal_file(dir: result_file_manager.dir_path, data: result_file_manager, file_name: '.result_file_manager.dump')
+                puts result_file_manager.dir_path
+            end
+            
             return :success
         end
     end

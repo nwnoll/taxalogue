@@ -103,6 +103,7 @@ subcommands = {
 
     merge: OptionParser.new do |opts|
         opts.banner = "Usage: merge [options]"
+        opts.on('-d RESULT_DIR', String, '--result_dir', 'Result directory that should be merged')
         opts.on('-a', '--all', 'Merges output of all source databases')
         opts.on('-g', '--gbol', 'Merges output of GBOL source database')
         opts.on('-b', '--bold', 'Merges output of BOLD source database')
@@ -419,10 +420,92 @@ if params[:classify].any?
 end
 
 if params[:merge].any?
+    if params[:merge][:result_dir].nil?
+        puts "Need a result directory:"
+        puts "please specify it with merge --result_dir DIRECTORY_PATH"
+        puts
+
+        exit
+    end
+
+    result_file_manager_from_dir_path = Pathname.new(params[:merge][:result_dir]) + '.result_file_manager.dump'
+    
+    begin
+        result_file_manager_from_dir = DownloadCheckHelper.get_object_from_marshal_file(result_file_manager_from_dir_path)
+    rescue StandardError => e
+        puts "Result directory can't be used, please specify another one"
+        puts
+
+        exit
+    end
+
+    file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
+
+    source_db_keywords = []
+    params[:merge].each do |key, value|
+        source_db_keywords.push('ncbi_', 'gbol_', 'bold_') if key == :all
+        source_db_keywords.push('bold_') if key == :bold && source_db_keywords.none? { |e| e == '_bold_' }
+        source_db_keywords.push('gbol_') if key == :gbol && source_db_keywords.none? { |e| e == '_gbol_' }
+        source_db_keywords.push('ncbi_') if key == :genbank && source_db_keywords.none? { |e| e == '_ncbi_' }
+    end
+
+    selected_source_db_files = result_file_manager_from_dir.created_files.select do |e|
+        is_match = false
+        source_db_keywords.each do |keyword|
+            
+            if e.path.basename.to_s.match?(keyword)
+                is_match = true
+                break
+            end
+        end
+        
+        is_match
+    end
+
+    file_manager.created_files = selected_source_db_files
+    file_manager.create_dir
+
     FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
     FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
     FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
     
+    all_files_from_old_dir = result_file_manager_from_dir.all_and_hidden_dir_path_files
+
+    download_info_files = all_files_from_old_dir.select do |e|
+        is_match = false
+        source_db_keywords.each do |keyword|
+            
+            if e.basename.to_s.match?(/^\.?#{keyword}/)
+                is_match = true
+                break
+            end
+        end
+        
+        is_match
+    end
+
+    download_info_files.each do |download_info_file|
+        next unless download_info_file.basename.to_s.starts_with?('.')
+        
+        file = File.read(download_info_file)
+        file =~ /^\s{6}(.*?);/
+        dir = $1
+        dir_path = Pathname.new(dir)
+        
+        if download_info_file.basename.to_s.starts_with?('.bold_')
+            DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: dir_path, result_file_manager: file_manager, source: BoldJob)
+        elsif download_info_file.basename.to_s.starts_with?('.gbol_')
+            DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: dir_path, result_file_manager: file_manager, source: GbolJob)
+        elsif download_info_file.basename.to_s.starts_with?('.ncbi_')
+            DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: dir_path, result_file_manager: file_manager, source: NcbiGenbankJob)
+        end
+    end
+
+    file_manager.copy_files(download_info_files)
+
+    puts "Output locations:"
+    puts file_manager.dir_path
+
     exit
 end
 

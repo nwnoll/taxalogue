@@ -56,7 +56,7 @@ class BoldJob
 
         _classify_downloads(download_file_managers)     unless download_only
         _write_marshal_files(download_file_managers)    unless did_use_marshal_file || classify_only || classify_dir
-
+        
         return [result_file_manager, download_file_managers]
     end
 
@@ -89,7 +89,6 @@ class BoldJob
         DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
         DownloadCheckHelper.write_marshal_file(dir: BOLD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump')
     end
-
 
     def _create_download_info_for_result_dir(already_downloaded_dir)
         data_dl_info_public_name = already_downloaded_dir + 'download_info.txt'

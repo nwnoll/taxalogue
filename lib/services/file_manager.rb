@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 class FileManager
-    attr_reader :directory, :versioning, :name, :base_dir, :dir_path, :force, :config, :multiple_files_per_dir, :created_files
-    attr_accessor :status
+    attr_reader :directory, :versioning, :name, :base_dir, :dir_path, :force, :config, :multiple_files_per_dir
+    attr_accessor :status, :created_files
     DATE_TIME_FORMAT = "%Y%m%dT%H%M"
 
-    def initialize(name:, versioning: true, base_dir: '.', force: true, config: nil, multiple_files_per_dir: false)
+    def initialize(name:, versioning: true, base_dir: '.', force: true, config: nil, multiple_files_per_dir: false, created_files: [])
         @base_dir               = Pathname.new(base_dir)
         @name                   = name
         @force                  = force
@@ -21,7 +21,7 @@ class FileManager
         @config                 = config
         @multiple_files_per_dir = multiple_files_per_dir
 
-        @created_files          = [] 
+        @created_files          = created_files 
     end
 
     def self.get_versioned_file_name(name)
@@ -134,6 +134,14 @@ class FileManager
         base_dir.glob('*').select { |entry| entry.file? }
     end
 
+    def all_dir_path_files
+        dir_path.glob('*').select { |entry| entry.file? }
+    end
+
+    def all_and_hidden_dir_path_files
+        dir_path.glob('*', File::FNM_DOTMATCH).select { |entry| entry.file? }
+    end
+
     def all_files_r
         base_dir.glob('**/*').select { |entry| entry.file? }
     end
@@ -154,10 +162,13 @@ class FileManager
         full_path = dir_path + path
         file = File.open(full_path, 'w')
         created_files.push(_file(full_path, file_type))
+
         return file
     end
 
-
+    def copy_files(files)
+        FileUtils.cp files, dir_path
+    end
 
     def versions
         dirs = base_dir.glob("**/#{name}*").select { |entry| entry.directory? }

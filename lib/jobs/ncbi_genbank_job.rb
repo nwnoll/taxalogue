@@ -80,8 +80,7 @@ class NcbiGenbankJob
             unless download_only
                 # replace with download check helper func
                 _create_download_info_for_result_dir(release_info_struct, download_file_managers)
-                # replace with download check helper func
-                _update_already_downloaded_dir_on_new_result_dir(release_info_struct)
+                DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir:release_info_struct.base_dir, result_file_manager: result_file_manager, source: self.class)
             end
 
             return download_file_managers
