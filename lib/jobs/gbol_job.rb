@@ -14,9 +14,8 @@ class GbolJob
         @classify_dir         = params[:classify][:gbol_dir]
     end
 
-    def run
-        already_existing_download_dir   = _get_already_existing_download_dir
-        download_file_manager           = _get_download_file_manager_from_already_downloaded_dir(already_existing_download_dir)
+    def run(already_downloaded_dir)
+        download_file_manager = _get_download_file_manager_from_already_downloaded_dir(already_downloaded_dir)
         
         if download_file_manager.nil?
             if classify_only
@@ -49,10 +48,6 @@ class GbolJob
         _write_marshal_files(download_file_manager) unless classify_only || classify_dir
 
         return [result_file_manager, [download_file_manager]]
-    end
-
-    def _get_already_existing_download_dir
-        GbolDownloadCheckHelper.ask_user_about_gbol_download_dirs(params)
     end
 
     def _get_download_file_manager_from_already_downloaded_dir(already_downloaded_dir)

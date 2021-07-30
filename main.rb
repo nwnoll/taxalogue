@@ -503,8 +503,8 @@ if params[:merge].any?
 
     file_manager.copy_files(download_info_files)
 
-    puts "Output locations:"
-    puts file_manager.dir_path
+    MiscHelper.OUT_header "Output locations:"
+    MiscHelper.OUT_success file_manager.dir_path
 
     exit
 end

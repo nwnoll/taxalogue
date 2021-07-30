@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class MiscHelper
+    PASTEL = Pastel.new
+
     def self.json_file_to_hash(file_name)
         file = File.read(file_name)
         hash = JSON.parse(file)
@@ -210,4 +212,21 @@ class MiscHelper
         puts "Or do it all at once with the create command."
         puts
     end
+
+    def self.OUT_header(str)
+        puts PASTEL.white.on_blue(str)
+    end
+
+    def self.OUT_question(str)
+        puts PASTEL.black.on_yellow(str)
+    end
+
+    def self.OUT_error(str)
+        puts PASTEL.white.on_red(str)
+    end
+
+    def self.OUT_success(str)
+        puts PASTEL.white.on_green(str)
+    end
+    
 end

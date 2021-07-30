@@ -21,8 +21,7 @@ class NcbiGenbankJob
         @classify_dir         = params[:classify][:classify_dir]
     end
 
-    def run
-        release_info_struct         = _get_already_existing_download_dirs
+    def run(release_info_struct)
         old_download_file_managers  = _get_download_file_managers_from_already_downloaded_dir(release_info_struct)
         new_download_file_managers  = old_download_file_managers.select { |dm| division_codes_for(division_ids).include?(dm.name) }
 
@@ -64,10 +63,6 @@ class NcbiGenbankJob
     end
 
     private
-    def _get_already_existing_download_dirs
-        NcbiDownloadCheckHelper.ask_user_about_download_dirs(params)
-    end
-
     def _get_download_file_managers_from_already_downloaded_dir(release_info_struct)
         return [] unless _has_already_downloaded_dir?(release_info_struct)
         

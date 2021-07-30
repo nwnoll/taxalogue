@@ -29,8 +29,7 @@ class BoldJob
 
     end
 
-    def run
-        already_downloaded_dir = _get_already_downloaded_dir
+    def run(already_downloaded_dir)
         download_file_managers = _get_download_file_managers_from_already_downloaded_dir(already_downloaded_dir)
         ## TODO:
         # Problem could be if the program chose a higher taxon
@@ -58,10 +57,6 @@ class BoldJob
         _write_marshal_files(download_file_managers)    unless did_use_marshal_file || classify_only || classify_dir
         
         return [result_file_manager, download_file_managers]
-    end
-
-    def _get_already_downloaded_dir
-        BoldDownloadCheckHelper.ask_user_about_download_dirs(params)
     end
 
     def _get_download_file_managers_from_already_downloaded_dir(already_downloaded_dir)

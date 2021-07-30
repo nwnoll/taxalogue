@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class NcbiDownloadCheckHelper
+    PASTEL = Pastel.new
 
     PRECEDENCE_OF = {
         ## although 0 is higher
@@ -11,7 +12,8 @@ class NcbiDownloadCheckHelper
         "[]" => 0,
     }
     def self.ask_user_about_download_dirs(params, only_successful = true)
-
+        MiscHelper.OUT_header("Looking for NCBI database downloads")
+        
         dirs = FileManager.directories_with_name_of(dir: NcbiGenbankConfig::DOWNLOAD_DIR, dir_name: 'release')
         return nil if DownloadCheckHelper.is_nil_or_empty?(dirs)
     
@@ -61,7 +63,11 @@ class NcbiDownloadCheckHelper
         end
 
         current_and_complete_release = releases.select { |r| r.is_current_release && r.has_all_divisions && r.success }.first
-        return current_and_complete_release unless current_and_complete_release.nil? ## success!
+        unless current_and_complete_release.nil? ## success!
+            puts "You already have the latest Genbank release"
+
+            return current_and_complete_release
+        end
         
         current_incomplete_release = releases.select { |r| r.is_current_release && r.success }.first
         if current_incomplete_release
@@ -76,6 +82,7 @@ class NcbiDownloadCheckHelper
         complete_releases                   = releases.select { |r| r.has_all_divisions }
         successful_and_complete_releases    = releases.select { |r| r.has_all_divisions && r.has_all_divisions }
 
+        byebug
         sorted_successful_and_complete_releases = successful_and_complete_releases.sort_by { |e| _get_release_number(e.name) }.reverse
         successful_and_complete_release = sorted_successful_and_complete_releases.first
         if successful_and_complete_release
@@ -83,7 +90,7 @@ class NcbiDownloadCheckHelper
             puts "You already have downloaded a Genbank release with all needed divisions"
             puts current_release_number == 0 ? "Current release number could not be identified\nYour old release version is #{suc_comp_release_num}" : "However, it is not the latest version\nYou have version #{suc_comp_release_num}, the latest version is #{current_release_number}"
             puts
-            puts "Do you want to use your old version? [Y/n]"
+            MiscHelper.OUT_question "Do you want to use your old version? [Y/n]"
             puts "Otherwise a new download will start"
 
             user_input  = gets.chomp

@@ -2,6 +2,7 @@
 
 class GbolDownloadCheckHelper
     def self.ask_user_about_gbol_download_dirs(params)
+        MiscHelper.OUT_header "Looking for GBOL database downloads"
 
         dirs = FileManager.directories_of(dir: GbolConfig::DOWNLOAD_DIR)
         current_release = nil
@@ -14,27 +15,28 @@ class GbolDownloadCheckHelper
             end
         end
 
+
         if current_release
             ## NEXT
             ## TODO:
             ## Check for download success
             
-            puts "You already have the latest GBOL Dataset release"
+            puts "You already have the latest GBOL release"
             return current_release
         else
-            puts "A new GBOL dataset is available"
-            puts "Do you want to download the new release? [Y/n]"
+            puts "A new GBOL release is available"
+            MiscHelper.OUT_question "Do you want to download the new release? [Y/n]"
             user_input  = gets.chomp
             download_new_release = (user_input =~ /y|yes/i) ? true : false
             if download_new_release
                 return nil
             else
                 if dirs.empty?
-                    puts "No releases available. New GBOL dataset will be downloaded."
+                    puts "No releases available. New GBOL release will be downloaded."
                     return nil
                 else
                     3.times do
-                        puts "Please specify one of the following GBOL dataset releases:"
+                        puts "Please specify one of the following GBOL releases:"
                         dirs.each { |dir| puts dir.to_s }
 
                         user_input  = gets.chomp
