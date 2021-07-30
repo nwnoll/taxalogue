@@ -5,8 +5,6 @@ class BoldDownloadCheckHelper
     RJUST_LEVEL_ONE = " " * 6
     RJUST_LEVEL_TWO = " " * 10
 
-    PASTEL = Pastel.new
-
     def self.select_from_download_dirs(dirs:)
 
         # precedence:
@@ -114,7 +112,7 @@ class BoldDownloadCheckHelper
     end
 
     def self.ask_user_about_download_dirs(params, only_successful = false)
-        MiscHelper.OUT_header "Looking for BOLD database downloads"
+        puts MiscHelper.OUT_header "Looking for BOLD database downloads"
 
         dirs = FileManager.directories_of(dir: BoldConfig::DOWNLOAD_DIR)
         return nil if DownloadCheckHelper.is_nil_or_empty?(dirs)
@@ -133,9 +131,7 @@ class BoldDownloadCheckHelper
         puts "Sequences for #{params[:taxon]} are available in: #{selected_download_dir.to_s}"
         puts "The latest already downloaded version is #{last_download_days} days old"
         puts
-        MiscHelper.OUT_question "Do you want to use the latest already downloaded version? [Y/n]"
-        puts "Otherwise a new download will start"
-    
+        puts MiscHelper.OUT_question "Do you want to use the latest already downloaded version? [Y/n]"
     
         # nested_dir_name = FileManager.dir_name_of(dir: selected_download_dir)
         # download_dir = selected_download_dir + nested_dir_name

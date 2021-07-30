@@ -178,7 +178,7 @@ class MiscHelper
         puts "You used the following parameters:"
         params.each do |key, value|
             next if key.to_s.match?("_object")
-            next if value.empty? || value.nil?
+            # next if value.empty? || value.nil?
 
             puts "\t#{key}: #{value}"
         end
@@ -214,19 +214,19 @@ class MiscHelper
     end
 
     def self.OUT_header(str)
-        puts PASTEL.white.on_blue(str)
+        PASTEL.white.on_blue(str)
     end
 
     def self.OUT_question(str)
-        puts PASTEL.black.on_yellow(str)
+        PASTEL.black.on_yellow(str)
     end
 
     def self.OUT_error(str)
-        puts PASTEL.white.on_red(str)
+        PASTEL.white.on_red(str)
     end
 
     def self.OUT_success(str)
-        puts PASTEL.white.on_green(str)
+        PASTEL.white.on_green(str)
     end
     
 end

@@ -16,13 +16,13 @@ class GbolClassifier
         )
     end
 
-    def initialize(params:, file_name:, fast_run: false, file_manager:)
+    def initialize(params:, file_name:, file_manager:)
         @file_name          = file_name
         @params             = params
         @query_taxon_object = params[:taxon_object]
         @query_taxon_name   = query_taxon_object.canonical_name
         @query_taxon_rank   = query_taxon_object.taxon_rank
-        @fast_run           = fast_run
+        @fast_run           = params[:fast_run]
         @file_manager       = file_manager
         @filter_params      = params[:filter]
         @taxonomy_params    = params[:taxonomy]
@@ -55,9 +55,9 @@ class GbolClassifier
             SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
         end
 
-        tsv             = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_fast_#{fast_run}_output.tsv", OutputFormat::Tsv)
-        fasta           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_fast_#{fast_run}_output.fas", OutputFormat::Fasta)
-        comparison_file = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_fast_#{fast_run}_comparison.tsv",   OutputFormat::Comparison)
+        tsv             = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_output.tsv", OutputFormat::Tsv)
+        fasta           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_output.fas", OutputFormat::Fasta)
+        comparison_file = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_comparison.tsv",   OutputFormat::Comparison)
     
         specimens_of_taxon.keys.each do |taxon_name|
             nomial              = specimens_of_taxon[taxon_name][:nomial]

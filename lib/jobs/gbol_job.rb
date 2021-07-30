@@ -133,7 +133,7 @@ class GbolJob
     def _classify_downloads(download_file_manager)
         return nil unless File.file?(download_file_manager.file_path)
 
-        gbol_classifier   = GbolClassifier.new(params: params, fast_run: true, file_name: download_file_manager.file_path, file_manager: result_file_manager)
+        gbol_classifier   = GbolClassifier.new(params: params, file_name: download_file_manager.file_path, file_manager: result_file_manager)
         error_file = gbol_classifier.run ## result_file_manager creates new files and will push those into internal array
     
         return error_file

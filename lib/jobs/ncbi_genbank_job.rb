@@ -324,7 +324,7 @@ class NcbiGenbankJob
             files.each do |file|
                 next unless File.file?(file)
 
-                classifier = NcbiGenbankClassifier.new(fast_run: true, file_name: file, file_manager: result_file_manager, params: params)
+                classifier = NcbiGenbankClassifier.new(file_name: file, file_manager: result_file_manager, params: params)
                 erroneous_files = classifier.run ## result_file_manager creates new files and will push those into internal array
                 erroneous_files_of[download_file_manager] = erroneous_files if erroneous_files.any?
             end

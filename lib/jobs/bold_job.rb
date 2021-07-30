@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class BoldJob
-    attr_reader :taxon, :markers, :taxon_name, :result_file_manager, :try_synonyms, :taxonomy_params, :params, :download_only, :classify_only, :classify_dir
+    attr_reader :taxon, :markers, :taxon_name, :result_file_manager, :try_synonyms, :taxonomy_params, :params, :download_only, :classify_only, :classify_dir, :num_threads
 
     HEADER_LENGTH = 1
     BOLD_DIR = Pathname.new('downloads/BOLD')
@@ -19,6 +19,7 @@ class BoldJob
         @download_only        = params[:download][:bold] || params[:download][:all]
         @classify_only        = params[:classify][:bold] || params[:classify][:all]
         @classify_dir         = params[:classify][:bold_dir]
+        @num_threads          = params[:num_threads] < 0 ? 5 : params[:num_threads]
         @root_download_dir    = nil
 
         @pending = Pastel.new.white.on_yellow('pending')
@@ -126,7 +127,6 @@ class BoldJob
         reached_genus_level     = false
         download_file_managers  = []
         rest_taxa               = Hash.new
-        num_threads             = 5
 
         num_of_ranks.times do |i|
             _print_download_progress_report(root_node: root_node, rank_level: i)
@@ -495,7 +495,7 @@ class BoldJob
             next unless download_file_manager.status == 'success'
             next unless File.file?(download_file_manager.file_path)
 
-            bold_classifier   = BoldClassifier.new(params: params, fast_run: false, file_name: download_file_manager.file_path, file_manager: result_file_manager)
+            bold_classifier   = BoldClassifier.new(params: params, file_name: download_file_manager.file_path, file_manager: result_file_manager)
             bold_classifier.run ## result_file_manager creates new files and will push those into internal array
         end
     end

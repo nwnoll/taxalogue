@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class NcbiDownloadCheckHelper
-    PASTEL = Pastel.new
-
     PRECEDENCE_OF = {
         ## although 0 is higher
         ## i reverse the resulting list later
@@ -12,7 +10,7 @@ class NcbiDownloadCheckHelper
         "[]" => 0,
     }
     def self.ask_user_about_download_dirs(params, only_successful = true)
-        MiscHelper.OUT_header("Looking for NCBI database downloads")
+        puts MiscHelper.OUT_header("Looking for NCBI database downloads")
         
         dirs = FileManager.directories_with_name_of(dir: NcbiGenbankConfig::DOWNLOAD_DIR, dir_name: 'release')
         return nil if DownloadCheckHelper.is_nil_or_empty?(dirs)
@@ -90,8 +88,7 @@ class NcbiDownloadCheckHelper
             puts "You already have downloaded a Genbank release with all needed divisions"
             puts current_release_number == 0 ? "Current release number could not be identified\nYour old release version is #{suc_comp_release_num}" : "However, it is not the latest version\nYou have version #{suc_comp_release_num}, the latest version is #{current_release_number}"
             puts
-            MiscHelper.OUT_question "Do you want to use your old version? [Y/n]"
-            puts "Otherwise a new download will start"
+            puts MiscHelper.OUT_question "Do you want to use your old version? [Y/n]"
 
             user_input  = gets.chomp
             use_old_version = (user_input =~ /y|yes/i) ? true : false

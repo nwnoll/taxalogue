@@ -63,9 +63,19 @@ global = OptionParser.new do |opts|
 		taxon_name
 	end
 	
-	opts.on('-m MARKERS', String, '--markers') do |markers|
+	opts.on('-m MARKERS', String, '--markers', 'Currently only co1 is available. default: co1') do |markers|
 		params[:marker_objects] = MiscHelper.create_marker_objects(query_marker_names: markers)
 	end
+
+    opts.on('-f FAST_RUN', TrueClass, '--fast_run', 'Accellerates Taxon comparison. Turn it off with --fast_run false. default: true') do |flag|
+        params[:fast_run] = flag
+        flag
+    end
+
+    opts.on('-n NUM_THREADS', Integer, '--num_threads', 'Number of threads for downloads. default: 5') do |num_threads|
+        params[:num_threads] = num_threads
+        num_threads
+    end
   
   opts.separator ""
   opts.separator subtext
@@ -78,6 +88,7 @@ subcommands = {
 		opts.on('-g', '--gbol', 'creates a reference database with sequences from GBOL')
 		opts.on('-b', '--bold', 'creates a reference database with sequences from BOLD')
 		opts.on('-k', '--genbank', 'creates a reference database with sequences from Genbank')
+		opts.on('-C', '--no_contaminants', 'If set, then no possible contaminants are downloaded. Some sequences in the source databases have wrong labels and belong in fact to theses contaminants.')
 	end,
 
     download: OptionParser.new do |opts|
@@ -312,9 +323,11 @@ if params[:create].any?
         end
     end
 
+    abort MiscHelper.OUT_error "Need at least one parameter for the databases: e.g: create --all" if jobs.empty?
+
     file_manager.create_dir
 
-    # MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
+    MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects]) unless params[:create][:no_contaminants]
 	
     multiple_jobs = MultipleJobs.new(jobs: jobs, params: params)
 	jobs_state = multiple_jobs.run
@@ -503,8 +516,8 @@ if params[:merge].any?
 
     file_manager.copy_files(download_info_files)
 
-    MiscHelper.OUT_header "Output locations:"
-    MiscHelper.OUT_success file_manager.dir_path
+    puts MiscHelper.OUT_header "Output locations:"
+    puts MiscHelper.OUT_success file_manager.dir_path
 
     exit
 end
@@ -1352,23 +1365,6 @@ exit
 # DatabaseSchema.create_db
 # GbifHomonymImporter.new(file_name: 'homonyms.txt').run
 # exit
-
-# byebug
-if params[:import_gbol]
-	gbol_classifier = GbolClassifier.new(fast_run: true, file_name: params[:import_gbol], query_taxon_object: params[:taxon_object])
-	gbol_classifier.run
-	exit
-elsif params[:import_genbank]
-	ncbi_genbank_classifier = NcbiGenbankClassifier.new(fast_run: false, file_name: params[:import_genbank], query_taxon_object: params[:taxon_object], markers: params[:marker_objects]) if params[:import_genbank]
-	ncbi_genbank_classifier.run
-	exit
-elsif params[:import_bold]
-	file_manager =  FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-	bold_classifier = BoldClassifier.new(fast_run: false, file_name: params[:import_bold], query_taxon_object: params[:taxon_object], file_manager: file_manager)
-	bold_classifier.run
-	exit
-end
-exit
 
 
 

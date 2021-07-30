@@ -5,13 +5,13 @@ class BoldClassifier
     attr_reader :file_name, :params, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :markers, :regexes_for_markers, :taxonomy_params, :region_params
 
     @@index_by_column_name = nil
-    def initialize(file_name:, params:, fast_run: true, file_manager:)
+    def initialize(file_name:, params:, file_manager:)
         @file_name            = file_name
         @params               = params
         @query_taxon_object   = params[:taxon_object]
         @query_taxon_name     = query_taxon_object.canonical_name
         @query_taxon_rank     = query_taxon_object.taxon_rank
-        @fast_run             = fast_run
+        @fast_run             = params[:fast_run]
         @markers              = params[:marker_objects]
         @regexes_for_markers  = Marker.regexes(db: self.class, markers: markers)
         @file_manager         = file_manager
@@ -39,9 +39,9 @@ class BoldClassifier
             SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
         end
 
-        tsv             = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_bold_fast_#{fast_run}_output.tsv", OutputFormat::Tsv)
-        fasta           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_bold_fast_#{fast_run}_output.fas", OutputFormat::Fasta)
-        comparison_file = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_bold_fast_#{fast_run}_comparison.tsv",   OutputFormat::Comparison)
+        tsv             = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_bold_output.tsv", OutputFormat::Tsv)
+        fasta           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_bold_output.fas", OutputFormat::Fasta)
+        comparison_file = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_bold_comparison.tsv",   OutputFormat::Comparison)
 
         specimens_of_taxon.keys.each do |taxon_name|
             nomial              = specimens_of_taxon[taxon_name][:nomial]
