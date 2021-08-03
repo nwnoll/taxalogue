@@ -24,7 +24,7 @@ class Nomial
     end
 
     def taxonomy(first_specimen_info:, importer:)
-        nil
+        return nil
     end
 
     private
@@ -40,16 +40,18 @@ class Nomial
 
     def _cleaned_name_parts
         return [] if _name_parts.nil?
+
         i                   = _open_nomenclature.map { |n| _name_parts.index(n) }.compact.min
         cleaned_name_parts  = _name_parts[0 ... i]
         cleaned_name_parts.map! { |word| MiscHelper.normalize(word) }
         cleaned = cleaned_name_parts.delete_if { |word| word =~ /[0-9]|_|\W/}
         cleaned.select! { |word| word == cleaned[0] || word !~ /[A-Z]/} if cleaned.size > 1
-        cleaned
+        
+        return cleaned
     end
 
     def _cleaned_name
-        cleaned_name = cleaned_name_parts.join(' ')
+        return cleaned_name_parts.join(' ')
     end
 end
 
@@ -246,9 +248,9 @@ class Monomial
     def _get_gbif_records(current_name:, importer:, first_specimen_info:, gbif_api_exact: false, gbif_api_fuzzy: false)
         return nil if current_name.nil? || query_taxon_object.nil? || query_taxon_rank.nil?
         
-        all_records = GbifTaxonomy.where(canonical_name: current_name)            if !gbif_api_exact  && !gbif_api_fuzzy
-        all_records = GbifApi.new(query: current_name, taxonomy_params: taxonomy_params).records                    if gbif_api_exact   && !gbif_api_fuzzy
-        all_records = GbifApi.new(path: _fuzzy_path, query: current_name, taxonomy_params: taxonomy_params).records if gbif_api_fuzzy   && !gbif_api_exact
+        all_records = GbifTaxonomy.where(canonical_name: current_name) if !gbif_api_exact && !gbif_api_fuzzy
+        all_records = GbifApi.new(query: current_name, taxonomy_params: taxonomy_params).records if gbif_api_exact && !gbif_api_fuzzy
+        all_records = GbifApi.new(path: _fuzzy_path, query: current_name, taxonomy_params: taxonomy_params).records if gbif_api_fuzzy && !gbif_api_exact
         return nil if all_records.nil?
 
         records = _is_homonym?(current_name) ? _records_with_matching_lineage(current_name: current_name, lineage: importer.get_source_lineage(first_specimen_info), all_records: all_records) : all_records
@@ -557,6 +559,7 @@ class Polynomial < Monomial
 
         cutted_name = _remove_last_name_part(name)
         return nil if cutted_name.blank?
+        
         nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
         nomial.gbif_taxonomy_backbone(first_specimen_info: first_specimen_info, importer: importer)
 
@@ -564,6 +567,7 @@ class Polynomial < Monomial
         source_lineage.combined.reverse.each do |source_lineage_taxon_name|
             records = _get_gbif_records(current_name: source_lineage_taxon_name, importer: importer, first_specimen_info: first_specimen_info)
             record  = _gbif_taxonomy_object(records: records)
+            
             return record unless record.nil?
         end
     end
@@ -573,6 +577,7 @@ class Polynomial < Monomial
         parts = name_to_clean.split(' ')
         parts.pop
         parts = parts.join(' ')
+        
         return parts
     end
 end

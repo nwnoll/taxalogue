@@ -55,9 +55,7 @@ class GbolClassifier
             SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
         end
 
-        tsv             = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_output.tsv", OutputFormat::Tsv)
-        fasta           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_output.fas", OutputFormat::Fasta)
-        comparison_file = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_gbol_comparison.tsv",   OutputFormat::Comparison)
+        file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'gbol')
     
         specimens_of_taxon.keys.each do |taxon_name|
             nomial              = specimens_of_taxon[taxon_name][:nomial]
@@ -69,22 +67,31 @@ class GbolClassifier
             next unless taxonomic_info
             next unless taxonomic_info.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
-            syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [TaxonomyHelper.get_source_db(taxonomy_params)])
-            OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms_of_taxonomy: syn.synonyms_of_taxonomy, used_taxonomy: TaxonomyHelper.get_source_db(taxonomy_params))
+            # if taxonomic_info.taxon_rank =~ /species/ || (!taxonomic_info.genus.blank? && !taxonomic_info.canonical_name.blank?)
+            #     canonical_ary = taxonomic_info.canonical_name.split(' ')
+            #     if canonical_ary.size >= 2
+            #         if canonical_ary.first != taxonomic_info.genus
+            #             p canonical_ary.first
+            #             p taxonomic_info.genus
+            #             p first_specimen_info
+            #             p taxonomic_info
+            #             p _to_taxon_info_fasta(taxonomic_info)
+            #             p _to_taxon_info_tsv(taxonomic_info)
+            #             p taxonomic_info.taxon_rank
+            #             p taxonomic_info.public_send(TaxonomyHelper.latinize_rank(taxonomic_info.taxon_rank))
+            #             puts '*'  * 100
+            #         end
+            #     end
+            # end
 
-        # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms_of_taxonomy: syn.synonyms_of_taxonomy)
+            # puts _to_taxon_info_tsv_all_standard_ranks(taxonomic_info)
 
-            specimens_of_taxon[taxon_name][:data].each do |data|
-                OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
-                OutputFormat::Fasta.write_to_file(fasta: fasta, data: data, taxonomic_info: taxonomic_info)
-            end
+            MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, specimens_of_taxon: specimens_of_taxon, taxon_name: taxon_name)
 
         end
-        OutputFormat::Tsv.rewind
 
-        tsv.close
-        fasta.close
-        comparison_file.close
+        OutputFormat::Tsv.rewind
+        file_of.each { |fc, fh| fh.close }
 
         return nil
     end

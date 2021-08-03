@@ -5,3 +5,12 @@
 :num_threads: 5
 :taxonomy:
   :ncbi: true
+:output:
+  :table: true
+  :fasta: true
+  :comparison: true
+  :qiime2: false
+  :kraken2: false
+  :dada2_taxonomy: false
+  :dada2_species: false
+  

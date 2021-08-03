@@ -99,6 +99,12 @@ class TestNomial < Test::Unit::TestCase
         assert_equal 'Bombus terrestris',               Nomial.generate(name: 'Bombus terrestris aff. cf. terrestris', query_taxon_rank: @query_taxon_rank, query_taxon_object: @query_taxon_object, taxonomy_params: @taxonomy_params).name
         assert_equal 'Bombus terrestris terrestris',    Nomial.generate(name: 'Bombus terrestris terrestris', query_taxon_rank: @query_taxon_rank, query_taxon_object: @query_taxon_object, taxonomy_params: @taxonomy_params).name
         assert_equal 'Bombus',                          Nomial.generate(name: 'Bombus sp', query_taxon_rank: @query_taxon_rank, query_taxon_object: @query_taxon_object, taxonomy_params: @taxonomy_params).name
-        assert_equal 'Bombus| sp',                      Nomial.generate(name: 'Bombus| sp', query_taxon_rank: @query_taxon_rank, query_taxon_object: @query_taxon_object, taxonomy_params: @taxonomy_params).name
+        assert_equal 'Bombus',                      Nomial.generate(name: 'Bombus| sp', query_taxon_rank: @query_taxon_rank, query_taxon_object: @query_taxon_object, taxonomy_params: @taxonomy_params).name
+    
+    
+
+        
+        
+    
     end
 end

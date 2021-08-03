@@ -13,7 +13,8 @@ params = {
 	update: Hash.new,
 	filter: Hash.new,
 	taxonomy: Hash.new,
-	region: Hash.new
+	region: Hash.new,
+    output: Hash.new
 }
 
 $fada_regions_of 	= Hash.new
@@ -49,7 +50,7 @@ Commonly used commands are:
    taxonomy :  different options regarding the used taxonomy
    region   :  select sequences by country, continent, biogeographic regions etc.
    import   :  imports files into SQL database, in general this happens after first start automatically
-
+   output   :  specify different output formats
 See 'bundle exec ruby main.rb COMMAND --help' for more information on a specific command.
 HELP
 
@@ -119,6 +120,17 @@ subcommands = {
         opts.on('-g', '--gbol', 'Merges output of GBOL source database')
         opts.on('-b', '--bold', 'Merges output of BOLD source database')
         opts.on('-k', '--genbank', 'Merges output of NCBI GenBank source database')
+    end,
+
+    output: OptionParser.new do |opts|
+        opts.banner = "Usage: output [options]"
+        opts.on('-t BOOLEAN', TrueClass, '--table', 'TSV Table. default: true')
+        opts.on('-f BOOLEAN', TrueClass, '--fasta', 'fasta file. default: true')
+        opts.on('-c BOOLEAN', TrueClass, '--comparison', 'Comparison TSV, shows initial Taxon information and normalization by Taxonomy. default: true')
+        opts.on('-q BOOLEAN', FalseClass, '--qiime2', 'QIIME2 Taxonomy files, includes a taxonomy text file and a fasta file.')
+        opts.on('-k BOOLEAN', FalseClass, '--kraken2', 'Kraken2 fasta file, works only with NCBI taxonomy.')
+        opts.on('-d BOOLEAN', FalseClass, '--dada2_taxonomy', 'Fasta output file for the dada2 assignTaxonomy function.')
+        opts.on('-s BOOLEAN', FalseClass, '--dada2_species', 'Fasta output file for the dada2 assignSpecies function')
     end,
 
 	import: OptionParser.new do |opts|
@@ -285,6 +297,11 @@ if MiscHelper.multiple_actions?(params)
     exit
 end
 
+if params[:output][:kraken2] && !params[:ncbi]
+    puts "The Kraken2 Output requires the NCBI Taxonomy"
+    puts "Any other Taxonomy is not allowed"
+    puts
+end
 ## if taxonomy was chosen by user, it needs to be updated
 ## object is also not set in opts.on
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
@@ -334,9 +351,7 @@ if params[:create].any?
     sleep 2
 
     if jobs_state == :success
-        FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
-        FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
-        FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
+        MiscHelper.run_file_merger(file_manager: file_manager, params: params)
     end
 
     exit
@@ -423,9 +438,7 @@ if params[:classify].any?
 
     unless params[:classify][:no_merge]
         if jobs_state == :success
-            FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
-            FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
-            FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
+            MiscHelper.run_file_merger(file_manager: file_manager, params: params)
         end
     end
 
@@ -478,9 +491,7 @@ if params[:merge].any?
     file_manager.created_files = selected_source_db_files
     file_manager.create_dir
 
-    FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)
-    FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)
-    FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)
+    MiscHelper.run_file_merger(file_manager: file_manager, params: params)
     
     all_files_from_old_dir = result_file_manager_from_dir.all_and_hidden_dir_path_files
 

@@ -228,5 +228,98 @@ class MiscHelper
     def self.OUT_success(str)
         PASTEL.white.on_green(str)
     end
-    
+
+    def self.run_file_merger(file_manager:, params:)
+        FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)                    if params[:output][:table]
+        FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)                  if params[:output][:fasta]
+        FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)             if params[:output][:comparison]
+        FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Qiime2Taxonomy)         if params[:output][:qiime2]
+        FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Qiime2TaxonomyFasta)    if params[:output][:qiime2]
+        FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Kraken2Fasta)           if params[:output][:kraken2]
+        FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Dada2TaxonomyFasta)     if params[:output][:dada2_taxonomy]
+        FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Dada2SpeciesFasta)      if params[:output][:dada2_species]
+    end
+
+    def self.create_output_files(file_manager:, query_taxon_name:, file_name:, params:, source_db:)
+        
+        file_of = Hash.new
+        if params[:output][:table]
+            tsv                         = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_output.tsv", OutputFormat::Tsv)
+            file_of[OutputFormat::Tsv]  = tsv
+        end
+
+        if params[:output][:fasta]
+            fasta                           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_output.fas", OutputFormat::Fasta)
+            file_of[OutputFormat::Fasta]    = fasta
+        end
+
+        if params[:output][:qiime2]
+            qiime2_taxonomy                         = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_qiime2_taxonomy.txt", OutputFormat::Qiime2Taxonomy)
+            file_of[OutputFormat::Qiime2Taxonomy]   = qiime2_taxonomy
+        end
+        
+        if params[:output][:qiime2] 
+            qiime2_fasta                                = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_qiime2_taxonomy.fas", OutputFormat::Qiime2TaxonomyFasta)
+            file_of[OutputFormat::Qiime2TaxonomyFasta]  = qiime2_fasta
+        end
+
+        if params[:output][:kraken2]
+            kraken2_fasta                       = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_kraken2.fas", OutputFormat::Kraken2Fasta)                  
+            file_of[OutputFormat::Kraken2Fasta] = kraken2_fasta
+        end
+        
+        if params[:output][:comparison]
+            comparison_file                     = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_comparison.tsv",   OutputFormat::Comparison)
+            file_of[OutputFormat::Comparison]   = comparison_file
+        end
+        
+        if params[:output][:dada2_taxonomy]
+            dada2_taxonomy_fasta                        = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_dada2_taxonomy.fas",   OutputFormat::Dada2TaxonomyFasta)   
+            file_of[OutputFormat::Dada2TaxonomyFasta]   = dada2_taxonomy_fasta
+        end
+        
+        if params[:output][:dada2_species]
+            dada2_species_fasta                         = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_dada2_species.fas",   OutputFormat::Dada2SpeciesFasta)
+            file_of[OutputFormat::Dada2SpeciesFasta]    = dada2_species_fasta
+        end
+
+        return file_of
+    end
+
+    def self.write_to_files(file_of:, taxonomic_info:, nomial:, params:, specimens_of_taxon:, taxon_name:)
+
+        file_of.each do |output_file_class, file|
+
+            if output_file_class == OutputFormat::Comparison
+                syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [TaxonomyHelper.get_source_db(params[:taxonomy])])
+                OutputFormat::Comparison.write_to_file(file: file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms_of_taxonomy: syn.synonyms_of_taxonomy, used_taxonomy: TaxonomyHelper.get_source_db(params[:taxonomy]))
+                # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms_of_taxonomy: syn.synonyms_of_taxonomy)
+            end
+            
+            specimens_of_taxon[taxon_name][:data].each do |data|
+
+                if output_file_class == OutputFormat::Tsv
+                    OutputFormat::Tsv.write_to_file(tsv: file, data: data, taxonomic_info: taxonomic_info)
+
+                elsif output_file_class == OutputFormat::Fasta
+                    OutputFormat::Fasta.write_to_file(fasta: file, data: data, taxonomic_info: taxonomic_info)
+
+                elsif output_file_class == OutputFormat::Qiime2Taxonomy
+                    OutputFormat::Qiime2Taxonomy.write_to_file(file: file, taxonomic_info: taxonomic_info, identifier: data[:identifier])
+
+                elsif output_file_class == OutputFormat::Qiime2TaxonomyFasta
+                    OutputFormat::Qiime2TaxonomyFasta.write_to_file(fasta: file, data: data)
+
+                elsif output_file_class == OutputFormat::Kraken2Fasta
+                    OutputFormat::Kraken2Fasta.write_to_file(fasta: file, data: data, taxonomic_info: taxonomic_info)
+
+                elsif output_file_class == OutputFormat::Dada2TaxonomyFasta
+                    OutputFormat::Dada2TaxonomyFasta.write_to_file(fasta: file, data: data, taxonomic_info: taxonomic_info)
+
+                elsif output_file_class == OutputFormat::Dada2SpeciesFasta
+                    OutputFormat::Dada2SpeciesFasta.write_to_file(fasta: file, data: data, taxonomic_info: taxonomic_info)
+                end
+            end
+        end
+    end
 end

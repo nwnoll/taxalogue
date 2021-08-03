@@ -19,7 +19,7 @@ class FileMerger
             
 
             file_in.each_line do |line|
-                next if file_in.lineno == 1 && i != 0 && file.type != OutputFormat::Fasta # print tsv header only once
+                next if file_in.lineno == 1 && i != 0 && (file.type == OutputFormat::Tsv || file.type == OutputFormat::Comparison) # print tsv header only once
                 
                 merged_file_out.write line
             end
@@ -35,8 +35,18 @@ class FileMerger
             return 'merged_output.tsv'
         elsif type == OutputFormat::Fasta
             return 'merged_output.fas'
+        elsif type == OutputFormat::Qiime2TaxonomyFasta
+            return 'merged_qiime2_taxonomy.fas'
         elsif type == OutputFormat::Comparison
             return 'merged_comparison.tsv'
+        elsif type == OutputFormat::Qiime2Taxonomy
+            return 'merged_qiime2_taxonomy.txt'
+        elsif type == OutputFormat::Kraken2Fasta
+            return 'merged_kraken2.fas'
+        elsif type == OutputFormat::Dada2TaxonomyFasta
+            return 'merged_dada2_taxonomy.fas'
+        elsif type == OutputFormat::Dada2SpeciesFasta
+            return 'merged_dada2_species.fas'
         else
             return nil
         end
@@ -49,6 +59,16 @@ class FileMerger
             return OutputFormat::MergedFasta
         elsif type == OutputFormat::Comparison
             return OutputFormat::MergedComparison
+        elsif type == OutputFormat::Qiime2Taxonomy
+            return OutputFormat::MergedQiime2Taxonomy
+        elsif type == OutputFormat::Qiime2TaxonomyFasta
+            return OutputFormat::MergedQiime2TaxonomyFasta
+        elsif type == OutputFormat::Kraken2Fasta
+            return OutputFormat::MergedKraken2Fasta
+        elsif type == OutputFormat::Dada2TaxonomyFasta
+            return OutputFormat::MergedDada2TaxonomyFasta
+        elsif type == OutputFormat::Dada2SpeciesFasta
+            return OutputFormat::MergedDada2SpeciesFasta
         else
             return nil
         end
