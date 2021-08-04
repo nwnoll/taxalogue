@@ -112,7 +112,7 @@ class GbolClassifier
 
             # puts _to_taxon_info_tsv_all_standard_ranks(taxonomic_info)
 
-            MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, specimens_of_taxon: specimens_of_taxon, taxon_name: taxon_name)
+            MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
 
         end
 

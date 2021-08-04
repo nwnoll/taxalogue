@@ -286,7 +286,7 @@ class MiscHelper
         return file_of
     end
 
-    def self.write_to_files(file_of:, taxonomic_info:, nomial:, params:, specimens_of_taxon:, taxon_name:)
+    def self.write_to_files(file_of:, taxonomic_info:, nomial:, params:, data:)
 
         file_of.each do |output_file_class, file|
 
@@ -296,28 +296,28 @@ class MiscHelper
                 # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms_of_taxonomy: syn.synonyms_of_taxonomy)
             end
             
-            specimens_of_taxon[taxon_name][:data].each do |data|
+            data.each do |datum|
 
                 if output_file_class == OutputFormat::Tsv
-                    OutputFormat::Tsv.write_to_file(tsv: file, data: data, taxonomic_info: taxonomic_info)
+                    OutputFormat::Tsv.write_to_file(tsv: file, data: datum, taxonomic_info: taxonomic_info)
 
                 elsif output_file_class == OutputFormat::Fasta
-                    OutputFormat::Fasta.write_to_file(fasta: file, data: data, taxonomic_info: taxonomic_info)
+                    OutputFormat::Fasta.write_to_file(fasta: file, data: datum, taxonomic_info: taxonomic_info)
 
                 elsif output_file_class == OutputFormat::Qiime2Taxonomy
-                    OutputFormat::Qiime2Taxonomy.write_to_file(file: file, taxonomic_info: taxonomic_info, identifier: data[:identifier])
+                    OutputFormat::Qiime2Taxonomy.write_to_file(file: file, taxonomic_info: taxonomic_info, identifier: datum[:identifier])
 
                 elsif output_file_class == OutputFormat::Qiime2TaxonomyFasta
-                    OutputFormat::Qiime2TaxonomyFasta.write_to_file(fasta: file, data: data)
+                    OutputFormat::Qiime2TaxonomyFasta.write_to_file(fasta: file, data: datum, taxonomic_info: taxonomic_info)
 
                 elsif output_file_class == OutputFormat::Kraken2Fasta
-                    OutputFormat::Kraken2Fasta.write_to_file(fasta: file, data: data, taxonomic_info: taxonomic_info)
+                    OutputFormat::Kraken2Fasta.write_to_file(fasta: file, data: datum, taxonomic_info: taxonomic_info)
 
                 elsif output_file_class == OutputFormat::Dada2TaxonomyFasta
-                    OutputFormat::Dada2TaxonomyFasta.write_to_file(fasta: file, data: data, taxonomic_info: taxonomic_info)
+                    OutputFormat::Dada2TaxonomyFasta.write_to_file(fasta: file, data: datum, taxonomic_info: taxonomic_info)
 
                 elsif output_file_class == OutputFormat::Dada2SpeciesFasta
-                    OutputFormat::Dada2SpeciesFasta.write_to_file(fasta: file, data: data, taxonomic_info: taxonomic_info)
+                    OutputFormat::Dada2SpeciesFasta.write_to_file(fasta: file, data: datum, taxonomic_info: taxonomic_info)
                 end
             end
         end

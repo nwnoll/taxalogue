@@ -70,10 +70,13 @@ class NcbiGenbankClassifier
                 return erroneous_files
             end
 
-            tsv             = file_manager.create_file("#{query_taxon_name}_#{file_name.basename.sub(/\..*/, '')}_ncbi_output.tsv", OutputFormat::Tsv)
-            fasta           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename.sub(/\..*/, '')}_ncbi_output.fas", OutputFormat::Fasta)
-            comparison_file = file_manager.create_file("#{query_taxon_name}_#{file_name.basename.sub(/\..*/, '')}_ncbi_comparison.tsv", OutputFormat::Comparison)
-    
+            # tsv             = file_manager.create_file("#{query_taxon_name}_#{file_name.basename.sub(/\..*/, '')}_ncbi_output.tsv", OutputFormat::Tsv)
+            # fasta           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename.sub(/\..*/, '')}_ncbi_output.fas", OutputFormat::Fasta)
+            # comparison_file = file_manager.create_file("#{query_taxon_name}_#{file_name.basename.sub(/\..*/, '')}_ncbi_comparison.tsv", OutputFormat::Comparison)
+            
+            file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'bold')
+            
+
             specimens_of_taxon.keys.each do |taxon_name|
                 nomial              = specimens_of_taxon[taxon_name][:nomial]
                 next unless nomial
@@ -83,24 +86,31 @@ class NcbiGenbankClassifier
 
                 next unless taxonomic_info
                 next unless taxonomic_info.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name
-
+                
+                if filter_params[:taxon_rank]
+                    has_user_taxon_rank = FilterHelper.has_taxon_tank(rank: filter_params[:taxon_rank], taxonomic_info: taxonomic_info)
+                    next unless has_user_taxon_rank
+                end
+    
+                MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
+    
                 # Synonym List
-                syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [TaxonomyHelper.get_source_db(taxonomy_params)])
+                # syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [TaxonomyHelper.get_source_db(taxonomy_params)])
                 # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms_of_taxonomy: syn.synonyms_of_taxonomy)
 
-                OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms_of_taxonomy: syn.synonyms_of_taxonomy, used_taxonomy: TaxonomyHelper.get_source_db(taxonomy_params) )
+                # OutputFormat::Comparison.write_to_file(file: comparison_file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms_of_taxonomy: syn.synonyms_of_taxonomy, used_taxonomy: TaxonomyHelper.get_source_db(taxonomy_params) )
 
-                specimens_of_taxon[taxon_name][:data].each do |data|
-                    OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
-                    OutputFormat::Fasta.write_to_file(fasta: fasta, data: data, taxonomic_info: taxonomic_info)
-                end
+                # specimens_of_taxon[taxon_name][:data].each do |data|
+                #     OutputFormat::Tsv.write_to_file(tsv: tsv, data: data, taxonomic_info: taxonomic_info)
+                #     OutputFormat::Fasta.write_to_file(fasta: fasta, data: data, taxonomic_info: taxonomic_info)
+                # end
             end
-
             OutputFormat::Tsv.rewind
+            file_of.each { |fc, fh| fh.close }
 
-            tsv.close
-            fasta.close
-            comparison_file.close
+            # tsv.close
+            # fasta.close
+            # comparison_file.close
         end
 
         return erroneous_files
