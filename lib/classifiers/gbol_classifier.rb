@@ -57,6 +57,25 @@ class GbolClassifier
 
         file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'gbol')
     
+        if params[:filter][:dereplicate]
+            specimens_of_sequence = Hash.new { |h,k| h[k] = [] }
+            specimens_of_taxon.keys.each do |taxon_name|
+                specimens_of_taxon[taxon_name][:data].each do |specimen|
+                    specimens_of_sequence[specimen[:sequence]].push(taxon_name)
+                end
+            end
+
+            specimens_of_sequence.each do |seq, names_ary|
+                if names_ary.uniq.size > 1
+                    puts seq
+                    puts names_ary.size
+                    p names_ary.uniq
+                    puts
+                    puts '*' * 100
+                end
+            end
+        end
+
         specimens_of_taxon.keys.each do |taxon_name|
             nomial              = specimens_of_taxon[taxon_name][:nomial]
             next unless nomial
@@ -66,6 +85,13 @@ class GbolClassifier
             
             next unless taxonomic_info
             next unless taxonomic_info.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name
+            
+
+            if filter_params[:taxon_rank]
+                has_user_taxon_rank = FilterHelper.has_taxon_tank(rank: filter_params[:taxon_rank], taxonomic_info: taxonomic_info)
+                next unless has_user_taxon_rank
+            end
+
 
             # if taxonomic_info.taxon_rank =~ /species/ || (!taxonomic_info.genus.blank? && !taxonomic_info.canonical_name.blank?)
             #     canonical_ary = taxonomic_info.canonical_name.split(' ')

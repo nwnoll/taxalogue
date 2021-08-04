@@ -5,7 +5,7 @@ class OutputFormat::Dada2SpeciesFasta
 
     def self.write_to_file(fasta:, data:, taxonomic_info:)
         header = fasta_header_dada2_species(data: data, taxonomic_info:taxonomic_info)
-        next if header.nil?
+        return nil if header.nil?
 
         fasta.puts header
         fasta.puts _fasta_seq(data: data)

@@ -47,7 +47,7 @@ module StringFormatting
         return "k__#{obj.canonical_name}; p__; c__; o__; f__; g__; s__"                                                                         if obj.taxon_rank == 'kingdom'
     end
 
-    def _tsv_header_all_standard_rank
+    def _tsv_header_all_standard_ranks
         "identifier\tkingdom\tphylum\tclass\torder\tfamily\tgenus\tspecies\tlocation\tlatitude\tlongitude\tsequence"
     end
 
@@ -60,11 +60,22 @@ module StringFormatting
         # "#{identifier}\t#{lineage_data.regnum}\t#{lineage_data.phylum}\t#{lineage_data.classis}\t#{lineage_data.ordo}\t#{lineage_data.familia}\t#{lineage_data.genus}\t#{lineage_data.canonical_name}\t#{sequence}"
         # "#{identifier}\t#{_to_taxon_info_tsv(lineage_data)}\t#{loc}\t#{lat}\t#{long}\t#{sequence}"
         
-        "#{identifier}\t#{lineage_data.regnum}\t#{lineage_data.phylum}\t#{lineage_data.classis}\t#{lineage_data.ordo}\t#{lineage_data.familia}\t#{lineage_data.canonical_name}\t#{loc}\t#{lat}\t#{long}\t#{sequence}"
+        "#{identifier}\t#{_to_taxon_info_tsv(lineage_data)}\t#{loc}\t#{lat}\t#{long}\t#{sequence}"
+    end
+
+    def _tsv_row_all_standard_ranks(lineage_data:, identifier:, sequence:, loc:, lat:, long:)
+        # "#{identifier}\t#{lineage_data.regnum}\t#{lineage_data.phylum}\t#{lineage_data.classis}\t#{lineage_data.ordo}\t#{lineage_data.familia}\t#{lineage_data.genus}\t#{lineage_data.canonical_name}\t#{sequence}"
+        # "#{identifier}\t#{_to_taxon_info_tsv(lineage_data)}\t#{loc}\t#{lat}\t#{long}\t#{sequence}"
+        
+        "#{identifier}\t#{_to_taxon_info_tsv_all_standard_ranks(lineage_data)}\t#{loc}\t#{lat}\t#{long}\t#{sequence}"
     end
 
     def _fasta_header(data:, taxonomic_info:)
         ">#{data[:identifier]}|#{_to_taxon_info_fasta(taxonomic_info)}"
+    end
+
+    def _fasta_header_all_standard_ranks(data:, taxonomic_info:)
+        ">#{data[:identifier]}|#{_to_taxon_info_fasta_all_standard_ranks(taxonomic_info)}"
     end
 
     def _fasta_header_qiime2_taxonomy(data:, taxonomic_info:)

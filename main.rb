@@ -168,6 +168,19 @@ subcommands = {
 		opts.on('-G MAX_GAPS', Integer,'--max_G')
 		opts.on('-l MIN_LENGTH', Integer,'--min_length')
 		opts.on('-L MAX_LENGTH', Integer,'--max_length')
+		opts.on('-r TAXON_RANK', String,'--taxon_rank', 'Filter for minimal taxon rank. e.g --taxon_rank genus considers sequences with at least genus information, therefore only sequences with species or genus information are considered. Allowed values: species, genus, family, order, class, phylum, kingdom') do |opt|
+            unless GbifTaxonomy.possible_ranks.include?(opt)
+                puts "#{opt} is not allowed for: filter --taxon_rank"
+                puts "Please use one of the following:"
+                pp GbifTaxonomy.possible_ranks
+                puts
+
+                exit
+            end
+
+            opt
+        end
+		opts.on('-d', '--dereplicate', 'Remove sequences that have the exact same sequence of characters and length')
 	end,
 
 	taxonomy: OptionParser.new do |opts|
@@ -301,7 +314,19 @@ if params[:output][:kraken2] && !params[:ncbi]
     puts "The Kraken2 Output requires the NCBI Taxonomy"
     puts "Any other Taxonomy is not allowed"
     puts
+
+    exit
 end
+
+if params[:output][:dada2_species] && !(params[:filter][:taxon_rank] == 'species' || params[:filter][:taxon_rank].nil?) 
+    puts "The dada2 species output requires species information"
+    puts "Therefore your filter --taxon_rank value is not allowed"
+    puts
+
+    exit
+end
+
+
 ## if taxonomy was chosen by user, it needs to be updated
 ## object is also not set in opts.on
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
