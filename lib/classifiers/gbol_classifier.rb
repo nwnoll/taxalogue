@@ -57,24 +57,27 @@ class GbolClassifier
 
         file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'gbol')
     
-        if params[:filter][:dereplicate]
-            specimens_of_sequence = Hash.new { |h,k| h[k] = [] }
-            specimens_of_taxon.keys.each do |taxon_name|
-                specimens_of_taxon[taxon_name][:data].each do |specimen|
-                    specimens_of_sequence[specimen[:sequence]].push(taxon_name)
-                end
-            end
+        # if params[:filter][:dereplicate]
+        #     specimens_of_sequence = Hash.new { |h,k| h[k] = [] }
+        #     specimens_of_taxon.keys.each do |taxon_name|
+        #         specimens_of_taxon[taxon_name][:data].each do |specimen|
+        #             specimens_of_sequence[specimen[:sequence]].push(taxon_name)
+        #         end
+        #     end
 
-            specimens_of_sequence.each do |seq, names_ary|
-                if names_ary.uniq.size > 1
-                    puts seq
-                    puts names_ary.size
-                    p names_ary.uniq
-                    puts
-                    puts '*' * 100
-                end
-            end
-        end
+        #     specimens_of_sequence.each do |seq, names_ary|
+        #         if names_ary.uniq.size > 1
+        #             puts seq
+        #             puts names_ary.size
+        #             p names_ary.uniq
+        #             puts
+        #             puts '*' * 100
+        #         end
+        #     end
+        # end
+
+
+        specimens_of_sequence = Hash.new# { |h,k| h[k] = Hash.new }
 
         specimens_of_taxon.keys.each do |taxon_name|
             nomial              = specimens_of_taxon[taxon_name][:nomial]
@@ -90,6 +93,35 @@ class GbolClassifier
             if filter_params[:taxon_rank]
                 has_user_taxon_rank = FilterHelper.has_taxon_tank(rank: filter_params[:taxon_rank], taxonomic_info: taxonomic_info)
                 next unless has_user_taxon_rank
+            end
+
+            specimens_of_taxon[taxon_name][:data].each do |specimen|
+                seq = specimen[:sequence]
+                if specimens_of_sequence.key?(seq)
+                    if specimens_of_sequence[seq].key?(taxon_name)
+                        specimens_of_sequence[seq][taxon_name].specimens.push(specimen)
+                    else
+                        seq_meta = OpenStruct.new(
+                            taxonomic_infos: taxonomic_info,
+                            first_specimen_infos: first_specimen_info,
+                            specimens: []
+                        )
+                        specimens_of_sequence[seq][taxon_name] = seq_meta
+    
+                        specimens_of_sequence[seq][taxon_name].specimens.push(specimen)
+                    end
+                else
+                    info_per_taxon_name = Hash.new
+                    seq_meta = OpenStruct.new(
+                        taxonomic_infos: taxonomic_info,
+                        first_specimen_infos: first_specimen_info,
+                        specimens: []
+                    )
+                    info_per_taxon_name[taxon_name] = seq_meta
+
+                    info_per_taxon_name[taxon_name].specimens.push(specimen)
+                    specimens_of_sequence[seq] = info_per_taxon_name 
+                end
             end
 
 
@@ -114,6 +146,25 @@ class GbolClassifier
 
             MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
 
+        end
+
+        if params[:filter][:dereplicate]
+            specimens_of_sequence.keys.each do |seq|
+                # byebug
+                if specimens_of_sequence[seq].keys.size > 1
+                    p specimens_of_sequence[seq].keys
+                    puts specimens_of_sequence[seq].size
+                    specimens_of_sequence[seq].each do |taxon_name, seq_meta|
+                        puts taxon_name
+                        p seq_meta.taxonomic_infos
+                        puts taxonomic_infos.taxon_rank
+                        puts seq_meta.first_specimen_infos["HigherTaxa"]
+                        puts seq_meta.first_specimen_infos["Species"]
+                        puts seq_meta.specimens.size
+                        puts
+                    end
+                end
+            end
         end
 
         OutputFormat::Tsv.rewind
