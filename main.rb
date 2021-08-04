@@ -377,6 +377,10 @@ if params[:create].any?
 
     if jobs_state == :success
         MiscHelper.run_file_merger(file_manager: file_manager, params: params)
+        MiscHelper.write_marshal_file(dir: file_manager.dir_path, file_name: '.params.dump', data: params)
+    
+        file = File.open(file_manager.dir_path + 'taxalogue.txt', 'w')
+        MiscHelper.print_params(params, file)
     end
 
     exit
@@ -464,6 +468,10 @@ if params[:classify].any?
     unless params[:classify][:no_merge]
         if jobs_state == :success
             MiscHelper.run_file_merger(file_manager: file_manager, params: params)
+            MiscHelper.write_marshal_file(dir: file_manager.dir_path, file_name: '.params.dump', data: params)
+            
+            file = File.open(file_manager.dir_path + 'taxalogue.txt', 'w')
+            MiscHelper.print_params(params, file)
         end
     end
 
@@ -551,6 +559,10 @@ if params[:merge].any?
     end
 
     file_manager.copy_files(download_info_files)
+    MiscHelper.write_marshal_file(dir: file_manager.dir_path, file_name: '.params.dump', data: params)
+    
+    file = File.open(file_manager.dir_path + 'taxalogue.txt', 'w')
+    MiscHelper.print_params(params, file)
 
     puts MiscHelper.OUT_header "Output locations:"
     puts MiscHelper.OUT_success file_manager.dir_path

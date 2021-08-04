@@ -174,16 +174,16 @@ class MiscHelper
         return nil
     end
 
-    def self.print_params(params)
-        puts "You used the following parameters:"
+    def self.print_params(params, file=nil)
+        file ? (file.puts "You used the following parameters:") : (puts "You used the following parameters:")
         params.each do |key, value|
             next if key.to_s.match?("_object")
             # next if value.empty? || value.nil?
 
-            puts "\t#{key}: #{value}"
+            file ? (file.puts "\t#{key}: #{value}") : (puts "\t#{key}: #{value}")
         end
 
-        puts
+        file ? (file.puts) : (puts)
     end
 
     def self.multiple_actions?(params)
@@ -321,5 +321,12 @@ class MiscHelper
                 end
             end
         end
+    end
+
+    def self.write_marshal_file(dir:, file_name:, data:)
+        marshal_dump_file_name = dir + file_name
+        data_dump = Marshal.dump(data)
+        
+        File.open(marshal_dump_file_name, 'wb') { |f| f.write(data_dump) }
     end
 end

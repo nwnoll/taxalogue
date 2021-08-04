@@ -19,13 +19,6 @@ class DownloadCheckHelper
         end
     end
 
-    def self.write_marshal_file(dir:, file_name:, data:)
-        marshal_dump_file_name = dir + file_name
-        data_dump = Marshal.dump(data)
-        
-        File.open(marshal_dump_file_name, 'wb') { |f| f.write(data_dump) }
-    end
-
     def self.get_object_from_marshal_file(file_name)
         Marshal.load(File.open(file_name, 'rb').read)
     end

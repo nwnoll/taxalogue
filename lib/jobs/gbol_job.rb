@@ -125,8 +125,8 @@ class GbolJob
     end
 
     def _write_marshal_files(download_file_manager)
-        DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
-        DownloadCheckHelper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
+        MiscHelper.write_marshal_file(dir: download_file_manager.dir_path, data: download_file_manager, file_name: '.download_file_managers.dump')
+        MiscHelper.write_marshal_file(dir: download_file_manager.dir_path, data: taxon, file_name: '.taxon_object.dump')
     end
 
 
