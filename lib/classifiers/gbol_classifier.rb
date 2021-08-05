@@ -150,19 +150,118 @@ class GbolClassifier
 
         if params[:filter][:dereplicate]
             specimens_of_sequence.keys.each do |seq|
-                # byebug
                 if specimens_of_sequence[seq].keys.size > 1
                     p specimens_of_sequence[seq].keys
                     puts specimens_of_sequence[seq].size
+
+                    old_seq_metas = []
+                    same_lineages = []
                     specimens_of_sequence[seq].each do |taxon_name, seq_meta|
-                        puts taxon_name
-                        p seq_meta.taxonomic_infos
-                        puts taxonomic_infos.taxon_rank
-                        puts seq_meta.first_specimen_infos["HigherTaxa"]
-                        puts seq_meta.first_specimen_infos["Species"]
-                        puts seq_meta.specimens.size
-                        puts
+                        if old_seq_metas.any?
+                            old_seq_metas.each do |old_seq_meta_ary|
+                                old_taxon_name          = old_seq_meta_ary.first
+                                old_seq_meta            = old_seq_meta_ary.last
+                                old_latinized_rank      = TaxonomyHelper.latinize_rank(old_seq_meta.taxonomic_infos.taxon_rank)
+                                current_latinized_rank  = TaxonomyHelper.latinize_rank(seq_meta.taxonomic_infos.taxon_rank)
+                                
+                                ## TODO:
+                                ## NEXT:
+                                # problem is that in Nomial class there might already be a lower taxon chosen
+                                # then the taxon_name no longer holds 
+                                # therefore i should use canonical name?
+                                if seq_meta.taxonomic_infos.public_send(old_latinized_rank) == old_taxon_name || old_seq_meta.taxonomic_infos.public_send(current_latinized_rank) == taxon_name
+                                    
+                                    old_taxon_rank_index        = GbifTaxonomy.possible_ranks.index(old_seq_meta.taxonomic_infos.taxon_rank)
+                                    current_taxon_rank_index    = GbifTaxonomy.possible_ranks.index(seq_meta.taxonomic_infos.taxon_rank)
+                                    
+                                    if old_taxon_rank_index < current_taxon_rank_index
+                                        lower_taxon_name = old_taxon_name
+                                        higher_taxon_name = taxon_name
+                                        lower_taxon_seq_meta = old_seq_meta
+                                        higher_taxon_seq_meta = seq_meta
+                                    elsif old_taxon_rank_index == current_taxon_rank_index
+                                        if old_taxon_name.split(' ').size > taxon_name.split(' ').size
+                                            lower_taxon_name  = old_taxon_name
+                                            higher_taxon_name = taxon_name
+                                            lower_taxon_seq_meta  = old_seq_meta
+                                            higher_taxon_seq_meta = seq_meta
+                                        else
+                                            lower_taxon_name  = taxon_name
+                                            higher_taxon_name = old_taxon_name
+                                            lower_taxon_seq_meta  = seq_meta
+                                            higher_taxon_seq_meta = old_seq_meta
+                                        end
+                                    else
+                                        lower_taxon_name  = taxon_name
+                                        higher_taxon_name = old_taxon_name
+                                        lower_taxon_seq_meta  = seq_meta
+                                        higher_taxon_seq_meta = old_seq_meta
+                                    end
+
+                                    same_lineages.push(
+                                        OpenStruct.new(
+                                            lower_taxon_name:       lower_taxon_name,
+                                            higher_taxon_name:      higher_taxon_name,
+                                            lower_taxon_seq_meta:   lower_taxon_seq_meta,
+                                            higher_taxon_seq_meta:  higher_taxon_seq_meta,
+                                        )
+                                    )
+                                else # do not have same lineage parts
+                                    puts 'Do not have same lineage parts'
+                                    puts '*' * 20
+                                    puts taxon_name
+                                    puts seq_meta.specimens.size
+                                    puts old_taxon_name
+                                    puts old_seq_meta.specimens.size
+                                    puts '*' * 20
+
+                                    ## Chose the most frequent
+                                    ## Maybe count only unique institutes?
+                                    ## maybe all specimens are from one person...
+                                    ## then it is not really evidence for this taoxn and that sequence..
+                                    # ["Agathidium varians", "Clambus punctulum", "Cybocephalus politus"]
+                                    # 3
+                                    # Do not have same lineage parts
+                                    # ********************
+                                    # Clambus punctulum
+                                    # 1
+                                    # Agathidium varians
+                                    # 12
+                                    # ********************
+                                    # Do not have same lineage parts
+                                    # ********************
+                                    # Cybocephalus politus
+                                    # 1
+                                    # Agathidium varians
+                                    # 12
+                                    # ********************
+                                    # Do not have same lineage parts
+                                    # ********************
+                                    # Cybocephalus politus
+                                    # 1
+                                    # Clambus punctulum
+                                    # 1
+                                    # ********************
+-
+
+                                end
+                            end
+                        end
+
+                        old_seq_metas.push([taxon_name, seq_meta])
+
                     end
+                    puts '-'
+                    same_lineages.each do |same_lineage|
+                        puts "lower_taxon_name:  #{same_lineage.lower_taxon_name}"
+                        puts "low_specimen_num:  #{same_lineage.lower_taxon_seq_meta.specimens.size}"
+                        puts "higher_taxon_name: #{same_lineage.higher_taxon_name}"
+                        puts "high_specimen_num: #{same_lineage.higher_taxon_seq_meta.specimens.size}"
+
+                        # puts "lower_taxon:       #{same_lineage.lower_taxon_seq_meta.taxonomic_infos}"
+                        # puts "higher_taxon:      #{same_lineage.higher_taxon_seq_meta.taxonomic_infos}"
+                    end
+                    puts
                 end
             end
         end
@@ -172,6 +271,10 @@ class GbolClassifier
 
         return nil
     end
+
+
+    #<OpenStruct taxonomic_infos=#<OpenStruct taxon_id=7042, regnum="Metazoa", phylum="Arthropoda", classis="Insecta", ordo="Coleoptera", familia="Curculionidae", genus="", canonical_name="Curculionidae", scientific_name="Curculionidae", taxonomic_status="accepted", taxon_rank="family", combined=["Metazoa", "Arthropoda", "Insecta", "Coleoptera", "Curculionidae"], comment="">, first_specimen_infos=#<CSV::Row "HigherTaxa":"Animalia, Arthropoda, Hexapoda, Insecta, Coleoptera, Curculionidae" "Species":"Acalles navieresi" "BarcodeSequence":"TACTTTATATTTTATCTTTGGTTCATGATCAGGAATAGTAGGAACATCATTAAGAATATTAATTCGAACTGAATTAGGAAACCCTGGAACCTTAATTGGTAATGATCAAATCTACAATTCAATTGTAACTGCCCATGCCTTTATTATAATTTTTTTCATAGTTATACCTATCATAATTGGGGGATTCGGCAATTGACTGATTCCTTTGATATTAGGAGCGCCCGATATAGCTTTCCCTCGATTAAATAATATAAGATTTTGGCTTTTACCTCCCTCATTAATTCTTCTTCTAATAAGAAGAATCATTGATAAAGGAGCTGGAACTGGCTGAACTGTTTATCCTCCTTTATCAGCTAATATTGCTCATGAAGGAATTTCTATTGATTTAGCTATTTTTAGATTACATATGGCAGGAGTTTCCTCAATTCTTGGAGCAATCAACTTTATCTCTACTGTAATTAACATACGTCCAATAGGGATAAATATTGACCGAATACCATTATTTATTTGAGCAGTAAAAATTACAGCGATTCTTCTACTTTTATCCCTACCTGTATTAGCTGGAGCTATTACTATACTATTAACAGACCGAAATATTAATACTTCATTTTTTGACCCTGCAGGAGGGGGAGACCCAATTTTATATCAACACTTATTT" "Institute":"ZFMK" "CatalogueNumber":"ZFMK-TIS-2563764" "UUID":"https://bolgermany.de/specimen/45f004119ab3ca09ec78a9f3c57a5748" "Location":"Rheinland-Pfalz, Germany, Elmstein" "Latitude":"49.42" "Longitude":"7.92">, specimens=[{:identifier=>"ZFMK-TIS-2563764", :sequence=>"TACTTTATATTTTATCTTTGGTTCATGATCAGGAATAGTAGGAACATCATTAAGAATATTAATTCGAACTGAATTAGGAAACCCTGGAACCTTAATTGGTAATGATCAAATCTACAATTCAATTGTAACTGCCCATGCCTTTATTATAATTTTTTTCATAGTTATACCTATCATAATTGGGGGATTCGGCAATTGACTGATTCCTTTGATATTAGGAGCGCCCGATATAGCTTTCCCTCGATTAAATAATATAAGATTTTGGCTTTTACCTCCCTCATTAATTCTTCTTCTAATAAGAAGAATCATTGATAAAGGAGCTGGAACTGGCTGAACTGTTTATCCTCCTTTATCAGCTAATATTGCTCATGAAGGAATTTCTATTGATTTAGCTATTTTTAGATTACATATGGCAGGAGTTTCCTCAATTCTTGGAGCAATCAACTTTATCTCTACTGTAATTAACATACGTCCAATAGGGATAAATATTGACCGAATACCATTATTTATTTGAGCAGTAAAAATTACAGCGATTCTTCTACTTTTATCCCTACCTGTATTAGCTGGAGCTATTACTATACTATTAACAGACCGAAATATTAATACTTCATTTTTTGACCCTGCAGGAGGGGGAGACCCAATTTTATATCAACACTTATTT", :location=>"Rheinland-Pfalz, Germany, Elmstein", :latitude=>"49.42", :longitude=>"7.92"}]>
+
   
     private
     def _get_specimen(row:)
