@@ -78,7 +78,7 @@ class GbolClassifier
 
 
         specimens_of_sequence = Hash.new# { |h,k| h[k] = Hash.new }
-
+        
         specimens_of_taxon.keys.each do |taxon_name|
             nomial              = specimens_of_taxon[taxon_name][:nomial]
             next unless nomial
@@ -95,32 +95,67 @@ class GbolClassifier
                 next unless has_user_taxon_rank
             end
 
+            ## dereplicate with taxon_name
+            # specimens_of_taxon[taxon_name][:data].each do |specimen|
+            #     seq = specimen[:sequence]
+            #     if specimens_of_sequence.key?(seq)
+            #         if specimens_of_sequence[seq].key?(taxon_name)
+            #             specimens_of_sequence[seq][taxon_name].specimens.push(specimen)
+            #         else
+            #             seq_meta = OpenStruct.new(
+            #                 taxonomic_infos: taxonomic_info,
+            #                 first_specimen_infos: first_specimen_info,
+            #                 specimens: []
+            #             )
+            #             specimens_of_sequence[seq][taxon_name] = seq_meta
+    
+            #             specimens_of_sequence[seq][taxon_name].specimens.push(specimen)
+            #         end
+            #     else
+            #         info_per_taxon_name = Hash.new
+            #         seq_meta = OpenStruct.new(
+            #             taxonomic_infos: taxonomic_info,
+            #             first_specimen_infos: first_specimen_info,
+            #             specimens: []
+            #         )
+            #         info_per_taxon_name[taxon_name] = seq_meta
+
+            #         info_per_taxon_name[taxon_name].specimens.push(specimen)
+            #         specimens_of_sequence[seq] = info_per_taxon_name 
+            #     end
+            # end
+
+            ## dereplicate with canonical_name as key for specimens_of_sequence
+            ## since in the act of normalization there mght be some taxon_name that change to a higher rank
+            ## from now on we ware only useing this canonical name therefore
+            ## whe should also use it in this context...
+            canonical_name = taxonomic_info.canonical_name
             specimens_of_taxon[taxon_name][:data].each do |specimen|
                 seq = specimen[:sequence]
                 if specimens_of_sequence.key?(seq)
-                    if specimens_of_sequence[seq].key?(taxon_name)
-                        specimens_of_sequence[seq][taxon_name].specimens.push(specimen)
+                    if specimens_of_sequence[seq].key?(canonical_name)
+                        specimens_of_sequence[seq][canonical_name].specimens.push(specimen)
                     else
                         seq_meta = OpenStruct.new(
                             taxonomic_infos: taxonomic_info,
                             first_specimen_infos: first_specimen_info,
                             specimens: []
                         )
-                        specimens_of_sequence[seq][taxon_name] = seq_meta
+                        specimens_of_sequence[seq][canonical_name] = seq_meta
     
-                        specimens_of_sequence[seq][taxon_name].specimens.push(specimen)
+                        specimens_of_sequence[seq][canonical_name].specimens.push(specimen)
                     end
                 else
-                    info_per_taxon_name = Hash.new
+                    info_per_canonical_name = Hash.new
                     seq_meta = OpenStruct.new(
                         taxonomic_infos: taxonomic_info,
                         first_specimen_infos: first_specimen_info,
                         specimens: []
                     )
-                    info_per_taxon_name[taxon_name] = seq_meta
+                    info_per_canonical_name[canonical_name] = seq_meta
 
-                    info_per_taxon_name[taxon_name].specimens.push(specimen)
-                    specimens_of_sequence[seq] = info_per_taxon_name 
+                    info_per_canonical_name[canonical_name].specimens.push(specimen)
+                    specimens_of_sequence[seq] = info_per_canonical_name 
                 end
             end
 
@@ -156,6 +191,15 @@ class GbolClassifier
 
                     old_seq_metas = []
                     same_lineages = []
+                    metas = specimens_of_sequence[seq].each.values
+                    num_of_specimens = metas.specimens.map!( |specimen_ary| specimen_ary.size )
+                    if num_of_specimens.uniq.size == 1
+                        ## all taxon names have the same value
+                        ## therefore it will be only valid if
+                        ## all share a lca
+                        # if seq_meta.taxonomic_infos.public_send(old_latinized_rank) == old_taxon_name || old_seq_meta.taxonomic_infos.public_send(current_latinized_rank) == taxon_name
+
+                    end
                     specimens_of_sequence[seq].each do |taxon_name, seq_meta|
                         if old_seq_metas.any?
                             old_seq_metas.each do |old_seq_meta_ary|
@@ -164,11 +208,6 @@ class GbolClassifier
                                 old_latinized_rank      = TaxonomyHelper.latinize_rank(old_seq_meta.taxonomic_infos.taxon_rank)
                                 current_latinized_rank  = TaxonomyHelper.latinize_rank(seq_meta.taxonomic_infos.taxon_rank)
                                 
-                                ## TODO:
-                                ## NEXT:
-                                # problem is that in Nomial class there might already be a lower taxon chosen
-                                # then the taxon_name no longer holds 
-                                # therefore i should use canonical name?
                                 if seq_meta.taxonomic_infos.public_send(old_latinized_rank) == old_taxon_name || old_seq_meta.taxonomic_infos.public_send(current_latinized_rank) == taxon_name
                                     
                                     old_taxon_rank_index        = GbifTaxonomy.possible_ranks.index(old_seq_meta.taxonomic_infos.taxon_rank)
@@ -203,7 +242,7 @@ class GbolClassifier
                                             lower_taxon_name:       lower_taxon_name,
                                             higher_taxon_name:      higher_taxon_name,
                                             lower_taxon_seq_meta:   lower_taxon_seq_meta,
-                                            higher_taxon_seq_meta:  higher_taxon_seq_meta,
+                                            higher_taxon_seq_meta:  higher_taxon_seq_meta
                                         )
                                     )
                                 else # do not have same lineage parts
@@ -213,37 +252,23 @@ class GbolClassifier
                                     puts seq_meta.specimens.size
                                     puts old_taxon_name
                                     puts old_seq_meta.specimens.size
-                                    puts '*' * 20
 
-                                    ## Chose the most frequent
-                                    ## Maybe count only unique institutes?
-                                    ## maybe all specimens are from one person...
-                                    ## then it is not really evidence for this taoxn and that sequence..
-                                    # ["Agathidium varians", "Clambus punctulum", "Cybocephalus politus"]
-                                    # 3
-                                    # Do not have same lineage parts
-                                    # ********************
-                                    # Clambus punctulum
-                                    # 1
-                                    # Agathidium varians
-                                    # 12
-                                    # ********************
-                                    # Do not have same lineage parts
-                                    # ********************
-                                    # Cybocephalus politus
-                                    # 1
-                                    # Agathidium varians
-                                    # 12
-                                    # ********************
-                                    # Do not have same lineage parts
-                                    # ********************
-                                    # Cybocephalus politus
-                                    # 1
-                                    # Clambus punctulum
-                                    # 1
-                                    # ********************
--
-
+                                    if seq_meta.specimens.size == old_seq_meta.specimens.size
+                                        ## here we do have the same number of specimens for different taxa
+                                        ## therefore it will choose the LCA of these two taxa
+                                        lca = TaxonHelper.lowest_matching_taxon(obj1: seq_meta, obj2: old_seq_meta, params: params, importer: self.class)
+                                        puts "LCA:"
+                                        p lca
+                                    else
+                                        ## one taxon has mor specimens than the other
+                                        ## for now i select the one with higher number of specimens
+                                        ## threshold could be implement at what point it should choose
+                                        ## one taxon over the other or if it should search for a LCA
+                                        taxon_with_more_specimens = seq_meta.specimens.size > old_seq_meta.specimens.size ? seq_meta : old_seq_meta
+                                        puts 'THE CHOSE ONE'
+                                        puts taxon_with_more_specimens.taxonomic_infos
+                                        puts '*' * 20
+                                    end
                                 end
                             end
                         end
@@ -251,17 +276,22 @@ class GbolClassifier
                         old_seq_metas.push([taxon_name, seq_meta])
 
                     end
+
+                    ## derep with same lineage parts
                     puts '-'
                     same_lineages.each do |same_lineage|
                         puts "lower_taxon_name:  #{same_lineage.lower_taxon_name}"
                         puts "low_specimen_num:  #{same_lineage.lower_taxon_seq_meta.specimens.size}"
                         puts "higher_taxon_name: #{same_lineage.higher_taxon_name}"
                         puts "high_specimen_num: #{same_lineage.higher_taxon_seq_meta.specimens.size}"
-
-                        # puts "lower_taxon:       #{same_lineage.lower_taxon_seq_meta.taxonomic_infos}"
-                        # puts "higher_taxon:      #{same_lineage.higher_taxon_seq_meta.taxonomic_infos}"
+                        puts 
+                        puts 'THE CHOSE ONE'
+                        puts same_lineage.lower_taxon_name
                     end
                     puts
+
+
+
                 end
             end
         end
@@ -271,6 +301,7 @@ class GbolClassifier
 
         return nil
     end
+
 
 
     #<OpenStruct taxonomic_infos=#<OpenStruct taxon_id=7042, regnum="Metazoa", phylum="Arthropoda", classis="Insecta", ordo="Coleoptera", familia="Curculionidae", genus="", canonical_name="Curculionidae", scientific_name="Curculionidae", taxonomic_status="accepted", taxon_rank="family", combined=["Metazoa", "Arthropoda", "Insecta", "Coleoptera", "Curculionidae"], comment="">, first_specimen_infos=#<CSV::Row "HigherTaxa":"Animalia, Arthropoda, Hexapoda, Insecta, Coleoptera, Curculionidae" "Species":"Acalles navieresi" "BarcodeSequence":"TACTTTATATTTTATCTTTGGTTCATGATCAGGAATAGTAGGAACATCATTAAGAATATTAATTCGAACTGAATTAGGAAACCCTGGAACCTTAATTGGTAATGATCAAATCTACAATTCAATTGTAACTGCCCATGCCTTTATTATAATTTTTTTCATAGTTATACCTATCATAATTGGGGGATTCGGCAATTGACTGATTCCTTTGATATTAGGAGCGCCCGATATAGCTTTCCCTCGATTAAATAATATAAGATTTTGGCTTTTACCTCCCTCATTAATTCTTCTTCTAATAAGAAGAATCATTGATAAAGGAGCTGGAACTGGCTGAACTGTTTATCCTCCTTTATCAGCTAATATTGCTCATGAAGGAATTTCTATTGATTTAGCTATTTTTAGATTACATATGGCAGGAGTTTCCTCAATTCTTGGAGCAATCAACTTTATCTCTACTGTAATTAACATACGTCCAATAGGGATAAATATTGACCGAATACCATTATTTATTTGAGCAGTAAAAATTACAGCGATTCTTCTACTTTTATCCCTACCTGTATTAGCTGGAGCTATTACTATACTATTAACAGACCGAAATATTAATACTTCATTTTTTGACCCTGCAGGAGGGGGAGACCCAATTTTATATCAACACTTATTT" "Institute":"ZFMK" "CatalogueNumber":"ZFMK-TIS-2563764" "UUID":"https://bolgermany.de/specimen/45f004119ab3ca09ec78a9f3c57a5748" "Location":"Rheinland-Pfalz, Germany, Elmstein" "Latitude":"49.42" "Longitude":"7.92">, specimens=[{:identifier=>"ZFMK-TIS-2563764", :sequence=>"TACTTTATATTTTATCTTTGGTTCATGATCAGGAATAGTAGGAACATCATTAAGAATATTAATTCGAACTGAATTAGGAAACCCTGGAACCTTAATTGGTAATGATCAAATCTACAATTCAATTGTAACTGCCCATGCCTTTATTATAATTTTTTTCATAGTTATACCTATCATAATTGGGGGATTCGGCAATTGACTGATTCCTTTGATATTAGGAGCGCCCGATATAGCTTTCCCTCGATTAAATAATATAAGATTTTGGCTTTTACCTCCCTCATTAATTCTTCTTCTAATAAGAAGAATCATTGATAAAGGAGCTGGAACTGGCTGAACTGTTTATCCTCCTTTATCAGCTAATATTGCTCATGAAGGAATTTCTATTGATTTAGCTATTTTTAGATTACATATGGCAGGAGTTTCCTCAATTCTTGGAGCAATCAACTTTATCTCTACTGTAATTAACATACGTCCAATAGGGATAAATATTGACCGAATACCATTATTTATTTGAGCAGTAAAAATTACAGCGATTCTTCTACTTTTATCCCTACCTGTATTAGCTGGAGCTATTACTATACTATTAACAGACCGAAATATTAATACTTCATTTTTTGACCCTGCAGGAGGGGGAGACCCAATTTTATATCAACACTTATTT", :location=>"Rheinland-Pfalz, Germany, Elmstein", :latitude=>"49.42", :longitude=>"7.92"}]>
