@@ -309,6 +309,7 @@ class TaxonHelper
             if obj1.taxonomic_infos.public_send(rank) == obj2.taxonomic_infos.public_send(rank)
                 puts "----> #{rank}"
                 nomial = Nomial.generate(name: obj1.taxonomic_infos.public_send(rank), query_taxon_object: params[:taxon_object], query_taxon_rank: params[:taxon_rank], taxonomy_params: params[:taxonomy])
+                
                 return nomial.taxonomy(first_specimen_info: obj1.first_specimen_infos, importer: importer)
             end
         end

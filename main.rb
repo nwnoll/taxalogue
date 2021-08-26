@@ -333,6 +333,19 @@ params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 
 MiscHelper.print_params(params)
 
+# DatabaseSchema.drop(:sequences)
+# DatabaseSchema.drop(:specimen_metas)
+# DatabaseSchema.drop(:taxon_object_proxies)
+# DatabaseSchema.migrate
+# exit
+# DatabaseSchema.migrate
+# p Sequence
+# p TaxonObjectProxy
+# p SpecimenMeta
+
+# exit
+
+
 if params[:create].any?
     jobs = []
     file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)

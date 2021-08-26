@@ -139,6 +139,7 @@ class GbolClassifier
                         seq_meta = OpenStruct.new(
                             taxonomic_infos: taxonomic_info,
                             first_specimen_infos: first_specimen_info,
+                            source_taxon_name: taxon_name,
                             specimens: []
                         )
                         specimens_of_sequence[seq][canonical_name] = seq_meta
@@ -150,6 +151,7 @@ class GbolClassifier
                     seq_meta = OpenStruct.new(
                         taxonomic_infos: taxonomic_info,
                         first_specimen_infos: first_specimen_info,
+                        source_taxon_name: taxon_name,
                         specimens: []
                     )
                     info_per_canonical_name[canonical_name] = seq_meta
@@ -179,8 +181,109 @@ class GbolClassifier
 
             # puts _to_taxon_info_tsv_all_standard_ranks(taxonomic_info)
 
-            MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
+            
 
+            # MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
+
+        end
+
+
+        ## got it from https://gist.github.com/btelles/284765/d7e256771c78069994e500d7a4b0ee81c6995937
+        Hash.class_eval do
+            def split_into(divisions)
+                count = 0
+                inject([]) do |final, key_value|
+                    final[count%divisions] ||= {}
+                    final[count%divisions].merge!({key_value[0] => key_value[1]})
+                    count += 1
+                    final
+                end
+            end
+        end
+
+        divisions_num = (specimens_of_sequence.keys.size / 10_000) + 1
+        p specimens_of_sequence.keys.size
+        p divisions_num
+
+        specimens_of_sequence_splitted_ary = specimens_of_sequence.split_into(divisions_num)
+        p specimens_of_sequence_splitted_ary.size
+
+        specimens_of_sequence_splitted_ary.each do |specimens_of_sequence_splitted|
+           
+            taxon_object_id_or_ary_of = Hash.new { |h,k| h[k] = [] }
+            seq_arys_to_import = []
+            
+            specimens_of_sequence_splitted.each do |seq, seq_meta_of|
+                
+                seq_sha256_bubblebabble = Digest::SHA256.bubblebabble(seq)
+                if Sequence.exists?(sha256_bubblebabble: seq_sha256_bubblebabble)
+                    sequence_ary_or_id = Sequence.find_by(sha256_bubblebabble: seq_sha256_bubblebabble).id
+                else
+                    sequence_ary_or_id = [seq_sha256_bubblebabble, seq]
+                    seq_arys_to_import.push(sequence_ary_or_id)
+                end
+
+                
+                seq_sha_or_id =  sequence_ary_or_id.kind_of?(Array) ? seq_sha256_bubblebabble : sequence_ary_or_id
+
+                seq_meta_of.each do |canonical_name, seq_meta|
+
+                    if taxonomy_params[:ncbi]
+                        used_taxonomy_string = 'ncbi'
+                    elsif taxonomy_params[:gbif_backbone]
+                        used_taxonomy_string = 'gbif_backbone'
+                    elsif taxonomy_params[:gbif]
+                        used_taxonomy_string = 'gbif'
+                    end
+
+                    taxon_object_proxy_string = "#{seq_meta.taxonomic_infos.regnum}|#{seq_meta.taxonomic_infos.phylum}|#{seq_meta.taxonomic_infos.classis}|#{seq_meta.taxonomic_infos.ordo}|#{seq_meta.taxonomic_infos.familia}|#{seq_meta.taxonomic_infos.genus}|#{seq_meta.taxonomic_infos.canonical_name}|#{seq_meta.taxonomic_infos.scientific_name}|#{used_taxonomy_string}"
+                    taxon_object_proxy_string_as_sha256_bubblebabble = Digest::SHA256.bubblebabble(taxon_object_proxy_string)
+                    
+                    if TaxonObjectProxy.exists?(sha256_bubblebabble: taxon_object_proxy_string_as_sha256_bubblebabble)
+                        taxon_object_proxy_ary_or_id = TaxonObjectProxy.find(sha256_bubblebabble: taxon_object_proxy_string_as_sha256_bubblebabble).id
+                    else
+                        taxon_object_proxy_ary_or_id = seq_meta.taxonomic_infos.to_h.values
+                        taxon_object_proxy_ary_or_id.push(query_taxon_name, used_taxonomy_string, taxonomy_params[:synonyms_allowed], seq_meta.source_taxon_name, taxon_object_proxy_string_as_sha256_bubblebabble)
+                    end
+                    
+                    taxon_object_id_or_ary_of[seq_sha_or_id].push(taxon_object_proxy_ary_or_id)
+
+                    first_specimen_identifier = seq_meta.specimens.first[:identifier]
+                    specimens_num = seq_meta.specimens.size
+                    
+                end
+            end
+            p seq_arys_to_import.size
+            p seq_arys_to_import.first
+            puts
+            p taxon_object_id_or_ary_of.first
+        end
+
+
+        sha_of = Hash.new
+        specimens_of_sequence.each do |seq, seq_meta_of|
+            seq_sha = Digest::SHA256.bubblebabble(seq)
+            if sha_of.has_key?(seq_sha)
+                puts '*' * 100
+                puts 'FOUND DUPLICATE SHA!!!'
+                p seq_sha
+                p seq
+                puts '*' * 100
+            else
+                # p seq_sha
+                sha_of[seq_sha] = seq
+            end
+
+            # if Sequence.exists?(sha256_bubblebabble: Digest::SHA256.bubblebabble(seq))
+
+            # else
+            #     count_seqs += 1
+            # end
+
+            # seq_meta_of.each do |canonical_name, seq_meta|
+                # p canonical_name
+                # p seq_meta
+            # end
         end
 
         if params[:filter][:dereplicate]
@@ -191,88 +294,184 @@ class GbolClassifier
 
                     old_seq_metas = []
                     same_lineages = []
-                    metas = specimens_of_sequence[seq].each.values
-                    num_of_specimens = metas.specimens.map!( |specimen_ary| specimen_ary.size )
-                    if num_of_specimens.uniq.size == 1
+                    # metas = specimens_of_sequence[seq].each.values
+                    # num_of_specimens = metas.specimens.map!{ |specimen_ary| specimen_ary.size }
+                    # if num_of_specimens.uniq.size == 1
                         ## all taxon names have the same value
                         ## therefore it will be only valid if
                         ## all share a lca
                         # if seq_meta.taxonomic_infos.public_send(old_latinized_rank) == old_taxon_name || old_seq_meta.taxonomic_infos.public_send(current_latinized_rank) == taxon_name
 
-                    end
+                    # end
+                    chosen_one = nil
                     specimens_of_sequence[seq].each do |taxon_name, seq_meta|
-                        if old_seq_metas.any?
-                            old_seq_metas.each do |old_seq_meta_ary|
-                                old_taxon_name          = old_seq_meta_ary.first
-                                old_seq_meta            = old_seq_meta_ary.last
-                                old_latinized_rank      = TaxonomyHelper.latinize_rank(old_seq_meta.taxonomic_infos.taxon_rank)
-                                current_latinized_rank  = TaxonomyHelper.latinize_rank(seq_meta.taxonomic_infos.taxon_rank)
+                        if chosen_one
+                            old_taxon_name          = chosen_one.first
+                            old_seq_meta            = chosen_one.last
+                            old_latinized_rank      = TaxonomyHelper.latinize_rank(old_seq_meta.taxonomic_infos.taxon_rank)
+                            current_latinized_rank  = TaxonomyHelper.latinize_rank(seq_meta.taxonomic_infos.taxon_rank)
+                            
+                            if seq_meta.taxonomic_infos.public_send(old_latinized_rank) == old_taxon_name || old_seq_meta.taxonomic_infos.public_send(current_latinized_rank) == taxon_name
                                 
-                                if seq_meta.taxonomic_infos.public_send(old_latinized_rank) == old_taxon_name || old_seq_meta.taxonomic_infos.public_send(current_latinized_rank) == taxon_name
-                                    
-                                    old_taxon_rank_index        = GbifTaxonomy.possible_ranks.index(old_seq_meta.taxonomic_infos.taxon_rank)
-                                    current_taxon_rank_index    = GbifTaxonomy.possible_ranks.index(seq_meta.taxonomic_infos.taxon_rank)
-                                    
-                                    if old_taxon_rank_index < current_taxon_rank_index
-                                        lower_taxon_name = old_taxon_name
+                                old_taxon_rank_index        = GbifTaxonomy.possible_ranks.index(old_seq_meta.taxonomic_infos.taxon_rank)
+                                current_taxon_rank_index    = GbifTaxonomy.possible_ranks.index(seq_meta.taxonomic_infos.taxon_rank)
+                                
+                                if old_taxon_rank_index < current_taxon_rank_index
+                                    lower_taxon_name = old_taxon_name
+                                    higher_taxon_name = taxon_name
+                                    lower_taxon_seq_meta = old_seq_meta
+                                    higher_taxon_seq_meta = seq_meta
+                                elsif old_taxon_rank_index == current_taxon_rank_index
+                                    if old_taxon_name.split(' ').size > taxon_name.split(' ').size
+                                        lower_taxon_name  = old_taxon_name
                                         higher_taxon_name = taxon_name
-                                        lower_taxon_seq_meta = old_seq_meta
+                                        lower_taxon_seq_meta  = old_seq_meta
                                         higher_taxon_seq_meta = seq_meta
-                                    elsif old_taxon_rank_index == current_taxon_rank_index
-                                        if old_taxon_name.split(' ').size > taxon_name.split(' ').size
-                                            lower_taxon_name  = old_taxon_name
-                                            higher_taxon_name = taxon_name
-                                            lower_taxon_seq_meta  = old_seq_meta
-                                            higher_taxon_seq_meta = seq_meta
-                                        else
-                                            lower_taxon_name  = taxon_name
-                                            higher_taxon_name = old_taxon_name
-                                            lower_taxon_seq_meta  = seq_meta
-                                            higher_taxon_seq_meta = old_seq_meta
-                                        end
                                     else
                                         lower_taxon_name  = taxon_name
                                         higher_taxon_name = old_taxon_name
                                         lower_taxon_seq_meta  = seq_meta
                                         higher_taxon_seq_meta = old_seq_meta
                                     end
+                                else
+                                    lower_taxon_name  = taxon_name
+                                    higher_taxon_name = old_taxon_name
+                                    lower_taxon_seq_meta  = seq_meta
+                                    higher_taxon_seq_meta = old_seq_meta
+                                end
 
-                                    same_lineages.push(
-                                        OpenStruct.new(
-                                            lower_taxon_name:       lower_taxon_name,
-                                            higher_taxon_name:      higher_taxon_name,
-                                            lower_taxon_seq_meta:   lower_taxon_seq_meta,
-                                            higher_taxon_seq_meta:  higher_taxon_seq_meta
-                                        )
+                                same_lineages.push(
+                                    OpenStruct.new(
+                                        lower_taxon_name:       lower_taxon_name,
+                                        higher_taxon_name:      higher_taxon_name,
+                                        lower_taxon_seq_meta:   lower_taxon_seq_meta,
+                                        higher_taxon_seq_meta:  higher_taxon_seq_meta
                                     )
-                                else # do not have same lineage parts
-                                    puts 'Do not have same lineage parts'
-                                    puts '*' * 20
-                                    puts taxon_name
-                                    puts seq_meta.specimens.size
-                                    puts old_taxon_name
-                                    puts old_seq_meta.specimens.size
+                                )
+                            else # do not have same lineage parts
+                                puts 'Do not have same lineage parts'
+                                puts '*' * 20
+                                puts taxon_name
+                                puts seq_meta.specimens.size
+                                puts old_taxon_name
+                                puts old_seq_meta.specimens.size
 
-                                    if seq_meta.specimens.size == old_seq_meta.specimens.size
-                                        ## here we do have the same number of specimens for different taxa
-                                        ## therefore it will choose the LCA of these two taxa
-                                        lca = TaxonHelper.lowest_matching_taxon(obj1: seq_meta, obj2: old_seq_meta, params: params, importer: self.class)
-                                        puts "LCA:"
-                                        p lca
-                                    else
-                                        ## one taxon has mor specimens than the other
-                                        ## for now i select the one with higher number of specimens
-                                        ## threshold could be implement at what point it should choose
-                                        ## one taxon over the other or if it should search for a LCA
-                                        taxon_with_more_specimens = seq_meta.specimens.size > old_seq_meta.specimens.size ? seq_meta : old_seq_meta
-                                        puts 'THE CHOSE ONE'
-                                        puts taxon_with_more_specimens.taxonomic_infos
-                                        puts '*' * 20
-                                    end
+                                if seq_meta.specimens.size == old_seq_meta.specimens.size
+                                    ## here we do have the same number of specimens for different taxa
+                                    ## therefore it will choose the LCA of these two taxa
+                                    lca = TaxonHelper.lowest_matching_taxon(obj1: seq_meta, obj2: old_seq_meta, params: params, importer: self.class)
+                                    puts "LCA:"
+                                    p lca
+                                else
+                                    ## one taxon has mor specimens than the other
+                                    ## for now i select the one with higher number of specimens
+                                    ## threshold could be implement at what point it should choose
+                                    ## one taxon over the other or if it should search for a LCA
+                                    taxon_with_more_specimens = seq_meta.specimens.size > old_seq_meta.specimens.size ? seq_meta : old_seq_meta
+                                    puts 'THE CHOSE ONE'
+                                    puts taxon_with_more_specimens.taxonomic_infos
+                                    puts '*' * 20
                                 end
                             end
                         end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                        # if old_seq_metas.any?
+                        #     old_seq_metas.each do |old_seq_meta_ary|
+                        #         old_taxon_name          = old_seq_meta_ary.first
+                        #         old_seq_meta            = old_seq_meta_ary.last
+                        #         old_latinized_rank      = TaxonomyHelper.latinize_rank(old_seq_meta.taxonomic_infos.taxon_rank)
+                        #         current_latinized_rank  = TaxonomyHelper.latinize_rank(seq_meta.taxonomic_infos.taxon_rank)
+                                
+                        #         if seq_meta.taxonomic_infos.public_send(old_latinized_rank) == old_taxon_name || old_seq_meta.taxonomic_infos.public_send(current_latinized_rank) == taxon_name
+                                    
+                        #             old_taxon_rank_index        = GbifTaxonomy.possible_ranks.index(old_seq_meta.taxonomic_infos.taxon_rank)
+                        #             current_taxon_rank_index    = GbifTaxonomy.possible_ranks.index(seq_meta.taxonomic_infos.taxon_rank)
+                                    
+                        #             if old_taxon_rank_index < current_taxon_rank_index
+                        #                 lower_taxon_name = old_taxon_name
+                        #                 higher_taxon_name = taxon_name
+                        #                 lower_taxon_seq_meta = old_seq_meta
+                        #                 higher_taxon_seq_meta = seq_meta
+                        #             elsif old_taxon_rank_index == current_taxon_rank_index
+                        #                 if old_taxon_name.split(' ').size > taxon_name.split(' ').size
+                        #                     lower_taxon_name  = old_taxon_name
+                        #                     higher_taxon_name = taxon_name
+                        #                     lower_taxon_seq_meta  = old_seq_meta
+                        #                     higher_taxon_seq_meta = seq_meta
+                        #                 else
+                        #                     lower_taxon_name  = taxon_name
+                        #                     higher_taxon_name = old_taxon_name
+                        #                     lower_taxon_seq_meta  = seq_meta
+                        #                     higher_taxon_seq_meta = old_seq_meta
+                        #                 end
+                        #             else
+                        #                 lower_taxon_name  = taxon_name
+                        #                 higher_taxon_name = old_taxon_name
+                        #                 lower_taxon_seq_meta  = seq_meta
+                        #                 higher_taxon_seq_meta = old_seq_meta
+                        #             end
+
+                        #             same_lineages.push(
+                        #                 OpenStruct.new(
+                        #                     lower_taxon_name:       lower_taxon_name,
+                        #                     higher_taxon_name:      higher_taxon_name,
+                        #                     lower_taxon_seq_meta:   lower_taxon_seq_meta,
+                        #                     higher_taxon_seq_meta:  higher_taxon_seq_meta
+                        #                 )
+                        #             )
+                        #         else # do not have same lineage parts
+                        #             puts 'Do not have same lineage parts'
+                        #             puts '*' * 20
+                        #             puts taxon_name
+                        #             puts seq_meta.specimens.size
+                        #             puts old_taxon_name
+                        #             puts old_seq_meta.specimens.size
+
+                        #             if seq_meta.specimens.size == old_seq_meta.specimens.size
+                        #                 ## here we do have the same number of specimens for different taxa
+                        #                 ## therefore it will choose the LCA of these two taxa
+                        #                 lca = TaxonHelper.lowest_matching_taxon(obj1: seq_meta, obj2: old_seq_meta, params: params, importer: self.class)
+                        #                 puts "LCA:"
+                        #                 p lca
+                        #             else
+                        #                 ## one taxon has mor specimens than the other
+                        #                 ## for now i select the one with higher number of specimens
+                        #                 ## threshold could be implement at what point it should choose
+                        #                 ## one taxon over the other or if it should search for a LCA
+                        #                 taxon_with_more_specimens = seq_meta.specimens.size > old_seq_meta.specimens.size ? seq_meta : old_seq_meta
+                        #                 puts 'THE CHOSE ONE'
+                        #                 puts taxon_with_more_specimens.taxonomic_infos
+                        #                 puts '*' * 20
+                        #             end
+                        #         end
+                        #     end
+                        # end
+
+                        chosen_one = [taxon_name, seq_meta]
                         old_seq_metas.push([taxon_name, seq_meta])
 
                     end
