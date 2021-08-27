@@ -333,10 +333,43 @@ params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 
 MiscHelper.print_params(params)
 
+
+byebug
 # DatabaseSchema.drop(:sequences)
-# DatabaseSchema.drop(:specimen_metas)
 # DatabaseSchema.drop(:taxon_object_proxies)
+# DatabaseSchema.drop(:sequence_taxon_object_proxies)
 # DatabaseSchema.migrate
+
+
+
+# seq1 = Sequence.create(nucleotides: 'AGGCT')
+# p seq1
+# top1 = TaxonObjectProxy.create(canonical_name: 'Insecta')
+# p top1
+
+
+
+# stp1 = SequenceTaxonObjectProxy.create(
+#     sequence_id: seq1.id,
+#     taxon_object_proxy_id: top1.id,
+#     specimens_num: 1,
+#     first_specimen_identifier: 'BO-KK092',
+# )
+# p stp1
+
+
+# seqs = TaxonObjectProxy.first.sequences.includes(:sequence_taxon_object_proxies)
+# seq = seqs.first
+
+# seq.taxon_object_proxies.build(canonical_name: 'Carabus')
+# seq.save
+# p seq.sequence_taxon_object_proxies
+
+
+# byebug
+
+
+
 # exit
 # DatabaseSchema.migrate
 # p Sequence

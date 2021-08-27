@@ -107,7 +107,7 @@ class DatabaseSchema
 
             create_table :sequences do |t|
                 t.string    :sha256_bubblebabble, index: true
-                t.text      :zlib_deflated
+                t.text      :nucleotides
 
                 t.timestamps
             end
@@ -132,10 +132,17 @@ class DatabaseSchema
 				t.string :source_taxon_name, index: true
 				t.string :sha256_bubblebabble, index: true
 
-                t.references :sequence
-
 				t.timestamps
 			end
+
+            create_table :sequence_taxon_object_proxies do |t|
+                t.belongs_to :sequence
+                t.belongs_to :taxon_object_proxy
+                t.integer :specimens_num
+                t.string :first_specimen_identifier
+                
+                t.timestamps
+            end
 
             # create_table :specimen_metas do |t|
             #     t.string        :identifier
