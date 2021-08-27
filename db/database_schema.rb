@@ -140,7 +140,7 @@ class DatabaseSchema
                 t.belongs_to :taxon_object_proxy
                 t.integer :specimens_num
                 t.string :first_specimen_identifier
-                
+
                 t.timestamps
             end
 

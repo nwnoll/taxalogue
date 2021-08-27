@@ -334,12 +334,21 @@ params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 MiscHelper.print_params(params)
 
 
-byebug
+# byebug
+
 # DatabaseSchema.drop(:sequences)
 # DatabaseSchema.drop(:taxon_object_proxies)
 # DatabaseSchema.drop(:sequence_taxon_object_proxies)
 # DatabaseSchema.migrate
 
+# Sequence.all.each do |seq|
+#     if seq.taxon_object_proxies.size > 1
+#         byebug
+#         # seq.sequence_taxon_object_proxies
+#         # seq.taxon_object_proxies
+#     end
+# end
+# exit
 
 
 # seq1 = Sequence.create(nucleotides: 'AGGCT')
