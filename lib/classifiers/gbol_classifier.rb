@@ -187,123 +187,123 @@ class GbolClassifier
 
         end
 
-        ## got it from https://gist.github.com/btelles/284765/d7e256771c78069994e500d7a4b0ee81c6995937
-        Hash.class_eval do
-            def split_into(divisions)
-                count = 0
-                inject([]) do |final, key_value|
-                    final[count%divisions] ||= {}
-                    final[count%divisions].merge!({key_value[0] => key_value[1]})
-                    count += 1
-                    final
-                end
-            end
-        end
+        ## TODO:
+        # Need to make it global
+        # or passed from Job to Job...
+        seq_top_ids                     = []
+        seqs_with_taxonomic_conflicts   = Hash.new { |h, k| h[k] = Hash.new(0) }
+        ##
+        seq_arys_to_import              = []
+        top_arys_to_import              = []
+        related_seqs_and_taxon_infos    = Hash.new
+        already_pushed_tops             = Set.new
 
-        divisions_num = (specimens_of_sequence.keys.size / 100_000) + 1
-        specimens_of_sequence_splitted_ary = specimens_of_sequence.split_into(divisions_num)
-        
-        seq_top_ids = []
+        specimens_of_sequence.each do |seq, seq_meta_of|
+            seq_sha256_bubblebabble = Digest::SHA256.bubblebabble(seq)
 
-        specimens_of_sequence_splitted_ary.each do |specimens_of_sequence_splitted|
+            ## Maybe easiest is to trop the has many through table? and create it again?
+            seq_meta_of.each { |k, v| seqs_with_taxonomic_conflicts[seq_sha256_bubblebabble][k] += v.specimens.size} if seq_meta_of.size > 1
             
-            seq_arys_to_import = []
-            top_arys_to_import = []
-            related_seqs_and_taxon_infos = Hash.new
-            already_pushed_tops = Set.new
+            if Sequence.exists?(sha256_bubblebabble: seq_sha256_bubblebabble)
+                sequence_ary_or_id = Sequence.find_by(sha256_bubblebabble: seq_sha256_bubblebabble).id
+            else
+                sequence_ary_or_id = [seq_sha256_bubblebabble, seq]
+                seq_arys_to_import.push(sequence_ary_or_id)
+            end
 
-            specimens_of_sequence_splitted.each do |seq, seq_meta_of|
-                seq_sha256_bubblebabble = Digest::SHA256.bubblebabble(seq)
+            seq_sha_or_id =  sequence_ary_or_id.kind_of?(Array) ? seq_sha256_bubblebabble : sequence_ary_or_id
+            
+            related_seqs_and_taxon_infos[seq_sha_or_id] = OpenStruct.new(
+                taxon_object_proxy_sha_or_ids: [],
+                specimens_num: 0,
+                first_specimen_identifier: nil
+            )
+
+            seq_meta_of.each do |canonical_name, seq_meta|
+                if taxonomy_params[:ncbi]
+                    used_taxonomy_string = 'ncbi'
+                elsif taxonomy_params[:gbif_backbone]
+                    used_taxonomy_string = 'gbif_backbone'
+                elsif taxonomy_params[:gbif]
+                    used_taxonomy_string = 'gbif'
+                end
                 
-                if Sequence.exists?(sha256_bubblebabble: seq_sha256_bubblebabble)
-                    sequence_ary_or_id = Sequence.find_by(sha256_bubblebabble: seq_sha256_bubblebabble).id
+                taxon_object_proxy_string = "#{seq_meta.taxonomic_infos.regnum}|#{seq_meta.taxonomic_infos.phylum}|#{seq_meta.taxonomic_infos.classis}|#{seq_meta.taxonomic_infos.ordo}|#{seq_meta.taxonomic_infos.familia}|#{seq_meta.taxonomic_infos.genus}|#{seq_meta.taxonomic_infos.canonical_name}|#{seq_meta.taxonomic_infos.scientific_name}|#{used_taxonomy_string}"
+                taxon_object_proxy_string_as_sha256_bubblebabble = Digest::SHA256.bubblebabble(taxon_object_proxy_string)
+                
+                if TaxonObjectProxy.exists?(sha256_bubblebabble: taxon_object_proxy_string_as_sha256_bubblebabble)
+                    taxon_object_proxy_ary_or_id = TaxonObjectProxy.find_by(sha256_bubblebabble: taxon_object_proxy_string_as_sha256_bubblebabble).id
+                elsif already_pushed_tops.include?(taxon_object_proxy_string_as_sha256_bubblebabble)
+                    ## lateron I check if the variable is of kind array
+                    # if thats the case i will use the sha
+                    # i have to use the sha since I dont yet have the ID, because
+                    # I import all at once later
+                    taxon_object_proxy_ary_or_id = [] 
                 else
-                    sequence_ary_or_id = [seq_sha256_bubblebabble, seq]
-                    seq_arys_to_import.push(sequence_ary_or_id)
+                    seq_meta_hash = seq_meta.taxonomic_infos.to_h
+                    seq_meta_hash[:combined] = seq_meta_hash[:combined].join(', ') if seq_meta_hash[:combined]
+
+                    taxon_object_proxy_ary_or_id = seq_meta_hash.to_h.values
+                    taxon_object_proxy_ary_or_id.push(query_taxon_name, used_taxonomy_string, taxonomy_params[:synonyms_allowed], seq_meta.source_taxon_name, taxon_object_proxy_string_as_sha256_bubblebabble)
+                    top_arys_to_import.push(taxon_object_proxy_ary_or_id)
+                    already_pushed_tops.add(taxon_object_proxy_string_as_sha256_bubblebabble)
                 end
 
-                seq_sha_or_id =  sequence_ary_or_id.kind_of?(Array) ? seq_sha256_bubblebabble : sequence_ary_or_id
-                
-                related_seqs_and_taxon_infos[seq_sha_or_id] = OpenStruct.new(
-                    taxon_object_proxy_sha_or_ids: [],
-                    specimens_num: 0,
-                    first_specimen_identifier: nil
-                )
-
-                seq_meta_of.each do |canonical_name, seq_meta|
-                    if taxonomy_params[:ncbi]
-                        used_taxonomy_string = 'ncbi'
-                    elsif taxonomy_params[:gbif_backbone]
-                        used_taxonomy_string = 'gbif_backbone'
-                    elsif taxonomy_params[:gbif]
-                        used_taxonomy_string = 'gbif'
-                    end
-                    
-                    taxon_object_proxy_string = "#{seq_meta.taxonomic_infos.regnum}|#{seq_meta.taxonomic_infos.phylum}|#{seq_meta.taxonomic_infos.classis}|#{seq_meta.taxonomic_infos.ordo}|#{seq_meta.taxonomic_infos.familia}|#{seq_meta.taxonomic_infos.genus}|#{seq_meta.taxonomic_infos.canonical_name}|#{seq_meta.taxonomic_infos.scientific_name}|#{used_taxonomy_string}"
-                    taxon_object_proxy_string_as_sha256_bubblebabble = Digest::SHA256.bubblebabble(taxon_object_proxy_string)
-                    
-                    if TaxonObjectProxy.exists?(sha256_bubblebabble: taxon_object_proxy_string_as_sha256_bubblebabble)
-                        taxon_object_proxy_ary_or_id = TaxonObjectProxy.find_by(sha256_bubblebabble: taxon_object_proxy_string_as_sha256_bubblebabble).id
-                    elsif already_pushed_tops.include?(taxon_object_proxy_string_as_sha256_bubblebabble)
-                        ## lateron I check if the variable is of kind array
-                        # if thats the case i will use the sha
-                        # i have to use the sha since I dont yet have the ID, because
-                        # I import all at once later
-                        taxon_object_proxy_ary_or_id = [] 
-                    else
-                        seq_meta_hash = seq_meta.taxonomic_infos.to_h
-                        seq_meta_hash[:combined] = seq_meta_hash[:combined].join(', ') if seq_meta_hash[:combined]
-
-                        taxon_object_proxy_ary_or_id = seq_meta_hash.to_h.values
-                        taxon_object_proxy_ary_or_id.push(query_taxon_name, used_taxonomy_string, taxonomy_params[:synonyms_allowed], seq_meta.source_taxon_name, taxon_object_proxy_string_as_sha256_bubblebabble)
-                        top_arys_to_import.push(taxon_object_proxy_ary_or_id)
-                        already_pushed_tops.add(taxon_object_proxy_string_as_sha256_bubblebabble)
-                    end
-
-                    top_sha_or_id =  taxon_object_proxy_ary_or_id.kind_of?(Array) ? taxon_object_proxy_string_as_sha256_bubblebabble : taxon_object_proxy_ary_or_id
-                    related_seqs_and_taxon_infos[seq_sha_or_id].taxon_object_proxy_sha_or_ids.push(top_sha_or_id)
-                    related_seqs_and_taxon_infos[seq_sha_or_id].specimens_num = seq_meta.specimens.size
-                    related_seqs_and_taxon_infos[seq_sha_or_id].first_specimen_identifier = seq_meta.specimens.first[:identifier]
-                end
-
-            end
-            seq_columns = Sequence.column_names - ['id']
-            top_columns = TaxonObjectProxy.column_names - ['id']
-            seq_top_columns = SequenceTaxonObjectProxy.column_names - ['id']
-            
-            TaxonObjectProxy.import top_columns, top_arys_to_import, validate: false if top_arys_to_import.any?
-            Sequence.import seq_columns, seq_arys_to_import, validate: false if seq_arys_to_import.any?
-            sleep 1
-
-            seq_top_arys_to_import = []
-            related_seqs_and_taxon_infos.each do |key, value|
-                ## TODO:
-                # Maybe here is an ID problem? tith seq_id and top_id
-                seq_id = key.kind_of?(String) ? Sequence.find_by(sha256_bubblebabble: key).id : key
-                value.taxon_object_proxy_sha_or_ids.each do |top_sha_or_id|
-                    top_id = top_sha_or_id.kind_of?(String) ? TaxonObjectProxy.find_by(sha256_bubblebabble: top_sha_or_id).id : top_sha_or_id
-                    
-                    unless SequenceTaxonObjectProxy.exists?(sequence_id: seq_id, taxon_object_proxy_id: top_id)
-                        seq_top_arys_to_import.push([seq_id, top_id, value.specimens_num, value.first_specimen_identifier])
-                    end
-
-                    seq_top_ids.push([seq_id, top_id])
-                end
-
-            end
-
-            SequenceTaxonObjectProxy.import seq_top_columns, seq_top_arys_to_import, validate: false if seq_top_arys_to_import.any?
-            sleep 1
-            ## TODO: NEXT
-            # Doese not work
-            seq_top_ids.reverse.each_with_index do |seq_top_ary, index|
-                seq_top_join_id = SequenceTaxonObjectProxy.find_by(sequence_id: seq_top_ary[0], taxon_object_proxy_id: seq_top_ary[1]).id
-                seq_top_ids[index].push(seq_top_join_id)
+                top_sha_or_id =  taxon_object_proxy_ary_or_id.kind_of?(Array) ? taxon_object_proxy_string_as_sha256_bubblebabble : taxon_object_proxy_ary_or_id
+                related_seqs_and_taxon_infos[seq_sha_or_id].taxon_object_proxy_sha_or_ids.push(top_sha_or_id)
+                related_seqs_and_taxon_infos[seq_sha_or_id].specimens_num = seq_meta.specimens.size
+                related_seqs_and_taxon_infos[seq_sha_or_id].first_specimen_identifier = seq_meta.specimens.first[:identifier]
             end
 
         end
+        seq_columns = Sequence.column_names - ['id']
+        top_columns = TaxonObjectProxy.column_names - ['id']
+        seq_top_columns = SequenceTaxonObjectProxy.column_names - ['id']
+        
+        TaxonObjectProxy.import top_columns, top_arys_to_import, validate: false, batch_size: 100_000 if top_arys_to_import.any?
+        Sequence.import seq_columns, seq_arys_to_import, validate: false, batch_size: 100_000 if seq_arys_to_import.any?
+        sleep 1
 
-        byebug
+        seq_top_arys_to_import = []
+        related_seqs_and_taxon_infos.each do |key, value|
+            seq_id = key.kind_of?(String) ? Sequence.find_by(sha256_bubblebabble: key).id : key
+            value.taxon_object_proxy_sha_or_ids.each do |top_sha_or_id|
+                top_id = top_sha_or_id.kind_of?(String) ? TaxonObjectProxy.find_by(sha256_bubblebabble: top_sha_or_id).id : top_sha_or_id
+                
+                unless SequenceTaxonObjectProxy.exists?(sequence_id: seq_id, taxon_object_proxy_id: top_id)
+                    seq_top_arys_to_import.push([seq_id, top_id, value.specimens_num, value.first_specimen_identifier])
+                end
+
+                seq_top_ids.push([seq_id, top_id])
+            end
+        end
+
+        SequenceTaxonObjectProxy.import seq_top_columns, seq_top_arys_to_import, validate: false, batch_size: 100_000 if seq_top_arys_to_import.any?
+        sleep 1
+        
+        seq_top_ids.map.with_index(0) do |seq_top_ary, index|
+            seq_top_join_id = SequenceTaxonObjectProxy.find_by(sequence_id: seq_top_ary[0], taxon_object_proxy_id: seq_top_ary[1]).id
+            seq_top_ids[index].push(seq_top_join_id)
+        end
+
+        seq_records_with_taxonomic_conflicts = Sequence.where(sha256_bubblebabble: seqs_with_taxonomic_conflicts.keys)
+
+
+        ## TODO: next specimens num is wrong in databse...
+        # but correct in hash
+        seqs_with_taxonomic_conflicts.each do |seq_sha, specimens_num_of_taxon|
+            seq_record = Sequence.find_by(sha256_bubblebabble: seq_sha)
+            puts '*' * 100
+            pp seq_record
+            puts '------------'
+            pp seq_record.taxon_object_proxies
+            puts '------------'
+            pp seq_record.sequence_taxon_object_proxies
+
+            puts '*' * 100
+            pp seqs_with_taxonomic_conflicts[seq_sha]
+
+        end
 
         if params[:filter][:dereplicate]
             specimens_of_sequence.keys.each do |seq|
