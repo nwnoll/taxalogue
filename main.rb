@@ -12,6 +12,7 @@ params = {
 	setup: Hash.new,
 	update: Hash.new,
 	filter: Hash.new,
+	derep: Hash.new,
 	taxonomy: Hash.new,
 	region: Hash.new,
     output: Hash.new
@@ -47,6 +48,7 @@ Commonly used commands are:
    setup    :  setup Taxonomies
    update   :  update taxonomies or sequences
    filter   :  filter sequences
+   derep    :  Remove sequences that have the exact same sequence of characters and length
    taxonomy :  different options regarding the used taxonomy
    region   :  select sequences by country, continent, biogeographic regions etc.
    import   :  imports files into SQL database, in general this happens after first start automatically
@@ -182,6 +184,29 @@ subcommands = {
         end
 		opts.on('-d', '--dereplicate', 'Remove sequences that have the exact same sequence of characters and length')
 	end,
+
+    derep: OptionParser.new do |opts|
+		opts.banner = "Usage: derep [options]"
+        opts.on('-l BOOLEAN', TrueClass, '--last_common_ancestor', 'If some taxonomic assignments have for example the same number of associated specimens or ar e from the same taxonomic rank, the last common ancestor is chosen. default: true') do |opt|
+            params[:derep][:random]     = false
+            params[:derep][:discard]    = false
+
+            opt
+        end
+        opts.on('-r BOOLEAN', TrueClass, '--random', 'If some taxonomic assignments for a given sequence have the same precedence, the candidate is chosen in input order') do |opt|
+            params[:derep][:last_common_ancestor]   = false
+            params[:derep][:discard]                = false
+
+            opt
+        end
+        opts.on('-d BOOLEAN', TrueClass, '--discard', 'If some taxonomic assignments for a given sequence have the same precedence, the sequence is discarded.') do |opt|
+            params[:derep][:last_common_ancestor]   = false
+            params[:derep][:random]                 = false
+
+            opt
+        end
+    
+    end,
 
 	taxonomy: OptionParser.new do |opts|
 		opts.banner = "Usage: taxonomy [options]"
@@ -326,6 +351,11 @@ if params[:output][:dada2_species] && !(params[:filter][:taxon_rank] == 'species
     exit
 end
 
+if params[:derep].values.count(true) > 1
+    puts "Only one derep strategy is allowed"
+
+    exit
+end
 
 ## if taxonomy was chosen by user, it needs to be updated
 ## object is also not set in opts.on
@@ -338,7 +368,11 @@ MiscHelper.print_params(params)
 
 # DatabaseSchema.drop(:sequences)
 # DatabaseSchema.drop(:taxon_object_proxies)
-# DatabaseSchema.drop(:sequence_taxon_object_proxies)
+DatabaseSchema.drop(:sequence_taxon_object_proxies) if ActiveRecord::Base.connection.table_exists?(:sequence_taxon_object_proxies)
+DatabaseSchema.create_table(:sequence_taxon_object_proxies)
+
+
+
 # DatabaseSchema.migrate
 
 # Sequence.all.each do |seq|

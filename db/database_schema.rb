@@ -164,4 +164,22 @@ class DatabaseSchema
     def self.drop(table_name)
         ActiveRecord::Migration.drop_table(table_name)
     end
+
+    def self.create_table(table_name)
+        if table_name == :sequence_taxon_object_proxies
+            ActiveRecord::Schema.define do
+                create_table :sequence_taxon_object_proxies do |t|
+                    t.belongs_to :sequence
+                    t.belongs_to :taxon_object_proxy
+                    t.integer :specimens_num
+                    t.string :first_specimen_identifier
+                    t.string :first_specimen_location
+                    t.string :first_specimen_latitude
+                    t.string :first_specimen_longitude
+
+                    t.timestamps
+                end
+            end
+        end
+    end
 end

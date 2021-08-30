@@ -5,6 +5,10 @@
 :num_threads: 5
 :taxonomy:
   :ncbi: true
+:derep:
+  :last_common_ancestor: true
+  :random: false
+  :discard: false
 :output:
   :table: true
   :fasta: true

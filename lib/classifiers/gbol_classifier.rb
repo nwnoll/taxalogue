@@ -190,7 +190,6 @@ class GbolClassifier
         ## TODO:
         # Need to make it global
         # or passed from Job to Job...
-        seq_top_ids                     = []
         seqs_with_taxonomic_conflicts   = Hash.new { |h, k| h[k] = Hash.new(0) }
         ##
         seq_arys_to_import              = []
@@ -202,7 +201,7 @@ class GbolClassifier
             seq_sha256_bubblebabble = Digest::SHA256.bubblebabble(seq)
 
             ## Maybe easiest is to trop the has many through table? and create it again?
-            seq_meta_of.each { |k, v| seqs_with_taxonomic_conflicts[seq_sha256_bubblebabble][k] += v.specimens.size} if seq_meta_of.size > 1
+            seq_meta_of.each { |canonical_name, seq_meta| seqs_with_taxonomic_conflicts[seq_sha256_bubblebabble][canonical_name] += seq_meta.specimens.size } if seq_meta_of.size > 1
             
             if Sequence.exists?(sha256_bubblebabble: seq_sha256_bubblebabble)
                 sequence_ary_or_id = Sequence.find_by(sha256_bubblebabble: seq_sha256_bubblebabble).id
@@ -215,8 +214,11 @@ class GbolClassifier
             
             related_seqs_and_taxon_infos[seq_sha_or_id] = OpenStruct.new(
                 taxon_object_proxy_sha_or_ids: [],
-                specimens_num: 0,
-                first_specimen_identifier: nil
+                specimens_nums: [],
+                first_specimen_identifiers: [],
+                first_specimen_locations: [],
+                first_specimen_latitudes: [],
+                first_specimen_longitudes: []
             )
 
             seq_meta_of.each do |canonical_name, seq_meta|
@@ -251,8 +253,11 @@ class GbolClassifier
 
                 top_sha_or_id =  taxon_object_proxy_ary_or_id.kind_of?(Array) ? taxon_object_proxy_string_as_sha256_bubblebabble : taxon_object_proxy_ary_or_id
                 related_seqs_and_taxon_infos[seq_sha_or_id].taxon_object_proxy_sha_or_ids.push(top_sha_or_id)
-                related_seqs_and_taxon_infos[seq_sha_or_id].specimens_num = seq_meta.specimens.size
-                related_seqs_and_taxon_infos[seq_sha_or_id].first_specimen_identifier = seq_meta.specimens.first[:identifier]
+                related_seqs_and_taxon_infos[seq_sha_or_id].specimens_nums.push(seq_meta.specimens.size)
+                related_seqs_and_taxon_infos[seq_sha_or_id].first_specimen_identifiers.push(seq_meta.specimens.first[:identifier])
+                related_seqs_and_taxon_infos[seq_sha_or_id].first_specimen_locations.push(seq_meta.specimens.first[:location])
+                related_seqs_and_taxon_infos[seq_sha_or_id].first_specimen_latitudes.push(seq_meta.specimens.first[:latitude])
+                related_seqs_and_taxon_infos[seq_sha_or_id].first_specimen_longitudes.push(seq_meta.specimens.first[:longitude])
             end
 
         end
@@ -267,43 +272,37 @@ class GbolClassifier
         seq_top_arys_to_import = []
         related_seqs_and_taxon_infos.each do |key, value|
             seq_id = key.kind_of?(String) ? Sequence.find_by(sha256_bubblebabble: key).id : key
-            value.taxon_object_proxy_sha_or_ids.each do |top_sha_or_id|
+            value.taxon_object_proxy_sha_or_ids.each_with_index do |top_sha_or_id, index|
                 top_id = top_sha_or_id.kind_of?(String) ? TaxonObjectProxy.find_by(sha256_bubblebabble: top_sha_or_id).id : top_sha_or_id
                 
                 unless SequenceTaxonObjectProxy.exists?(sequence_id: seq_id, taxon_object_proxy_id: top_id)
-                    seq_top_arys_to_import.push([seq_id, top_id, value.specimens_num, value.first_specimen_identifier])
+                    seq_top_arys_to_import.push([seq_id, top_id, value.specimens_nums[index], value.first_specimen_identifiers[index], value.first_specimen_locations[index], value.first_specimen_latitudes[index], value.first_specimen_longitudes[index]])
                 end
 
-                seq_top_ids.push([seq_id, top_id])
+                $seq_ids.push(seq_id)
             end
         end
 
         SequenceTaxonObjectProxy.import seq_top_columns, seq_top_arys_to_import, validate: false, batch_size: 100_000 if seq_top_arys_to_import.any?
         sleep 1
-        
-        seq_top_ids.map.with_index(0) do |seq_top_ary, index|
-            seq_top_join_id = SequenceTaxonObjectProxy.find_by(sequence_id: seq_top_ary[0], taxon_object_proxy_id: seq_top_ary[1]).id
-            seq_top_ids[index].push(seq_top_join_id)
-        end
 
         seq_records_with_taxonomic_conflicts = Sequence.where(sha256_bubblebabble: seqs_with_taxonomic_conflicts.keys)
 
 
         ## TODO: next specimens num is wrong in databse...
         # but correct in hash
-        seqs_with_taxonomic_conflicts.each do |seq_sha, specimens_num_of_taxon|
-            seq_record = Sequence.find_by(sha256_bubblebabble: seq_sha)
-            puts '*' * 100
-            pp seq_record
-            puts '------------'
-            pp seq_record.taxon_object_proxies
-            puts '------------'
-            pp seq_record.sequence_taxon_object_proxies
-
-            puts '*' * 100
-            pp seqs_with_taxonomic_conflicts[seq_sha]
-
-        end
+        # seqs_with_taxonomic_conflicts.each do |seq_sha, specimens_num_of_taxon|
+        #     seq_record = Sequence.find_by(sha256_bubblebabble: seq_sha)
+        #     puts '*' * 100
+        #     pp seq_record
+        #     puts '------------'
+        #     pp seq_record.taxon_object_proxies
+        #     puts '------------'
+        #     pp seq_record.sequence_taxon_object_proxies
+        #     puts '------------'
+        #     pp seqs_with_taxonomic_conflicts[seq_sha]
+        #     puts '*' * 100
+        # end
 
         if params[:filter][:dereplicate]
             specimens_of_sequence.keys.each do |seq|

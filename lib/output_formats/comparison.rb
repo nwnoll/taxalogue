@@ -5,17 +5,17 @@ class OutputFormat::Comparison
 
     @@count = 0
 
-    def self.write_to_file(file:, nomial:, accepted_taxon:, synonyms_of_taxonomy: nil, used_taxonomy:)
+    def self.write_to_file(file:, nomial: nil, accepted_taxon:, synonyms_of_taxonomy: nil, used_taxonomy:)
         @@count += 1
         if @@count == 1
             file.puts "source_taxon_name\taccepted_taxon_name\taccepted_full_taxon_name\taccepted_taxonomic_status\tused_taxonomy\tsynonyms_for_accepted_taxon"
         end
-        source_taxon_name           = nomial.name
+
+        source_taxon_name           = nomial.nil? ? accepted_taxon.source_taxon_name : nomial.name
         accepted_taxon_name         = accepted_taxon.canonical_name
         accepted_full_taxon_name    = accepted_taxon.scientific_name
         accepted_taxonomic_status   = accepted_taxon.taxonomic_status
         
-
         synonyms_str = ''
         if synonyms_of_taxonomy
             synonyms_ary = []
