@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 class MultipleJobs
-    attr_reader :jobs, :download_only, :params
+    attr_reader :jobs, :download_only, :params, :result_file_manager
 
     def initialize(jobs:, params:)
         @jobs           = jobs
         @params         = params
         @download_only  = params[:download].any?
+        @result_file_manager = nil
     end
 
     def run
@@ -39,12 +40,40 @@ class MultipleJobs
             end
         end
 
+        @result_file_manager = jobs.last.result_file_manager 
+
         if params[:derep].any? { |opt| opt.last == true }
             seqs = Sequence.where(id: $seq_ids)
+            
+            file_of = MiscHelper.create_output_files(
+                file_manager: result_file_manager,
+                query_taxon_name: params[:taxon_object].canonical_name,
+                file_name: Pathname.new("derep"),
+                params: params,
+                source_db: 'all'
+            )
+
+            result_file_manager
             seqs.each do |seq|
+                    ## would prefer a different solution but otherwise might take to much memory
+                    # specimen_data = Hash.new(
+                    #     identifier: seq.sequence_taxon_object_proxies.first.first_specimen_identifier,
+                    #     sequence: seq.nucleotides,
+                    #     location: seq.sequence_taxon_object_proxies.first.first_specimen_location,
+                    #     latitude: seq.sequence_taxon_object_proxies.first.first_specimen_latitude,
+                    #     longitude: seq.sequence_taxon_object_proxies.first.first_specimen_longitude
+                    # )
                 if seq.taxon_object_proxies.size < 2
+                    specimen_data = _create_specimen_data(seq, seq.sequence_taxon_object_proxies.first)
                     
-                    seq
+                    MiscHelper.write_to_files(
+                        file_of: file_of,
+                        taxonomic_info: seq.taxon_object_proxies.first,
+                        nomial: nil,
+                        params: params,
+                        data: [specimen_data]
+                    )
+
                     next
                 end
                 comparison_results_for = Hash.new
@@ -82,20 +111,6 @@ class MultipleJobs
                     end
                 end
 
-                # puts '*' * 100
-                # puts
-                # puts 'sorted'
-                # pp sorted
-                # puts
-                # puts 'same comparison results'
-                # pp same_comparison_results
-                # puts
-                # puts 'join model'
-                # sorted.each { |top| pp top.sequence_taxon_object_proxies.find_by(sequence_id: seq.id) }
-                # puts
-                # puts '*' * 100
-
-
                 if same_comparison_results.any?
                     if params[:derep][:last_common_ancestor]
                         comparison_result   = comparison_results_for[sorted.first]
@@ -105,17 +120,54 @@ class MultipleJobs
 
                         taxon_record        = TaxonHelper.get_taxon_record(params, taxon_name, automatic: true)
                         taxon_record.source_taxon_name = sorted.first.source_taxon_name
-                        puts '-----------'
-                        p taxon_record
-                        puts
                         pp sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)
-                        puts '-----------'
-                        byebug if taxon_record.nil?
-                    elsif params[:derep][:random]
-                        
-                    elsif params[:derep][:discard]
+                        p taxon_record
+                        p seq.nucleotides
+                        puts
 
+                        specimen_data = _create_specimen_data(seq, sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id))
+                        MiscHelper.write_to_files(
+                            file_of: file_of,
+                            taxonomic_info: taxon_record,
+                            nomial: nil,
+                            params: params,
+                            data: [specimen_data]
+                        )
+
+                        next
+                    elsif params[:derep][:random]
+                        pp sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)
+                        p sorted.first
+                        p seq.nucleotides
+                        puts
+
+                        specimen_data = _create_specimen_data(seq, sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id))
+                        MiscHelper.write_to_files(
+                            file_of: file_of,
+                            taxonomic_info: sorted.first,
+                            nomial: nil,
+                            params: params,
+                            data: [specimen_data]
+                        )
+
+                        next
+                    elsif params[:derep][:discard]
+                        # maybe write it to extra file
+
+                        next
                     end
+                else
+                    ## sorted.first is the best hit
+                    specimen_data = _create_specimen_data(seq, sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id))
+                    MiscHelper.write_to_files(
+                        file_of: file_of,
+                        taxonomic_info: sorted.first,
+                        nomial: nil,
+                        params: params,
+                        data: [specimen_data]
+                    )
+
+                    next
                 end
             end
         end
@@ -157,5 +209,16 @@ class MultipleJobs
             
             return :success
         end
+    end
+
+    def _create_specimen_data(seq, seq_top)
+        specimen_data = Hash.new
+        specimen_data[:identifier]  =  seq_top.first_specimen_identifier
+        specimen_data[:sequence]    =  seq.nucleotides
+        specimen_data[:location]    =  seq_top.first_specimen_location
+        specimen_data[:latitude]    =  seq_top.first_specimen_latitude
+        specimen_data[:longitude]   =  seq_top.first_specimen_longitude
+
+        return specimen_data
     end
 end
