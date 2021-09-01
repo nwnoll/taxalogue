@@ -37,7 +37,7 @@ class FtpDownloader
             
             begin
                 puts "downloading #{file}"
-                break if i == 1 # useful for short tests
+                # break if i == 1 # useful for short tests
                 
                 ftp.get(file, local_path, 32768)
                 sleep 2

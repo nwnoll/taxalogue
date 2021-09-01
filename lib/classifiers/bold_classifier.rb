@@ -22,7 +22,9 @@ class BoldClassifier
 
     def run
         specimens_of_taxon = Hash.new { |hash, key| hash[key] = {} }
-        
+        specimens_of_sequence   = Hash.new
+        file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'gbol') unless params[:derep].any? { |opt| opt.last == true }
+
         file = File.file?(file_name) ? File.open(file_name, 'r') : nil
         return nil if file.nil?
         
@@ -36,10 +38,9 @@ class BoldClassifier
             specimen = _get_specimen(row: scrubbed_row)
             next if specimen.nil? || specimen.sequence.nil? || specimen.sequence.empty?
             next unless specimen_is_from_area(specimen: specimen, region_params: region_params) if region_params.any?
+            
             SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
         end
-
-        file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'bold')
 
         specimens_of_taxon.keys.each do |taxon_name|
             nomial              = specimens_of_taxon[taxon_name][:nomial]
@@ -56,11 +57,22 @@ class BoldClassifier
                 next unless has_user_taxon_rank
             end
 
-            MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
+            if params[:derep].any? { |opt| opt.last == true }
+                DerepHelper.fill_specimens_of_sequence(specimens: specimens_of_taxon[taxon_name][:data], specimens_of_sequence: specimens_of_sequence, taxonomic_info: taxonomic_info, taxon_name: taxon_name, first_specimen_info: first_specimen_info)
+            else
+                MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
+                OutputFormat::Tsv.rewind
+            end
         end
 
-        OutputFormat::Tsv.rewind
-        file_of.each { |fc, fh| fh.close }
+        if params[:derep].any? { |opt| opt.last == true }
+            DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name)
+        else
+            MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
+            ## TODO: Check if it should also be done for Comparison
+            OutputFormat::Tsv.rewind
+            file_of.each { |fc, fh| fh.close }
+        end
 
         return nil
     end

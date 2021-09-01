@@ -123,7 +123,6 @@ class MiscHelper
 
     def merge_files_in_dir(dir_name)
         ## TODO: refactor and maybe implement into FileMerger?
-    
         dir = Pathname.new(dir_name)
     
         tsv_files = dir.glob("*_output.tsv")
@@ -230,6 +229,8 @@ class MiscHelper
     end
 
     def self.run_file_merger(file_manager:, params:)
+        return nil if params[:derep].any? {|opt| opt.last == true }
+        
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)                    if params[:output][:table]
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)                  if params[:output][:fasta]
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)             if params[:output][:comparison]

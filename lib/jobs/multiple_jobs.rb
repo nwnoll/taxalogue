@@ -40,29 +40,19 @@ class MultipleJobs
             end
         end
 
-        @result_file_manager = jobs.last.result_file_manager 
-
         if params[:derep].any? { |opt| opt.last == true }
-            seqs = Sequence.where(id: $seq_ids)
-            
+            seqs            = Sequence.where(id: $seq_ids)
+            file_manager    = jobs.last.result_file_manager
+
             file_of = MiscHelper.create_output_files(
-                file_manager: result_file_manager,
+                file_manager: file_manager,
                 query_taxon_name: params[:taxon_object].canonical_name,
                 file_name: Pathname.new("derep"),
                 params: params,
                 source_db: 'all'
             )
 
-            result_file_manager
             seqs.each do |seq|
-                    ## would prefer a different solution but otherwise might take to much memory
-                    # specimen_data = Hash.new(
-                    #     identifier: seq.sequence_taxon_object_proxies.first.first_specimen_identifier,
-                    #     sequence: seq.nucleotides,
-                    #     location: seq.sequence_taxon_object_proxies.first.first_specimen_location,
-                    #     latitude: seq.sequence_taxon_object_proxies.first.first_specimen_latitude,
-                    #     longitude: seq.sequence_taxon_object_proxies.first.first_specimen_longitude
-                    # )
                 if seq.taxon_object_proxies.size < 2
                     specimen_data = _create_specimen_data(seq, seq.sequence_taxon_object_proxies.first)
                     
@@ -81,7 +71,7 @@ class MultipleJobs
                 sorted = seq.taxon_object_proxies.to_a.sort_by do |taxon_object_proxy|
                     specimens_num = -(taxon_object_proxy.sequence_taxon_object_proxies.find_by(sequence_id: seq.id).specimens_num)
                     rank = GbifTaxonomy.possible_ranks.index(taxon_object_proxy.taxon_rank)
-                    rank_hit_index = 9 ## this value  is only for sorting purposes, a higher value means higher rank hit
+                    rank_hit_index = 9 ## this value is only for sorting purposes, a higher value means higherrank hit
                     seq.taxon_object_proxies.map do |other_taxon_object_proxy|
                         next if taxon_object_proxy.id == other_taxon_object_proxy.id
 
@@ -120,10 +110,10 @@ class MultipleJobs
 
                         taxon_record        = TaxonHelper.get_taxon_record(params, taxon_name, automatic: true)
                         taxon_record.source_taxon_name = sorted.first.source_taxon_name
-                        pp sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)
-                        p taxon_record
-                        p seq.nucleotides
-                        puts
+                        # pp sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)
+                        # p taxon_record
+                        # p seq.nucleotides
+                        # puts
 
                         specimen_data = _create_specimen_data(seq, sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id))
                         MiscHelper.write_to_files(
@@ -136,10 +126,10 @@ class MultipleJobs
 
                         next
                     elsif params[:derep][:random]
-                        pp sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)
-                        p sorted.first
-                        p seq.nucleotides
-                        puts
+                        # pp sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)
+                        # p sorted.first
+                        # p seq.nucleotides
+                        # puts
 
                         specimen_data = _create_specimen_data(seq, sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id))
                         MiscHelper.write_to_files(

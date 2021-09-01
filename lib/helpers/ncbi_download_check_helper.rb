@@ -80,7 +80,6 @@ class NcbiDownloadCheckHelper
         complete_releases                   = releases.select { |r| r.has_all_divisions }
         successful_and_complete_releases    = releases.select { |r| r.has_all_divisions && r.has_all_divisions }
 
-        byebug
         sorted_successful_and_complete_releases = successful_and_complete_releases.sort_by { |e| _get_release_number(e.name) }.reverse
         successful_and_complete_release = sorted_successful_and_complete_releases.first
         if successful_and_complete_release

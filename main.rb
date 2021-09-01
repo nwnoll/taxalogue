@@ -182,7 +182,6 @@ subcommands = {
 
             opt
         end
-		opts.on('-d', '--dereplicate', 'Remove sequences that have the exact same sequence of characters and length')
 	end,
 
     derep: OptionParser.new do |opts|
@@ -357,70 +356,23 @@ if params[:derep].values.count(true) > 1
     exit
 end
 
+if params[:merge].any? && params[:derep].any? { |opt| opt.last == true }
+    puts "Merging while dereplicating is not possibble at the moment"
+    puts "Only merging will be executed"
+
+    params[:derep].each { |param| param = false }
+end
+
 ## if taxonomy was chosen by user, it needs to be updated
 ## object is also not set in opts.on
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 
 MiscHelper.print_params(params)
 
-
-# byebug
-
-# DatabaseSchema.drop(:sequences)
-# DatabaseSchema.drop(:taxon_object_proxies)
-DatabaseSchema.drop(:sequence_taxon_object_proxies) if ActiveRecord::Base.connection.table_exists?(:sequence_taxon_object_proxies)
-DatabaseSchema.create_table(:sequence_taxon_object_proxies)
-
-
-
-# DatabaseSchema.migrate
-
-# Sequence.all.each do |seq|
-#     if seq.taxon_object_proxies.size > 1
-#         byebug
-#         # seq.sequence_taxon_object_proxies
-#         # seq.taxon_object_proxies
-#     end
-# end
-# exit
-
-
-# seq1 = Sequence.create(nucleotides: 'AGGCT')
-# p seq1
-# top1 = TaxonObjectProxy.create(canonical_name: 'Insecta')
-# p top1
-
-
-
-# stp1 = SequenceTaxonObjectProxy.create(
-#     sequence_id: seq1.id,
-#     taxon_object_proxy_id: top1.id,
-#     specimens_num: 1,
-#     first_specimen_identifier: 'BO-KK092',
-# )
-# p stp1
-
-
-# seqs = TaxonObjectProxy.first.sequences.includes(:sequence_taxon_object_proxies)
-# seq = seqs.first
-
-# seq.taxon_object_proxies.build(canonical_name: 'Carabus')
-# seq.save
-# p seq.sequence_taxon_object_proxies
-
-
-# byebug
-
-
-
-# exit
-# DatabaseSchema.migrate
-# p Sequence
-# p TaxonObjectProxy
-# p SpecimenMeta
-
-# exit
-
+if params[:derep].any? { |opt| opt.last == true }
+    DatabaseSchema.drop(:sequence_taxon_object_proxies) if ActiveRecord::Base.connection.table_exists?(:sequence_taxon_object_proxies)
+    DatabaseSchema.create_table(:sequence_taxon_object_proxies)
+end
 
 if params[:create].any?
     jobs = []
@@ -554,6 +506,7 @@ if params[:classify].any?
 	jobs_state = multiple_jobs.run
     sleep 2
 
+    ## TODO: why dont create marshal files etc if no_merge?
     unless params[:classify][:no_merge]
         if jobs_state == :success
             MiscHelper.run_file_merger(file_manager: file_manager, params: params)
@@ -620,9 +573,9 @@ if params[:merge].any?
     download_info_files = all_files_from_old_dir.select do |e|
         is_match = false
         source_db_keywords.each do |keyword|
-            
             if e.basename.to_s.match?(/^\.?#{keyword}/)
                 is_match = true
+
                 break
             end
         end
@@ -658,68 +611,6 @@ if params[:merge].any?
 
     exit
 end
-
-
-
-
-# file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-# ncbi_genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
-# # gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
-# # bold_job = BoldJob.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
-# file_manager.create_dir
-# # bold_job.run
-# ncbi_genbank_job.run
-# # gbol_job.run
-# exit
-
-# # <a href="gbbct10.seq.gz">gbbct10.seq.gz</a>          2021-05-26 18:20  149M
-# HttpDownloader2.new(address: 'https://ftp.ncbi.nlm.nih.gov/genbank/', destination: 'gb_test.txt' )
-# gb_test_file = File.open('gb_test.txt')
-# matches = gb_test_file.match(/<a href="(.*?)">/)
-# byebug
-
-# exit
-
-if params[:classify][:bold]
-    result_file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-	result_file_manager.create_dir
-    file_managers = DownloadInfoParser.get_file_managers_from_download_info_tree(params[:classify][:bold])
-    # DownloadInfoParser.get_file_managers_from_download_info_tree('/home/nnoll/phd/db_merger/downloads/BOLD/Arthropoda-20210613T1754/.bold_download_tree_info.txt')
-    # pp file_managers
-    DownloadInfoParser.classify_with_already_downloaded_dirs(file_managers, params, result_file_manager)
-end
-
-exit
-
-
-
-
-exit
-
-
-
-
-
-
-
-bold_job = BoldJob.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
-# gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
-file_manager.create_dir
-
-# gbol_job.run
-
-# MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
-bold_job.run
-
-
-exit
-bold_job = BoldJob.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
-file_manager.create_dir
-# MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
-bold_job.run
-# gbol_job.run
-
-
 
 ## TODO:
 ## NEXT:
@@ -757,178 +648,7 @@ bold_job.run
 # dont knwo if i have to read in the whole file anyway?
 
 
-
-# bold_dirs = FileManager.directories_of(dir: Pathname.new('downloads/BOLD/'))
-# taxon_dirs = BoldDownloadCheckHelper.download_dirs_for_taxon(params: params, dirs: bold_dirs)
-
-# selected_bold_download_dir_and_state = BoldDownloadCheckHelper.select_from_download_dirs(dirs: taxon_dirs)
-
-# pp taxon_dirs
-# puts
-# puts
-# pp selected_bold_download_dir_and_state
-
-# puts
-# puts
-# p FileManager.is_how_old?(dir: selected_bold_download_dir_and_state.first)
-
-# dir = BoldDownloadCheckHelper.ask_user_about_download_dirs(params)
-# p dir
-# p dir if dir
-
-# exit
-
-
-
-# p BoldDownloadCheckHelper.taxon_download_status(dir_name: 'Mantophasmatodea', params: params)
-# p BoldDownloadCheckHelper.taxon_download_status(dir_name: 'Insecta', params: params)
-# p BoldDownloadCheckHelper.taxon_download_status(dir_name: 'Indsecta', params: params)
-
-# p Helper.taxon_belongs_to(taxon_object:params[:taxon_object], dir_name: 'Mantophasmatodea')
-
-# exit
-
-
-# download_info_path = Pathname.new("/home/nnoll/phd/db_merger/results/Mantophasmatodea-20210326T1433/.download_info.txt")
-# failures = DownloadInfoParser.get_download_failures(download_info_path)
-
-
-# byebug
-
-
-
-pp params
-
 exit
-p NcbiDivision.get_division_id_by_taxon_name(params[:taxon])
-p NcbiDivision.get_division_id_by_taxon_id(params[:taxon_object].taxon_id)
-exit
-
-p NcbiDownloadCheckHelper.ask_user_about_download_dirs(params)
-
-exit
-
-file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-# gbol_job = GbolJob.new(taxon: params[:taxon_object], taxonomy_params: params[:taxonomy], result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], region_params: params[:region])
-
-bold_job = BoldJob.new(taxon: params[:taxon_object], taxonomy: NcbiTaxonomy, result_file_manager: file_manager, filter_params: params[:filter], markers: params[:marker_objects], taxonomy_params: params[:taxonomy], region_params: params[:region], params: params)
-file_manager.create_dir
-# MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects])
-bold_job.run
-# gbol_job.run
-
-exit
-
-
-# * Arthropoda                   failure
-# |---> Arachnida                loading
-# |---> Merostomata              success
-# |---> Pycnogonida              success
-# |---> Chilopoda                success
-# |---> Diplopoda                success
-# |---> Pauropoda                success
-# |---> Symphyla                 success
-# |---> Branchiopoda             success
-# |---> Cephalocarida            success
-# |---> Hexanauplia              success
-# |---> Malacostraca             loading
-# |---> Ichthyostraca            success
-# |---> Mystacocarida            failure
-# |---> Ostracoda                success
-# |---> Remipedia                success
-# |---> Collembola               loading
-# |---> Insecta                  failure
-# +---> Protura                  success
-
-
-# /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:14:in `rescue in getaddress': Failed to open TCP connection to www.boldsystems.org:80 (Hostname not known: www.boldsystems.org) (SocketError)
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:10:in `getaddress'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:25:in `initialize'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `open'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `block in connect'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/timeout.rb:97:in `block in timeout'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/timeout.rb:107:in `timeout'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:985:in `connect'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:970:in `do_start'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:959:in `start'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:621:in `start'
-# 	from /home/nnoll/phd/db_merger/lib/downloaders/http_downloader.rb:20:in `run'
-# 	from /home/nnoll/phd/db_merger/lib/jobs/bold_job2.rb:68:in `_download_response'
-# 	from /home/nnoll/phd/db_merger/lib/jobs/bold_job2.rb:125:in `block (2 levels) in dload'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:508:in `call_with_index'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:361:in `block (2 levels) in work_in_threads'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:519:in `with_instrumentation'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:360:in `block in work_in_threads'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:211:in `block (4 levels) in in_threads'
-# /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv.rb:94:in `getaddress': no address for www.boldsystems.org (Resolv::ResolvError)
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv.rb:44:in `getaddress'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:12:in `getaddress'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/resolv-replace.rb:25:in `initialize'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `open'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:987:in `block in connect'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/timeout.rb:97:in `block in timeout'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/timeout.rb:107:in `timeout'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:985:in `connect'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:970:in `do_start'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:959:in `start'
-# 	from /home/nnoll/.rvm/rubies/ruby-3.0.0/lib/ruby/3.0.0/net/http.rb:621:in `start'
-# 	from /home/nnoll/phd/db_merger/lib/downloaders/http_downloader.rb:20:in `run'
-# 	from /home/nnoll/phd/db_merger/lib/jobs/bold_job2.rb:68:in `_download_response'
-# 	from /home/nnoll/phd/db_merger/lib/jobs/bold_job2.rb:125:in `block (2 levels) in dload'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:508:in `call_with_index'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:361:in `block (2 levels) in work_in_threads'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:519:in `with_instrumentation'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:360:in `block in work_in_threads'
-# 	from /home/nnoll/.rvm/gems/ruby-3.0.0/gems/parallel-1.19.2/lib/parallel.rb:211:in `block (4 levels) in in_threads'
-
-
-
-
-
-
-
-
-exit
-
-
-
-# ncbi_api = NcbiApi.new(markers: params[:marker_objects], taxon_name: 'Wolbachia', max_seq: 100)
-# ncbi_api.efetch
-
-# ncbi_api = NcbiApi.new(markers: params[:marker_objects], taxon_name: 'Homo sapiens', max_seq: 10)
-# ncbi_api.efetch
-
-# exit
-
-fm = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-fm.create_dir
-
-# contaminants_dir_path = fm.dir_path + 'contaminants/'
-# FileUtils.mkdir_p(contaminants_dir_path)
-
-# contaminants_file_path = contaminants_dir_path + 'Wolbachia.gb'
-
-# ncbi_api = NcbiApi.new(markers: params[:marker_objects], taxon_name: 'Wolbachia', max_seq: 100, file_name: contaminants_file_path)
-# ncbi_api.efetch
-
-# contaminants_file_path = contaminants_dir_path + 'Homo_sapiens.gb'
-
-# ncbi_api = NcbiApi.new(markers: params[:marker_objects], taxon_name: 'Homo sapiens', max_seq: 10, file_name: contaminants_file_path)
-# ncbi_api.efetch
-
-exit
-
-
-
-# file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-
-# genbank_job = NcbiGenbankJob.new(taxon: params[:taxon_object], taxonomy: GbifTaxonomy, result_file_manager: file_manager, markers: params[:marker_objects], filter_params: params[:filter], taxonomy_params: params[:taxonomy])
-# file_manager.create_dir
-
-# genbank_job.run
-
-# exit
-
 
 shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', 'rb')
 # shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/europe_biogeo/BiogeoRegions2016.shp', 'rb')

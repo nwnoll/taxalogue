@@ -162,10 +162,12 @@ class DatabaseSchema
     end
 
     def self.drop(table_name)
+        ActiveRecord::Schema.verbose = false
         ActiveRecord::Migration.drop_table(table_name)
     end
 
     def self.create_table(table_name)
+        ActiveRecord::Schema.verbose = false
         if table_name == :sequence_taxon_object_proxies
             ActiveRecord::Schema.define do
                 create_table :sequence_taxon_object_proxies do |t|

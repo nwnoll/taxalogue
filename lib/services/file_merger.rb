@@ -17,7 +17,6 @@ class FileMerger
 
             file_in = File.open(file.path, 'r')
             
-
             file_in.each_line do |line|
                 next if file_in.lineno == 1 && i != 0 && (file.type == OutputFormat::Tsv || file.type == OutputFormat::Comparison) # print tsv header only once
                 
