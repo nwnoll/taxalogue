@@ -56,11 +56,23 @@ class GbolClassifier
             SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
         end
 
+        # Parallel.map(specimens_of_taxon.keys, in_threads: 10) do |taxon_name|
+        #     ActiveRecord::Base.connection_pool.with_connection do
+        #         nomial  = specimens_of_taxon[taxon_name][:nomial]
+        #         unless nomial.nil?
+        #             first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
+        #             taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
+        #             p taxonomic_info
+        #         end
+        #     end
+        # end
+
         specimens_of_taxon.keys.each do |taxon_name|
             nomial              = specimens_of_taxon[taxon_name][:nomial]
             next unless nomial
 
             first_specimen_info = specimens_of_taxon[taxon_name][:first_specimen_info]
+
             taxonomic_info      = nomial.taxonomy(first_specimen_info: first_specimen_info, importer: self.class)
             
             next unless taxonomic_info
