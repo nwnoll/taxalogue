@@ -4,7 +4,7 @@ class TaxonomyHelper
     include REXML
 
     def self.new_ncbi_taxonomy_available?
-        ncbi_taxonomy_update_config_name = 'lib/configs/ncbi_taxonomy_update_config.json' 
+        ncbi_taxonomy_update_config_name = '.lib/configs/ncbi_taxonomy_update_config.json' 
         params = MiscHelper.json_file_to_hash(ncbi_taxonomy_update_config_name)
         config = Config.new(params)
         

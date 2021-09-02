@@ -30,12 +30,12 @@ require 'time'
 require 'rexml/document'
 require 'biodiversity'
 
-require_relative "db/database_schema"
-require_relative 'lib/output_formats/output_format'
+require_relative ".db/database_schema"
+require_relative '.lib/output_formats/output_format'
 
 Bundler.require
 
-db_config_file 	= File.open("db/database.yaml")
+db_config_file 	= File.open(".db/database.yaml")
 db_config 		= YAML::load(db_config_file)
 
 if File.exists?(db_config['database'])
@@ -47,9 +47,9 @@ end
 
 sections = ['helpers', 'decorators', 'services', 'models', 'importers', 'classifiers', 'jobs', 'downloaders', 'configs', 'output_formats']
 sections.each do |section|
-	Dir[File.dirname(__FILE__) + "/lib/#{section}/*.rb"].each do |file|
+	Dir[File.dirname(__FILE__) + "/.lib/#{section}/*.rb"].each do |file|
 		# puts File.basename(file, File.extname(file))
-		require_relative "lib/#{section}/#{File.basename(file, File.extname(file))}"
+		require_relative ".lib/#{section}/#{File.basename(file, File.extname(file))}"
 	end
 end
 
@@ -64,8 +64,7 @@ end
 unless NcbiRankedLineage.any? || NcbiName.any? || NcbiNode.any?
 	puts "NCBI Taxonomy is not setup yet, downloading and importing NCBI Taxonomy, this may take a while."
 	
-
-	ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
+	ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: '.lib/configs/ncbi_taxonomy_config.json')
 	ncbi_taxonomy_job.run
 end
 

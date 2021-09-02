@@ -7,7 +7,7 @@ class TaxonHelper
     
         unless File.exists?(file_name)
     
-            config_name = 'lib/configs/gbif_zoological_names_config.json' 
+            config_name = '.lib/configs/gbif_zoological_names_config.json' 
             params = MiscHelper.json_file_to_hash(config_name)
             config = Config.new(params)
             

@@ -220,7 +220,7 @@ RecreateNcbiNameTable.migrate(:up)
 
 
 # ### import ncbi names do not delete should use it for later....
-# conf_params = MiscHelper.json_file_to_hash('lib/configs/ncbi_taxonomy_config.json')
+# conf_params = MiscHelper.json_file_to_hash('.lib/configs/ncbi_taxonomy_config.json')
 # config = Config.new(conf_params)
 # file_manager = config.file_manager
 
@@ -278,7 +278,7 @@ RecreateNcbiRankedLineageTable.migrate(:up)
 
 
 ### import ncbi names do not delete should use it for later....
-conf_params = MiscHelper.json_file_to_hash('lib/configs/ncbi_taxonomy_config.json')
+conf_params = MiscHelper.json_file_to_hash('.lib/configs/ncbi_taxonomy_config.json')
 config = Config.new(conf_params)
 file_manager = config.file_manager
 

@@ -30,12 +30,16 @@ class MultipleJobs
             end
         end
     
+        used_source_db_ary = []
         jobs.each do |job|
             if job.class == BoldJob
+                used_source_db_ary.push('bold')
                 results_of[job.class] = job.run(bold_dir)
             elsif job.class == GbolJob
+                used_source_db_ary.push('gbol')
                 results_of[job.class] = job.run(gbol_dir)
             elsif job.class == NcbiGenbankJob
+                used_source_db_ary.push('ncbi')
                 results_of[job.class] = job.run(ncbi_dir)
             end
         end
@@ -43,13 +47,14 @@ class MultipleJobs
         if params[:derep].any? { |opt| opt.last == true }
             seqs            = Sequence.where(id: $seq_ids)
             file_manager    = jobs.last.result_file_manager
+            source_db_string = used_source_db_ary.size == 3 ? 'all' : used_source_db_ary.join('_')
 
             file_of = MiscHelper.create_output_files(
                 file_manager: file_manager,
                 query_taxon_name: params[:taxon_object].canonical_name,
                 file_name: Pathname.new("derep"),
                 params: params,
-                source_db: 'all'
+                source_db: source_db_string
             )
 
             seqs.each do |seq|

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require './requirements'
+require './.requirements'
 include GeoUtils
 
 params = {
@@ -53,11 +53,13 @@ Commonly used commands are:
    region   :  select sequences by country, continent, biogeographic regions etc.
    import   :  imports files into SQL database, in general this happens after first start automatically
    output   :  specify different output formats
-See 'bundle exec ruby main.rb COMMAND --help' for more information on a specific command.
+
+See 'bundle exec ruby taxalogue.rb COMMAND --help' for more information on a specific command.
+
 HELP
 
 global = OptionParser.new do |opts|
-	opts.banner = "Usage: bundle exec ruby main.rb [params] [subcommand [params]]"
+	opts.banner = "\nUsage: bundle exec ruby taxalogue.rb [params] [subcommand [params]]"
 	opts.on('-t TAXON', String, '--taxon', 'Choose a taxon to build your database, if you want a database for a species, put "" around the option: e.g.: -t "Apis mellifera". default: Arthropoda') do |taxon_name|
 		abort 'Taxon is extinct, please choose another Taxon' if TaxonHelper.is_extinct?(taxon_name)
 
@@ -153,16 +155,16 @@ subcommands = {
 		opts.on('-b', '--biogeographic_realms')
    	end,
 
-   	update: OptionParser.new do |opts|
-		opts.banner = "Usage: update [options]"
-		opts.on('-A', '--all_taxonomies')
-		opts.on('-b', '--gbif_taxonomy')
-		opts.on('-n', '--ncbi_taxonomy')
-		opts.on('-a', '--all_sequences')
-		opts.on('-o', '--bold_sequences')
-		opts.on('-k', '--genbank_sequences')
-		opts.on('-g', '--gbol_sequences')
-	end,
+   	# update: OptionParser.new do |opts|
+	# 	opts.banner = "Usage: update [options]"
+	# 	opts.on('-A', '--all_taxonomies')
+	# 	opts.on('-b', '--gbif_taxonomy')
+	# 	opts.on('-n', '--ncbi_taxonomy')
+	# 	opts.on('-a', '--all_sequences')
+	# 	opts.on('-o', '--bold_sequences')
+	# 	opts.on('-k', '--genbank_sequences')
+	# 	opts.on('-g', '--gbol_sequences')
+	# end,
 
 	filter: OptionParser.new do |opts|
 		opts.banner = "Usage: filter [options]"
@@ -322,13 +324,13 @@ if MiscHelper.multiple_actions?(params)
     puts "Never use create, download, or classify simultaneously"
     puts
     puts "create is used to download and classify at the same time"
-    puts "e.g: bundle exec ruby main.rb -t Trichoptera create --all filter -N 5"
+    puts "e.g: bundle exec ruby taxalogue.rb -t Trichoptera create --all filter -N 5"
     puts
     puts "download is used to only download sequences without classifying"
-    puts "e.g: bundle exec ruby main.rb -t Trichoptera download --all"
+    puts "e.g: bundle exec ruby taxalogue.rb -t Trichoptera download --all"
     puts
     puts "classify is used to only classify already downloaded sequences"
-    puts "e.g: bundle exec ruby main.rb -t Trichoptera download --all filter -N 5 taxonomy --gbif_backbone"
+    puts "e.g: bundle exec ruby taxalogue.rb -t Trichoptera download --all filter -N 5 taxonomy --gbif_backbone"
     puts
 
     exit
@@ -409,10 +411,10 @@ if params[:create].any?
     abort MiscHelper.OUT_error "Need at least one parameter for the databases: e.g: create --all" if jobs.empty?
 
     file_manager.create_dir
-
-    MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects]) unless params[:create][:no_contaminants]
 	
     multiple_jobs = MultipleJobs.new(jobs: jobs, params: params)
+    MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects]) unless params[:create][:no_contaminants]
+
 	jobs_state = multiple_jobs.run
     sleep 2
 
@@ -1074,12 +1076,12 @@ end
 
 
 
-# abort 'Please use only one Taxonomy mapping strategy e.g. bundle exec ruby main.rb taxonomy -B' if (params[:taxonomy].keys.reject { |o| o == :retain || o == :synonyms_allowed }.size) > 1
+# abort 'Please use only one Taxonomy mapping strategy e.g. bundle exec ruby taxalogue.rb taxonomy -B' if (params[:taxonomy].keys.reject { |o| o == :retain || o == :synonyms_allowed }.size) > 1
 ## TODO: same for other options...
 
 
 # ### import ncbi names do not delete should use it for later....
-# conf_params = MiscHelper.json_file_to_hash('lib/configs/ncbi_taxonomy_config.json')
+# conf_params = MiscHelper.json_file_to_hash('.lib/configs/ncbi_taxonomy_config.json')
 # config = Config.new(conf_params)
 # file_manager = config.file_manager
 
@@ -1121,14 +1123,14 @@ end
 
 if params[:setup][:ncbi_taxonomy]
 	if TaxonomyHelper.new_ncbi_taxonomy_available?
-		ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
+		ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: '.lib/configs/ncbi_taxonomy_config.json')
 		ncbi_taxonomy_job.run
 	else
 		user_input  		= gets.chomp
 		replace_taxonomy 	= (user_input =~ /y|yes/i) ? true : false
 
 		if replace_taxonomy
-			ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
+			ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: '.lib/configs/ncbi_taxonomy_config.json')
 			ncbi_taxonomy_job.run
 		end
 	end
@@ -1181,7 +1183,7 @@ if params[:update][:all_taxonomies]
 
 	if TaxonomyHelper.new_ncbi_taxonomy_available?
 		
-		ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: 'lib/configs/ncbi_taxonomy_config.json')
+		ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: '.lib/configs/ncbi_taxonomy_config.json')
 		ncbi_taxonomy_job.run
 	else
 	end
