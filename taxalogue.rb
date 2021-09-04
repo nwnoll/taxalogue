@@ -231,7 +231,7 @@ subcommands = {
 		end
 		opts.on('-u', '--unmapped', 'No mapping takes place, original specimen information is used but only standard ranks are used (e.g. no subfamilies)')
 		opts.on('-s', '--synonyms_allowed', 'Allows Taxon information of synonyms to be set to sequences')
-		opts.on('-r', '--retain', 'retains sequences for taxa that are not present in chosen taxonomy')
+        opts.on('-r', '--retain', 'retains sequences for taxa that are not present in chosen taxonomy')
 	end,
 
 	region: OptionParser.new do |opts|
@@ -336,7 +336,7 @@ if MiscHelper.multiple_actions?(params)
     exit
 end
 
-if params[:output][:kraken2] && !params[:ncbi]
+if params[:output][:kraken2] && !params[:taxonomy][:ncbi]
     puts "The Kraken2 Output requires the NCBI Taxonomy"
     puts "Any other Taxonomy is not allowed"
     puts

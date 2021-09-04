@@ -261,9 +261,9 @@ class Monomial
     def _get_gbif_records(current_name:, importer:, first_specimen_info:, gbif_api_exact: false, gbif_api_fuzzy: false)
         return nil if current_name.nil? || query_taxon_object.nil? || query_taxon_rank.nil?
         
-        all_records = GbifTaxonomy.where(canonical_name: current_name)            if !gbif_api_exact  && !gbif_api_fuzzy
-        all_records = GbifApi.new(query: current_name, taxonomy_params: taxonomy_params).records                    if gbif_api_exact   && !gbif_api_fuzzy
-        all_records = GbifApi.new(path: _fuzzy_path, query: current_name, taxonomy_params: taxonomy_params).records if gbif_api_fuzzy   && !gbif_api_exact
+        all_records = GbifTaxonomy.where(canonical_name: current_name) if !gbif_api_exact && !gbif_api_fuzzy
+        all_records = GbifApi.new(query: current_name, taxonomy_params: taxonomy_params).records if gbif_api_exact && !gbif_api_fuzzy
+        all_records = GbifApi.new(path: _fuzzy_path, query: current_name, taxonomy_params: taxonomy_params).records if gbif_api_fuzzy  && !gbif_api_exact
         return nil if all_records.nil?
 
         records = _is_homonym?(current_name) ? _records_with_matching_lineage(current_name: current_name, lineage: importer.get_source_lineage(first_specimen_info), all_records: all_records) : all_records

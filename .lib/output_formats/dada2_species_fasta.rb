@@ -4,7 +4,7 @@ class OutputFormat::Dada2SpeciesFasta
     extend StringFormatting
 
     def self.write_to_file(fasta:, data:, taxonomic_info:)
-        header = fasta_header_dada2_species(data: data, taxonomic_info:taxonomic_info)
+        header = _fasta_header_dada2_species(data: data, taxonomic_info:taxonomic_info)
         return nil if header.nil?
 
         fasta.puts header

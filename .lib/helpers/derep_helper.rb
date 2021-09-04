@@ -85,10 +85,20 @@ class DerepHelper
                     # I import all at once later
                     taxon_object_proxy_ary_or_id = [] 
                 else
-                    seq_meta_hash = seq_meta.taxonomic_infos.to_h
+                    seq_meta_hash = seq_meta.taxonomic_infos.as_json
+                    ## TODO:
+                    ## fix synonyms
+                    ## fix derep for gbif
+                    ## write more tests
+                    # byebug
                     seq_meta_hash[:combined] = seq_meta_hash[:combined].join(', ') if seq_meta_hash[:combined]
 
-                    taxon_object_proxy_ary_or_id = seq_meta_hash.to_h.values
+                    taxon_object_proxy_ary_or_id = seq_meta_hash.values
+                    taxon_object_proxy_columns = TaxonObjectProxy.column_names -["id", "created_at", "updated_at"]
+                    taxon_object_proxy_column_names.each do |column_name|
+                        seq_meta_hash.key?(column_name)
+                    end
+                    
                     taxon_object_proxy_ary_or_id.push(query_taxon_name, used_taxonomy_string, taxonomy_params[:synonyms_allowed], seq_meta.source_taxon_name, taxon_object_proxy_string_as_sha256_bubblebabble)
                     top_arys_to_import.push(taxon_object_proxy_ary_or_id)
                     already_pushed_tops.add(taxon_object_proxy_string_as_sha256_bubblebabble)
