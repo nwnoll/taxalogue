@@ -79,20 +79,42 @@ class DatabaseSchema
 
             create_table :sequences do |t|
                 t.string    :sha256_bubblebabble, index: true
-                t.text      :zlib_deflated
-                t.string    :marker
+                t.text      :nucleotides
 
                 t.timestamps
             end
 
-            create_table :specimen_metas do |t|
-                t.string        :identifier, index: true
-                t.string        :source_taxon_name, index: true
-                t.string        :location
-                t.string        :lat
-                t.string        :long
+            create_table :taxon_object_proxies do |t|
+				t.integer :taxon_id
+				t.string :regnum
+				t.string :phylum
+				t.string :classis
+				t.string :ordo
+				t.string :familia
+				t.string :genus
+				t.string :canonical_name, index: true
+				t.string :scientific_name
+				t.string :taxonomic_status
+				t.string :taxon_rank
+				t.string :combined
+				t.string :comment
+				t.string :query_taxon_name
+				t.string :used_taxonomy
+				t.boolean :synonyms_allowed
+				t.string :source_taxon_name, index: true
+				t.string :sha256_bubblebabble, index: true
 
-                t.references    :sequence
+				t.timestamps
+			end
+
+            create_table :sequence_taxon_object_proxies do |t|
+                t.belongs_to :sequence
+                t.belongs_to :taxon_object_proxy
+                t.integer :specimens_num
+                t.string :first_specimen_identifier
+                t.string :first_specimen_location
+                t.string :first_specimen_latitude
+                t.string :first_specimen_longitude
 
                 t.timestamps
             end
@@ -140,24 +162,13 @@ class DatabaseSchema
                 t.belongs_to :taxon_object_proxy
                 t.integer :specimens_num
                 t.string :first_specimen_identifier
+                t.string :first_specimen_location
+                t.string :first_specimen_latitude
+                t.string :first_specimen_longitude
 
                 t.timestamps
             end
 
-            # create_table :specimen_metas do |t|
-            #     t.string        :identifier
-			# 	  t.string        :sha256_bubblebabble, index: true
-            #     t.string        :source_taxon_name
-            #     t.string        :location
-            #     t.string        :lat
-            #     t.string        :long
-            #     t.string        :used_source_database
-
-            #     t.references    :sequence
-            #     t.references    :taxon_object_proxy
-
-            #     t.timestamps
-            # end
         end
     end
 

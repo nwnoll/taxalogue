@@ -1,7 +1,7 @@
 /workflow.txt
 /.byebug_history
 **/.db/database.db
-**/.db/db_setup.db
+**/.db/test_database.db
 /data
 /downloads
 /results*

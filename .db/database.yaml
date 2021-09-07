@@ -1,3 +1,9 @@
-adapter: 'sqlite3'
-database: '.db/database.db'
-pool: 10
+production:
+  adapter: 'sqlite3'
+  database: '.db/database.db'
+  pool: 10
+
+test:
+  adapter: 'sqlite3'
+  database: '.db/test_database.db'
+  pool: 10

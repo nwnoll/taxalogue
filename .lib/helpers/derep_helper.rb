@@ -90,16 +90,22 @@ class DerepHelper
                     ## fix synonyms
                     ## fix derep for gbif
                     ## write more tests
-                    # byebug
                     seq_meta_hash[:combined] = seq_meta_hash[:combined].join(', ') if seq_meta_hash[:combined]
-
-                    taxon_object_proxy_ary_or_id = seq_meta_hash.values
-                    taxon_object_proxy_columns = TaxonObjectProxy.column_names -["id", "created_at", "updated_at"]
-                    taxon_object_proxy_column_names.each do |column_name|
-                        seq_meta_hash.key?(column_name)
-                    end
                     
-                    taxon_object_proxy_ary_or_id.push(query_taxon_name, used_taxonomy_string, taxonomy_params[:synonyms_allowed], seq_meta.source_taxon_name, taxon_object_proxy_string_as_sha256_bubblebabble)
+                    if seq_meta.taxonomic_infos.class == GbifTaxonomy
+                        taxon_object_proxy_column_names = TaxonObjectProxy.column_names - ["id", "created_at", "updated_at"]
+                        taxon_object_proxy_ary_or_id = []
+                        taxon_object_proxy_column_names.each do |column_name|
+                            taxon_object_proxy_ary_or_id.push(seq_meta_hash[column_name]) if seq_meta_hash.key?(column_name)                            
+                        end
+                        ## combined and comment is missing in Gbiftaxonomy objects
+                        ## therefore i have to add it to get to the same column number
+                        taxon_object_proxy_ary_or_id.push("", "", query_taxon_name, used_taxonomy_string, taxonomy_params[:synonyms_allowed], seq_meta.source_taxon_name, taxon_object_proxy_string_as_sha256_bubblebabble)
+                    else
+                        taxon_object_proxy_ary_or_id = seq_meta_hash.values
+                        taxon_object_proxy_ary_or_id.push(query_taxon_name, used_taxonomy_string, taxonomy_params[:synonyms_allowed], seq_meta.source_taxon_name, taxon_object_proxy_string_as_sha256_bubblebabble)
+s                    end
+
                     top_arys_to_import.push(taxon_object_proxy_ary_or_id)
                     already_pushed_tops.add(taxon_object_proxy_string_as_sha256_bubblebabble)
                 end

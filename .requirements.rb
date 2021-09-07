@@ -35,13 +35,16 @@ require_relative '.lib/output_formats/output_format'
 
 Bundler.require
 
+mode = ENV['TAXALOGUE_MODE']
+mode = 'production' if mode.nil?
+
 db_config_file 	= File.open(".db/database.yaml")
 db_config 		= YAML::load(db_config_file)
 
-if File.exists?(db_config['database'])
-	ActiveRecord::Base.establish_connection(db_config)
+if File.exists?(db_config[mode]['database'])
+	ActiveRecord::Base.establish_connection(db_config[mode])
 else
-	ActiveRecord::Base.establish_connection(db_config)
+	ActiveRecord::Base.establish_connection(db_config[mode])
 	DatabaseSchema.create_db
 end
 
@@ -53,21 +56,22 @@ sections.each do |section|
 	end
 end
 
+if mode == 'production'
+    unless GbifTaxonomy.any?
+        puts "GBIF Taxonomy is not setup yet, downloading and importing GBIF Taxonomy, this may take a while."
+        
+        gbif_taxonomy_job = GbifTaxonomyJob.new
+        gbif_taxonomy_job.run
+    end
 
-unless GbifTaxonomy.any?
-	puts "GBIF Taxonomy is not setup yet, downloading and importing GBIF Taxonomy, this may take a while."
-	
-	gbif_taxonomy_job = GbifTaxonomyJob.new
-	gbif_taxonomy_job.run
-end
+    unless NcbiRankedLineage.any? || NcbiName.any? || NcbiNode.any? 
+        puts "NCBI Taxonomy is not setup yet, downloading and importing NCBI Taxonomy, this may take a while."
+        
+        ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: '.lib/configs/ncbi_taxonomy_config.json')
+        ncbi_taxonomy_job.run
+    end
 
-unless NcbiRankedLineage.any? || NcbiName.any? || NcbiNode.any?
-	puts "NCBI Taxonomy is not setup yet, downloading and importing NCBI Taxonomy, this may take a while."
-	
-	ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: '.lib/configs/ncbi_taxonomy_config.json')
-	ncbi_taxonomy_job.run
-end
-
-unless GbifHomonym.any?
-	GbifHomonymImporter.new(file_name: 'homonyms.txt').run
+    unless GbifHomonym.any?
+        GbifHomonymImporter.new(file_name: 'homonyms.txt').run
+    end
 end

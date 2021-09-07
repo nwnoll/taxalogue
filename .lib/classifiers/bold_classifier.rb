@@ -22,7 +22,7 @@ class BoldClassifier
 
     def run
         specimens_of_taxon = Hash.new { |hash, key| hash[key] = {} }
-        specimens_of_sequence   = Hash.new
+        specimens_of_sequence = Hash.new
         file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'gbol') unless params[:derep].any? { |opt| opt.last == true }
 
         file = File.file?(file_name) ? File.open(file_name, 'r') : nil
