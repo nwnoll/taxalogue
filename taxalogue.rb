@@ -153,6 +153,7 @@ subcommands = {
 		opts.on('-r', '--regions')
 		opts.on('-e', '--terrestrial_ecoregions')
 		opts.on('-b', '--biogeographic_realms')
+		opts.on('-x', '--reset_database')
    	end,
 
    	# update: OptionParser.new do |opts|
@@ -317,6 +318,42 @@ loop do
 
 	command = ARGV.shift.to_sym
 	subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
+end
+
+if params[:setup][:reset_database]
+    MiscHelper.OUT_question("Do you really want to reset? This will destroy the database and recreate it. [Y/n]")
+    
+    user_input  = gets.chomp
+    reset_db = (user_input =~ /y|yes/i) ? true : false
+
+    if reset_db
+        FileUtils.rm('.db/database.db')
+
+        db_config_file 	= File.open(".db/database.yaml")
+        db_config 		= YAML::load(db_config_file)
+        ActiveRecord::Base.establish_connection(db_config['production'])
+        DatabaseSchema.create_db
+
+        MiscHelper.OUT_header("Downloading and importing GBIF Taxonomy")
+        gbif_taxonomy_job = GbifTaxonomyJob.new
+        gbif_taxonomy_job.run
+        puts "imported GBIF Taxonomy"
+        puts
+
+        MiscHelper.OUT_header("Downloading and importing NCBI Taxonomy")
+        ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: '.lib/configs/ncbi_taxonomy_config.json')
+		ncbi_taxonomy_job.run
+        puts "imported NCBI Taxonomy"
+        puts
+
+        MiscHelper.OUT_header("Downloading and importing GBIF Homonyms")
+        TaxonHelper.import_homonyms
+
+        puts "imported GBIF Homonyms"
+        puts
+    end
+
+    exit
 end
 
 if MiscHelper.multiple_actions?(params)

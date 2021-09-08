@@ -1,0 +1,12 @@
+{
+    "name": "GBIF_HOMONYMS",
+    "downloader": "HttpDownloader",
+    "address": "https://raw.githubusercontent.com/nwnoll/checklistbank/master/checklistbank-nub/homonyms.txt",
+    "file_type": "txt",
+    "importers": {
+        "GbifHomonymImporter": "homonyms.txt"
+    },
+    "versioning" : false,
+    "base_dir": "downloads/",
+    "multiple_files_per_dir": false
+}

@@ -1,6 +1,23 @@
 # frozen_string_literal: true
 
 class TaxonHelper
+
+    def self.import_homonyms
+        config_name = '.lib/configs/gbif_homonyms_config.json' 
+        params = MiscHelper.json_file_to_hash(config_name)
+        config = Config.new(params)
+        
+        config.file_manager.create_dir
+    
+        downloader = HttpDownloader2.new(address: config.address, destination: config.file_manager.file_path)
+        downloader.run
+        
+        return :no_file unless File.file?(config.file_manager.file_path)
+        
+        importer = GbifHomonymImporter.new(config.file_manager.file_path)
+        importer.run
+    end
+
     def self.is_extinct?(taxon_name)
 
         file_name = Pathname.new('downloads/GBIF_ZOOLOGIAL_NAMES/names.txt')

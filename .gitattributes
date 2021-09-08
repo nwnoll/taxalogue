@@ -1,2 +1,3 @@
 .git*   export-ignore
 .test*  export-ignore
+notes.txt  export-ignore

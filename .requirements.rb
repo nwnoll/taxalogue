@@ -56,6 +56,19 @@ sections.each do |section|
 	end
 end
 
+database_tables = [
+    :ncbi_ranked_lineages,
+    :ncbi_names,
+    :ncbi_nodes,
+    :gbif_taxonomy,
+    :gbif_homonyms,
+    :sequences,
+    :taxon_object_proxies,
+    :sequence_taxon_object_proxies
+]
+
+DatabaseSchema.create_db if database_tables.any? { |table| ActiveRecord::Base.connection.table_exists?(table) == false }
+
 if mode == 'production'
     unless GbifTaxonomy.any?
         puts "GBIF Taxonomy is not setup yet, downloading and importing GBIF Taxonomy, this may take a while."
@@ -72,6 +85,8 @@ if mode == 'production'
     end
 
     unless GbifHomonym.any?
-        GbifHomonymImporter.new(file_name: 'homonyms.txt').run
+        state = TaxonHelper.import_homonyms
+        ## retry
+        TaxonHelper.import_homonyms if state == :no_file
     end
 end
