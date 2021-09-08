@@ -99,9 +99,7 @@ class DerepHelper
                         end
                         seq_meta_hash = HashWithIndifferentAccess.new(seq_meta.taxonomic_infos.to_h)
                     end
-                    ## TODO:
-                    ## fix synonyms
-                    ## write more tests
+
                     seq_meta_hash[:combined] = seq_meta_hash[:combined].join(', ') if seq_meta_hash[:combined]
                     if seq_meta.taxonomic_infos.class == GbifTaxonomy
                         taxon_object_proxy_column_names = TaxonObjectProxy.column_names - ["id", "created_at", "updated_at"]
