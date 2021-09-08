@@ -50,9 +50,12 @@ class TestTaxonHelper < Test::Unit::TestCase
     end
 
     def test_get_ncbi_records
-        assert_nil TaxonHelper.get_ncbi_records('xxxxccccccxxxxxx')
-        assert_equal Array, TaxonHelper.get_ncbi_records('Lentulidae').class
-        assert_equal [@lentulidae_obj], TaxonHelper.get_ncbi_records('Lentulidae')
+
+        params = Hash.new { |h,k| h[k]= Hash.new }
+        params[:taxonomy][:synonyms_allowed] =  true
+        assert_nil TaxonHelper.get_ncbi_records('xxxxccccccxxxxxx', params)
+        assert_equal Array, TaxonHelper.get_ncbi_records('Lentulidae', params).class
+        assert_equal [@lentulidae_obj], TaxonHelper.get_ncbi_records('Lentulidae', params)
     end
 
     def test_choose_ncbi_record

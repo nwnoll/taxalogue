@@ -66,7 +66,6 @@ module StringFormatting
     def _tsv_row_all_standard_ranks(lineage_data:, identifier:, sequence:, loc:, lat:, long:)
         # "#{identifier}\t#{lineage_data.regnum}\t#{lineage_data.phylum}\t#{lineage_data.classis}\t#{lineage_data.ordo}\t#{lineage_data.familia}\t#{lineage_data.genus}\t#{lineage_data.canonical_name}\t#{sequence}"
         # "#{identifier}\t#{_to_taxon_info_tsv(lineage_data)}\t#{loc}\t#{lat}\t#{long}\t#{sequence}"
-        
         "#{identifier}\t#{_to_taxon_info_tsv_all_standard_ranks(lineage_data)}\t#{loc}\t#{lat}\t#{long}\t#{sequence}"
     end
 

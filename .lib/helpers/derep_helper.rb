@@ -77,21 +77,32 @@ class DerepHelper
                 taxon_object_proxy_string_as_sha256_bubblebabble = Digest::SHA256.bubblebabble(taxon_object_proxy_string)
                 
                 if TaxonObjectProxy.exists?(sha256_bubblebabble: taxon_object_proxy_string_as_sha256_bubblebabble)
+                    
                     taxon_object_proxy_ary_or_id = TaxonObjectProxy.find_by(sha256_bubblebabble: taxon_object_proxy_string_as_sha256_bubblebabble).id
+                
                 elsif already_pushed_tops.include?(taxon_object_proxy_string_as_sha256_bubblebabble)
+                    
                     ## lateron I check if the variable is of kind array
                     # if thats the case i will use the sha
                     # i have to use the sha since I dont yet have the ID, because
                     # I import all at once later
                     taxon_object_proxy_ary_or_id = [] 
                 else
-                    seq_meta_hash = seq_meta.taxonomic_infos.as_json
+                    if seq_meta.taxonomic_infos.class == GbifTaxonomy
+                        ## OpenStruct to json adds table key...
+                        seq_meta_hash = HashWithIndifferentAccess.new(seq_meta.taxonomic_infos.as_json)
+                    else
+                        if seq_meta.taxonomic_infos.respond_to?('api_taxon_id')
+                            seq_meta.taxonomic_infos.taxon_id = seq_meta.taxonomic_infos.api_taxon_id
+                            seq_meta.taxonomic_infos.delete_field('api_taxon_id')
+                            seq_meta.taxonomic_infos.delete_field('comment')
+                        end
+                        seq_meta_hash = HashWithIndifferentAccess.new(seq_meta.taxonomic_infos.to_h)
+                    end
                     ## TODO:
                     ## fix synonyms
-                    ## fix derep for gbif
                     ## write more tests
                     seq_meta_hash[:combined] = seq_meta_hash[:combined].join(', ') if seq_meta_hash[:combined]
-                    
                     if seq_meta.taxonomic_infos.class == GbifTaxonomy
                         taxon_object_proxy_column_names = TaxonObjectProxy.column_names - ["id", "created_at", "updated_at"]
                         taxon_object_proxy_ary_or_id = []
@@ -104,7 +115,7 @@ class DerepHelper
                     else
                         taxon_object_proxy_ary_or_id = seq_meta_hash.values
                         taxon_object_proxy_ary_or_id.push(query_taxon_name, used_taxonomy_string, taxonomy_params[:synonyms_allowed], seq_meta.source_taxon_name, taxon_object_proxy_string_as_sha256_bubblebabble)
-s                    end
+                    end
 
                     top_arys_to_import.push(taxon_object_proxy_ary_or_id)
                     already_pushed_tops.add(taxon_object_proxy_string_as_sha256_bubblebabble)
@@ -121,10 +132,9 @@ s                    end
 
         end
 
-        seq_columns     = Sequence.column_names - ['id']
-        top_columns     = TaxonObjectProxy.column_names - ['id']
-        seq_top_columns = SequenceTaxonObjectProxy.column_names - ['id']
-        
+        seq_columns     = Sequence.column_names - ["id", "created_at", "updated_at"]
+        top_columns     = TaxonObjectProxy.column_names - ["id", "created_at", "updated_at"]
+        seq_top_columns = SequenceTaxonObjectProxy.column_names - ["id", "created_at", "updated_at"]
         TaxonObjectProxy.import top_columns, top_arys_to_import, validate: false, batch_size: 100_000 if top_arys_to_import.any?
         Sequence.import seq_columns, seq_arys_to_import, validate: false, batch_size: 100_000 if seq_arys_to_import.any?
         sleep 1

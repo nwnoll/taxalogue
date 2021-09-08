@@ -60,11 +60,10 @@ class MultipleJobs
             seqs.each do |seq|
                 if seq.taxon_object_proxies.size < 2
                     specimen_data = _create_specimen_data(seq, seq.sequence_taxon_object_proxies.first)
-                    
                     MiscHelper.write_to_files(
                         file_of: file_of,
                         taxonomic_info: seq.taxon_object_proxies.first,
-                        nomial: nil,
+                        nomial: seq.taxon_object_proxies.first.source_taxon_name,
                         params: params,
                         data: [specimen_data]
                     )
@@ -76,6 +75,11 @@ class MultipleJobs
                 sorted = seq.taxon_object_proxies.to_a.sort_by do |taxon_object_proxy|
                     specimens_num = -(taxon_object_proxy.sequence_taxon_object_proxies.find_by(sequence_id: seq.id).specimens_num)
                     rank = GbifTaxonomy.possible_ranks.index(taxon_object_proxy.taxon_rank)
+                    if rank.nil?
+                        deduced_rank = TaxonHelper.deduce_rank(taxon_object_proxy)
+                        rank = deduced_rank.nil? ? (GbifTaxonomy.possible_ranks.size -1) : GbifTaxonomy.possible_ranks.index(deduced_rank)
+                    end
+
                     rank_hit_index = 9 ## this value is only for sorting purposes, a higher value means higherrank hit
                     seq.taxon_object_proxies.map do |other_taxon_object_proxy|
                         next if taxon_object_proxy.id == other_taxon_object_proxy.id
@@ -93,7 +97,7 @@ class MultipleJobs
                     end
 
                     comparison_results_for[taxon_object_proxy] = [rank, rank_hit_index, specimens_num]
-
+                    
                     [rank, rank_hit_index, specimens_num]
                 end
 
@@ -113,18 +117,20 @@ class MultipleJobs
                         lca_rank            = GbifTaxonomy.rank_mappings.values[lca_rank_index]
                         taxon_name          = sorted.first.public_send(lca_rank)
 
+                        
                         taxon_record        = TaxonHelper.get_taxon_record(params, taxon_name, automatic: true)
-                        taxon_record.source_taxon_name = sorted.first.source_taxon_name
+                        next if taxon_record.nil?
                         # pp sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)
                         # p taxon_record
                         # p seq.nucleotides
                         # puts
 
                         specimen_data = _create_specimen_data(seq, sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id))
+                        
                         MiscHelper.write_to_files(
                             file_of: file_of,
                             taxonomic_info: taxon_record,
-                            nomial: nil,
+                            nomial: sorted.first.source_taxon_name,
                             params: params,
                             data: [specimen_data]
                         )
@@ -140,7 +146,7 @@ class MultipleJobs
                         MiscHelper.write_to_files(
                             file_of: file_of,
                             taxonomic_info: sorted.first,
-                            nomial: nil,
+                            nomial: sorted.first.source_taxon_name,
                             params: params,
                             data: [specimen_data]
                         )
@@ -157,7 +163,7 @@ class MultipleJobs
                     MiscHelper.write_to_files(
                         file_of: file_of,
                         taxonomic_info: sorted.first,
-                        nomial: nil,
+                        nomial: sorted.first.source_taxon_name,
                         params: params,
                         data: [specimen_data]
                     )

@@ -35,7 +35,6 @@ class TestNomial < Test::Unit::TestCase
             combined: ["Metazoa", "Arthropoda", "Insecta", "Orthoptera", "Lentulidae"],
             comment: ''
         )
-        @gbif_lentulidae_obj = GbifTaxonomy.find_by(canonical_name: 'Lentulidae')
     end
 
     def test_class_generate

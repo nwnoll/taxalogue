@@ -35,7 +35,7 @@ class TaxonHelper
         return false
     end
 
-    def self.get_ncbi_records(name)
+    def self.get_ncbi_records(name, params)
       ncbi_name_records         = NcbiName.where(name: name)
       usable_ncbi_name_records  = ncbi_name_records.select { |record| record.name_class == 'scientific name' || record.name_class == 'synonym' || record.name_class == 'includes' || record.name_class == 'authority' } # || record.name_class == 'in-part'  }
       return nil if usable_ncbi_name_records.empty?
@@ -66,29 +66,30 @@ class TaxonHelper
             phylum            = ncbi_node_record.rank == 'phylum'   ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.phylum
             regnum            = ncbi_node_record.rank == 'kingdom'  ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.regnum
     
-            # if are_synonyms_allowed
-            #   scientifc_name_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'scientific name' }.first
-            #   canonical_name = scientifc_name_record.nil? ? usable_ncbi_name_record.name : scientifc_name_record.name 
-    
-            #   authority_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'authority' }.first
-            #   authority = authority_record.nil? ? canonical_name : authority_record.name
-    
-            #   taxonomic_status = _taxonomic_name(usable_ncbi_name_record)
-    
-            #   if ncbi_node_record.rank == 'species' || ncbi_node_record.rank == 'subspecies' || ncbi_node_record.rank == 'genus' 
-            #     genus = usable_ncbi_name_record.name.split(' ')[0]
-            #   end
-            # else
-            scientifc_name_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'scientific name' }.first
-            canonical_name = scientifc_name_record.name unless scientifc_name_record.nil?
-    
-            authority_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'authority' }.first
-            authority = authority_record.nil? ? canonical_name : authority_record.name
-    
-            genus = ncbi_node_record.rank == 'genus' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.genus
-    
-            taxonomic_status = TaxonHelper._taxonomic_status(scientifc_name_record) unless scientifc_name_record.nil?
-            # end
+            if params[:taxonomy][:synonyms_allowed]
+                scientifc_name_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'scientific name' }.first
+                # canonical_name = scientifc_name_record.nil? ? usable_ncbi_name_record.name : scientifc_name_record.name 
+                canonical_name = usable_ncbi_name_record.name 
+
+                authority_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'authority' }.first
+                authority = authority_record.nil? ? canonical_name : authority_record.name
+
+                taxonomic_status = _taxonomic_status(usable_ncbi_name_record)
+
+                if ncbi_node_record.rank == 'species' || ncbi_node_record.rank == 'subspecies' || ncbi_node_record.rank == 'genus' 
+                    genus = usable_ncbi_name_record.name.split(' ')[0]
+                end
+            else
+                scientifc_name_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'scientific name' }.first
+                canonical_name = scientifc_name_record.name unless scientifc_name_record.nil?
+        
+                authority_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'authority' }.first
+                authority = authority_record.nil? ? canonical_name : authority_record.name
+        
+                genus = ncbi_node_record.rank == 'genus' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.genus
+        
+                taxonomic_status = TaxonHelper._taxonomic_status(scientifc_name_record) unless scientifc_name_record.nil?
+            end
     
             # combined = _get_combined(ncbi_ranked_lineage_record, ncbi_node_record.rank)
     
@@ -137,8 +138,8 @@ class TaxonHelper
         end
     end
 
-    def self.choose_ncbi_record(taxon_name:, automatic: false)
-        records = TaxonHelper.get_ncbi_records(taxon_name)
+    def self.choose_ncbi_record(taxon_name:, automatic: false, params:)
+        records = TaxonHelper.get_ncbi_records(taxon_name, params)
         return nil if records.nil?
     
         records_with_available_ranks = records.select { |record| NcbiTaxonomy.possible_ranks.include?(record.taxon_rank) }
@@ -261,24 +262,28 @@ class TaxonHelper
         taxon_name = params[:taxon] if taxon_name.nil?
         
         if params[:taxonomy][:ncbi]
-            record = TaxonHelper.choose_ncbi_record(taxon_name: taxon_name, automatic: automatic)
+            record = TaxonHelper.choose_ncbi_record(taxon_name: taxon_name, automatic: automatic, params: params)
             taxon_object = record
       
         elsif params[:taxonomy][:gbif]
             # taxon_object = GbifTaxonomy.find_by_canonical_name(taxon_name)
             ## TODO: change?
             taxon_objects = GbifTaxonomy.where(canonical_name: taxon_name)
-            taxon_objects = taxon_objects.select { |t| t.taxonomic_status == 'accepted' }
-            taxon_object  = taxon_objects.first
+            taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'accepted' }
+            taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'doubtful' } if taxon_object.nil?
+            taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'synonym' } if taxon_object.nil?
+            taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'misapplied' } if taxon_object.nil?
         
         elsif params[:taxonomy][:gbif_backbone]
             ## TODO: change?
             taxon_objects = GbifTaxonomy.where(canonical_name: taxon_name)
-            taxon_objects = taxon_objects.select { |t| t.taxonomic_status == 'accepted' }
-            taxon_object  = taxon_objects.first
+            taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'accepted' }
+            taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'doubtful' } if taxon_object.nil?
+            taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'synonym' } if taxon_object.nil?
+            taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'misapplied' } if taxon_object.nil?
         
         else ## default ncbi
-            record = TaxonHelper.choose_ncbi_record(taxon_name: taxon_name, automatic: automatic)
+            record = TaxonHelper.choose_ncbi_record(taxon_name: taxon_name, automatic: automatic, params: params)
             taxon_object = record
         end
     
@@ -315,5 +320,25 @@ class TaxonHelper
         end
 
         return nil
+    end
+
+    def self.deduce_rank(obj)
+        return nil if obj.nil?
+
+        if obj.canonical_name.split(' ').size > 1
+            return 'species'
+        elsif obj.genus.match?(/\w+/)
+            return 'genus'
+        elsif obj.familia.match?(/\w+/)
+            return 'family'
+        elsif obj.ordo.match?(/\w+/)
+            return 'order'
+        elsif obj.classis.match?(/\w+/)
+            return 'class'
+        elsif obj.phylum.match?(/\w+/)
+            return 'phylum'
+        elsif obj.regnum.match?(/\w+/)
+            return 'kingdom'
+        end
     end
 end

@@ -11,7 +11,7 @@ class OutputFormat::Comparison
             file.puts "source_taxon_name\taccepted_taxon_name\taccepted_full_taxon_name\taccepted_taxonomic_status\tused_taxonomy\tsynonyms_for_accepted_taxon"
         end
 
-        source_taxon_name           = nomial.nil? ? accepted_taxon.source_taxon_name : nomial.name
+        source_taxon_name           = nomial.class == String ? nomial : nomial.name
         accepted_taxon_name         = accepted_taxon.canonical_name
         accepted_full_taxon_name    = accepted_taxon.scientific_name
         accepted_taxonomic_status   = accepted_taxon.taxonomic_status

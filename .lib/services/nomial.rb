@@ -303,7 +303,8 @@ class Monomial
 
             if are_synonyms_allowed
                 scientifc_name_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'scientific name' }.first
-                canonical_name = scientifc_name_record.nil? ? usable_ncbi_name_record.name : scientifc_name_record.name 
+                # canonical_name = scientifc_name_record.nil? ? usable_ncbi_name_record.name : scientifc_name_record.name 
+                canonical_name = usable_ncbi_name_record.name 
 
                 authority_record = ncbi_name_records_for_tax_id.select { |record| record.name_class == 'authority' }.first
                 authority = authority_record.nil? ? canonical_name : authority_record.name
