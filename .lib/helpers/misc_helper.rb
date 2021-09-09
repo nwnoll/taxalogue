@@ -190,8 +190,10 @@ class MiscHelper
         has_download_action = params[:download].any?    ? 1 : 0
         has_classify_action = params[:classify].any?    ? 1 : 0
         has_merge_action    = params[:merge].any?       ? 1 : 0
+        has_setup_action    = params[:setup].any?       ? 1 : 0
+        has_update_action   = params[:update].any?      ? 1 : 0
 
-        if (has_create_action + has_download_action + has_classify_action + has_merge_action) > 1
+        if (has_create_action + has_download_action + has_classify_action + has_merge_action + has_setup_action + has_update_action) > 1
             return true
         else
             return false

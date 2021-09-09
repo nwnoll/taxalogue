@@ -33,9 +33,9 @@ class TaxonomyHelper
 
         unless File.exists?('downloads/GBIF_TAXONOMY/eml.xml') || File.exists?('downloads/GBIF_TAXONOMY/Taxon.tsv')
             puts "The GBIF Taxonomy has not been setup yet, please use setup --gbif_taxonomy"
+            
             return true
         end
-    
     
         file                          = File.new("downloads/GBIF_TAXONOMY/eml.xml")
         doc                           = Document.new(file)
@@ -82,6 +82,7 @@ class TaxonomyHelper
         end
     end
 
+    ## UNUSED since the download from google drive does not work
     def self.download_predefined_database
         if File.file?('.db/database.db')
 

@@ -51,15 +51,15 @@ class DatabaseSchema
                 create_table :gbif_taxonomy do |t|
                     t.integer :taxon_id, index: true
                     t.string :dataset_id
-                    t.string :parent_name_usage_id, index: true
+                    t.string :parent_name_usage_id
                     t.string :accepted_name_usage_id, index: true
                     t.string :original_name_usage_id
-                    t.string :scientific_name, index: true
-                    t.string :scientific_name_authorship, index: true # remove index
+                    t.string :scientific_name
+                    t.string :scientific_name_authorship
                     t.string :canonical_name, index: true
-                    t.string :generic_name, index: true # remove index
-                    t.string :specific_epithet, index: true # remove index
-                    t.string :infraspecific_epithet, index: true # remove index
+                    t.string :generic_name
+                    t.string :specific_epithet
+                    t.string :infraspecific_epithet
                     t.string :taxon_rank # maybe index
                     t.text :name_according_to
                     t.text :name_published_in

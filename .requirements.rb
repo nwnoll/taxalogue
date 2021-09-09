@@ -52,14 +52,18 @@ db_config 		= YAML::load(db_config_file)
 if File.exists?(db_config[mode]['database'])
 	ActiveRecord::Base.establish_connection(db_config[mode])
 else
-    state = TaxonomyHelper.download_predefined_database
+    ActiveRecord::Base.establish_connection(db_config[mode])
+    DatabaseSchema.create_db
+
+    ## Find a way to download from goodle drive or find another repo
+    # state = TaxonomyHelper.download_predefined_database
     
-    if state == :success
-        ActiveRecord::Base.establish_connection(db_config[mode])
-    else
-        ActiveRecord::Base.establish_connection(db_config[mode])
-	    DatabaseSchema.create_db
-    end
+    # if state == :success
+    #     ActiveRecord::Base.establish_connection(db_config[mode])
+    # else
+    #     ActiveRecord::Base.establish_connection(db_config[mode])
+	#     DatabaseSchema.create_db
+    # end
 end
 
 database_tables = [
@@ -77,22 +81,50 @@ DatabaseSchema.create_db if database_tables.any? { |table| ActiveRecord::Base.co
 
 if mode == 'production'
     unless GbifTaxonomy.any?
-        puts "GBIF Taxonomy is not setup yet, downloading and importing GBIF Taxonomy, this may take a while."
-        
+        MiscHelper.OUT_header("GBIF Taxonomy is not setup yet, downloading and importing GBIF Taxonomy, this may take a while.")
+        puts
+
         gbif_taxonomy_job = GbifTaxonomyJob.new
         gbif_taxonomy_job.run
+
+        puts 'GBIF Taxonomy has been imported'
+        puts
     end
 
     unless NcbiRankedLineage.any? || NcbiName.any? || NcbiNode.any? 
-        puts "NCBI Taxonomy is not setup yet, downloading and importing NCBI Taxonomy, this may take a while."
-        
+        MiscHelper.OUT_header("NCBI Taxonomy is not setup yet, downloading and importing NCBI Taxonomy, this may take a while.")
+        puts
+
         ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: '.lib/configs/ncbi_taxonomy_config.json')
         ncbi_taxonomy_job.run
+
+        puts 'GBIF Taxonomy has been imported'
+        puts
     end
 
     unless GbifHomonym.any?
+        MiscHelper.OUT_header("Homonyms are not setup yet, downloading and importing homonyms.")
+        puts
+
         state = TaxonHelper.import_homonyms
         ## retry
-        TaxonHelper.import_homonyms if state == :no_file
+        if state == :no_file
+            MiscHelper.OUT_error("Homonyms could not be imported")
+            puts
+            puts 'retry'
+            state = TaxonHelper.import_homonyms
+            if state == :no_file
+                MiscHelper.OUT_error("Homonyms could not be imported")
+                puts
+                puts 'Please try again later with bundle exec ruby taxalogue.rb setup --gbif_homonyms'
+                puts
+            else
+                puts 'Homonyms have been imported'
+                puts
+            end
+        else
+            puts 'Homonyms have been imported'
+            puts
+        end
     end
 end

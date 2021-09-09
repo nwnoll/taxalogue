@@ -320,7 +320,8 @@ class TaxonHelper
 
         return params
     end
-
+    
+    ## UNUSED
     def self.lowest_matching_taxon(obj1:, obj2:, params:, importer:)
         ranks = GbifTaxonomy.rank_mappings.values
 
