@@ -174,7 +174,7 @@ class MultipleJobs
         end
 
         puts
-        puts MiscHelper.OUT_header "Output locations:"
+        MiscHelper.OUT_header "Output locations:"
         result_file_manager = nil
         count_cant_classify = 0
         results_of.each do |key, value|
@@ -198,14 +198,14 @@ class MultipleJobs
         end
 
         if count_cant_classify == results_of.keys.size
-            puts MiscHelper.OUT_error 'No output' unless download_only
+            MiscHelper.OUT_error 'No output' unless download_only
             FileUtils.rmdir(result_file_manager.dir_path)
 
             return :failure
         else
             unless download_only
                 MiscHelper.write_marshal_file(dir: result_file_manager.dir_path, data: result_file_manager, file_name: '.result_file_manager.dump')
-                puts MiscHelper.OUT_success result_file_manager.dir_path
+                MiscHelper.OUT_success result_file_manager.dir_path
             end
             
             return :success

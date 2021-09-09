@@ -112,7 +112,7 @@ class BoldDownloadCheckHelper
     end
 
     def self.ask_user_about_download_dirs(params, only_successful = false)
-        puts MiscHelper.OUT_header "Looking for BOLD database downloads"
+        MiscHelper.OUT_header "Looking for BOLD database downloads"
 
         dirs = FileManager.directories_of(dir: BoldConfig::DOWNLOAD_DIR)
         return nil if DownloadCheckHelper.is_nil_or_empty?(dirs)
@@ -131,7 +131,7 @@ class BoldDownloadCheckHelper
         puts "Sequences for #{params[:taxon]} are available in: #{selected_download_dir.to_s}"
         puts "The latest already downloaded version is #{last_download_days} days old"
         puts
-        puts MiscHelper.OUT_question "Do you want to use the latest already downloaded version? [Y/n]"
+        MiscHelper.OUT_question "Do you want to use the latest already downloaded version? [Y/n]"
     
         # nested_dir_name = FileManager.dir_name_of(dir: selected_download_dir)
         # download_dir = selected_download_dir + nested_dir_name

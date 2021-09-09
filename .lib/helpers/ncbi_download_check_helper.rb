@@ -10,7 +10,7 @@ class NcbiDownloadCheckHelper
         "[]" => 0,
     }
     def self.ask_user_about_download_dirs(params, only_successful = true)
-        puts MiscHelper.OUT_header("Looking for NCBI database downloads")
+        MiscHelper.OUT_header("Looking for NCBI database downloads")
         
         dirs = FileManager.directories_with_name_of(dir: NcbiGenbankConfig::DOWNLOAD_DIR, dir_name: 'release')
         return nil if DownloadCheckHelper.is_nil_or_empty?(dirs)
@@ -87,7 +87,7 @@ class NcbiDownloadCheckHelper
             puts "You already have downloaded a Genbank release with all needed divisions"
             puts current_release_number == 0 ? "Current release number could not be identified\nYour old release version is #{suc_comp_release_num}" : "However, it is not the latest version\nYou have version #{suc_comp_release_num}, the latest version is #{current_release_number}"
             puts
-            puts MiscHelper.OUT_question "Do you want to use your old version? [Y/n]"
+            MiscHelper.OUT_question "Do you want to use your old version? [Y/n]"
 
             user_input  = gets.chomp
             use_old_version = (user_input =~ /y|yes/i) ? true : false

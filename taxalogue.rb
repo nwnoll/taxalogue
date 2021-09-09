@@ -611,8 +611,8 @@ if params[:merge].any?
     file = File.open(file_manager.dir_path + 'taxalogue.txt', 'w')
     MiscHelper.print_params(params, file)
 
-    puts MiscHelper.OUT_header "Output locations:"
-    puts MiscHelper.OUT_success file_manager.dir_path
+    MiscHelper.OUT_header "Output locations:"
+    MiscHelper.OUT_success file_manager.dir_path
 
     exit
 end

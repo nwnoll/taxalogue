@@ -215,19 +215,19 @@ class MiscHelper
     end
 
     def self.OUT_header(str)
-        PASTEL.white.on_blue(str)
+        puts PASTEL.white.on_blue(str)
     end
 
     def self.OUT_question(str)
-        PASTEL.black.on_yellow(str)
+        puts PASTEL.black.on_yellow(str)
     end
 
     def self.OUT_error(str)
-        PASTEL.white.on_red(str)
+        puts PASTEL.white.on_red(str)
     end
 
     def self.OUT_success(str)
-        PASTEL.white.on_green(str)
+        puts PASTEL.white.on_green(str)
     end
 
     def self.run_file_merger(file_manager:, params:)
