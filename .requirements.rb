@@ -33,6 +33,14 @@ require 'biodiversity'
 require_relative ".db/database_schema"
 require_relative '.lib/output_formats/output_format'
 
+sections = ['helpers', 'decorators', 'services', 'models', 'importers', 'classifiers', 'jobs', 'downloaders', 'configs', 'output_formats']
+sections.each do |section|
+	Dir[File.dirname(__FILE__) + "/.lib/#{section}/*.rb"].each do |file|
+		# puts File.basename(file, File.extname(file))
+		require_relative ".lib/#{section}/#{File.basename(file, File.extname(file))}"
+	end
+end
+
 Bundler.require
 
 mode = ENV['TAXALOGUE_MODE']
@@ -52,14 +60,6 @@ else
         ActiveRecord::Base.establish_connection(db_config[mode])
 	    DatabaseSchema.create_db
     end
-end
-
-sections = ['helpers', 'decorators', 'services', 'models', 'importers', 'classifiers', 'jobs', 'downloaders', 'configs', 'output_formats']
-sections.each do |section|
-	Dir[File.dirname(__FILE__) + "/.lib/#{section}/*.rb"].each do |file|
-		# puts File.basename(file, File.extname(file))
-		require_relative ".lib/#{section}/#{File.basename(file, File.extname(file))}"
-	end
 end
 
 database_tables = [
