@@ -73,7 +73,7 @@ class BoldJob
             
             return download_file_managers
         rescue => e
-            puts "Release directory could not be used, starting download"
+            puts "Release directory could not be used."
             pp e
             sleep 2
             
@@ -357,7 +357,7 @@ class BoldJob
         end
 
         excluded_taxa_string = taxa.join('|')
-        query = excluded_taxa_string.prepend("taxon=")
+        query = excluded_taxa_string.dup.prepend("taxon=")
         query = query.concat("|#{failed_taxon}")
         query = query.concat('&format=tsv')
         

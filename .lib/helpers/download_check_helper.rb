@@ -37,17 +37,17 @@ class DownloadCheckHelper
             download_file_managers.each_with_index do |download_file_manager, i|
                 if release_info_struct
                     file.puts 'data:' if i == 0
-                    file.puts "#{release_info_struct.base_dir.to_s}; success: #{success}".prepend(RJUST_LEVEL_ONE) if i == 0
+                    file.puts "#{release_info_struct.base_dir.to_s}; success: #{success}".dup.prepend(RJUST_LEVEL_ONE) if i == 0
 
                     sub_directory_success = download_file_manager.status == 'success' ?  true : false
-                    file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".prepend(RJUST_LEVEL_TWO)
+                    file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".dup.prepend(RJUST_LEVEL_TWO)
                 else
                     file.puts 'data:' if i == 0
-                    file.puts "#{download_file_manager.base_dir.to_s}; success: #{success}".prepend(RJUST_LEVEL_ONE) if i == 0 && source != GbolJob
+                    file.puts "#{download_file_manager.base_dir.to_s}; success: #{success}".dup.prepend(RJUST_LEVEL_ONE) if i == 0 && source != GbolJob
 
                     sub_directory_success = download_file_manager.status == 'success' ?  true : false
-                    file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".prepend(RJUST_LEVEL_TWO) if source != GbolJob
-                    file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".prepend(RJUST_LEVEL_ONE) if source == GbolJob
+                    file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".dup.prepend(RJUST_LEVEL_TWO) if source != GbolJob
+                    file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".dup.prepend(RJUST_LEVEL_ONE) if source == GbolJob
                 end
             end
         end
@@ -65,7 +65,7 @@ class DownloadCheckHelper
             next unless File.file?(path)
 
             file = File.open(path, 'a')
-            file.puts "#{result_file_manager.dir_path.to_s}".prepend(RJUST_LEVEL_ONE)
+            file.puts "#{result_file_manager.dir_path.to_s}".dup.prepend(RJUST_LEVEL_ONE)
         end
     end
 
@@ -76,19 +76,19 @@ class DownloadCheckHelper
             download_file_managers.each_with_index do |download_file_manager, i|
                 if path.descend.first.to_s == 'results'
                     file.puts 'data:' if i == 0
-                    file.puts "#{download_file_manager.base_dir.to_s}; success: #{success}".prepend(RJUST_LEVEL_ONE) if i == 0
+                    file.puts "#{download_file_manager.base_dir.to_s}; success: #{success}".dup.prepend(RJUST_LEVEL_ONE) if i == 0
                     
                     sub_directory_success = download_file_manager.status == 'success' ?  true : false
-                    file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".prepend(RJUST_LEVEL_TWO)
+                    file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".dup.prepend(RJUST_LEVEL_TWO)
                 else
                     file.puts 'data:' if i == 0
-                    file.puts "#{download_file_manager.base_dir.to_s}; success: #{success}".prepend(RJUST_LEVEL_ONE) if i == 0
+                    file.puts "#{download_file_manager.base_dir.to_s}; success: #{success}".dup.prepend(RJUST_LEVEL_ONE) if i == 0
                     
                     sub_directory_success = download_file_manager.status == 'success' ?  true : false
-                    file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".prepend(RJUST_LEVEL_TWO)
+                    file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".dup.prepend(RJUST_LEVEL_TWO)
 
                     file.puts 'results:' if i == (download_file_managers.size - 1)
-                    file.puts "#{result_file_manager.dir_path.to_s}".prepend(RJUST_LEVEL_ONE) if i == (download_file_managers.size - 1)
+                    file.puts "#{result_file_manager.dir_path.to_s}".dup.prepend(RJUST_LEVEL_ONE) if i == (download_file_managers.size - 1)
                 end
             end
             file.rewind

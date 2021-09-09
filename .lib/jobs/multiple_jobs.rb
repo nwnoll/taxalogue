@@ -199,7 +199,7 @@ class MultipleJobs
 
         if count_cant_classify == results_of.keys.size
             MiscHelper.OUT_error 'No output' unless download_only
-            FileUtils.rmdir(result_file_manager.dir_path)
+            FileUtils.rm_rf(result_file_manager.dir_path)
 
             return :failure
         else

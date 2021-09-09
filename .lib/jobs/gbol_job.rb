@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class GbolJob
-    attr_reader :taxon, :result_file_manager, :params, :download_only, :classify_only, :classify_dir
+    attr_reader :taxon, :result_file_manager, :params, :download_only, :classify_only, :classify_dir, :taxon_name
 
     DOWNLOAD_INFO_NAME = 'gbol_download_info.txt'
 
@@ -9,6 +9,7 @@ class GbolJob
         @result_file_manager  = result_file_manager
         @params               = params
         @taxon                = params[:taxon_object]
+        @taxon_name           = taxon.canonical_name
         @download_only        = params[:download][:gbol] || params[:download][:all]
         @classify_only        = params[:classify][:gbol] || params[:classify][:all]
         @classify_dir         = params[:classify][:gbol_dir]
@@ -63,7 +64,7 @@ class GbolJob
 
             return download_file_manager
         rescue StandardError => e
-            puts "Release directory could not be used, starting download"
+            puts "Release directory could not be used."
             pp e
             sleep 2
             

@@ -98,7 +98,7 @@ if mode == 'production'
         ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: '.lib/configs/ncbi_taxonomy_config.json')
         ncbi_taxonomy_job.run
 
-        puts 'GBIF Taxonomy has been imported'
+        puts 'NCBI Taxonomy has been imported'
         puts
     end
 

@@ -159,10 +159,10 @@ class BoldDownloadCheckHelper
             file = File.open(path, 'w')
             download_file_managers.each_with_index do |download_file_manager, i|
                 file.puts 'data:' if i == 0
-                file.puts "#{download_file_manager.base_dir.to_s}; success: #{success}".prepend(RJUST_LEVEL_ONE) if i == 0
+                file.puts "#{download_file_manager.base_dir.to_s}; success: #{success}".dup.prepend(RJUST_LEVEL_ONE) if i == 0
 
                 sub_directory_success = download_file_manager.status == 'success' ?  true : false
-                file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".prepend(RJUST_LEVEL_TWO)
+                file.puts "#{download_file_manager.dir_path.to_s}; success: #{sub_directory_success}".dup.prepend(RJUST_LEVEL_TWO)
             end
         end
     end

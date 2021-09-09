@@ -14,7 +14,7 @@ class TaxonHelper
         
         return :no_file unless File.file?(config.file_manager.file_path)
         
-        importer = GbifHomonymImporter.new(config.file_manager.file_path)
+        importer = GbifHomonymImporter.new(file_name: config.file_manager.file_path)
         importer.run
     end
 
