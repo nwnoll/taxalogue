@@ -17,7 +17,7 @@ params = {
     output: Hash.new
 }
 
-$fada_regions_of 	= Hash.new
+$fada_regions_of    = Hash.new
 $eco_zones_of 		= Hash.new
 $continent_of 		= Hash.new
 
@@ -39,20 +39,20 @@ end
 
 ## modified after https://gist.github.com/rkumar/445735
 subtext = <<HELP
-Commonly used commands are:
+Commonly used subcommands are:
    create   :  creates a barcode database
    download :  downloads sequence and specimen data
    classify :  normalizes the taxon names based on used taxonomy
    merge    :  combines results from different source databases
-   setup    :  setup Taxonomies
-   update   :  update taxonomies or sequences
-   filter   :  filter sequences
-   derep    :  Remove sequences that have the exact same sequence of characters and length
+   setup    :  setup taxonomies
+   update   :  update taxonomies 
+   filter   :  set filter options
+   derep    :  remove sequences that have the exact same sequence of characters and length
    taxonomy :  different options regarding the used taxonomy
    region   :  select sequences by country, continent, biogeographic regions etc.
    output   :  specify different output formats
 
-See 'bundle exec ruby taxalogue.rb COMMAND --help' for more information on a specific command.
+See 'bundle exec ruby taxalogue.rb SUBCOMMAND --help' for more information on a specific subcommand.
 
 HELP
 
@@ -101,10 +101,10 @@ subcommands = {
 
     download: OptionParser.new do |opts|
 		opts.banner = "Usage: download [options]"
+		opts.on('-a', '--all')
 		opts.on('-g', '--gbol')
 		opts.on('-o', '--bold')
 		opts.on('-k', '--genbank')
-		opts.on('-a', '--all')
 		opts.on('-i', '--inv_contaminants', 'Download possible invertebrate contaminants')
    	end,
 
@@ -129,17 +129,6 @@ subcommands = {
         opts.on('-k', '--genbank', 'Merges output of NCBI GenBank source database')
     end,
 
-    output: OptionParser.new do |opts|
-        opts.banner = "Usage: output [options]"
-        opts.on('-t BOOLEAN', TrueClass, '--table', 'TSV Table. default: true')
-        opts.on('-f BOOLEAN', TrueClass, '--fasta', 'fasta file. default: true')
-        opts.on('-c BOOLEAN', TrueClass, '--comparison', 'Comparison TSV, shows initial Taxon information and normalization by Taxonomy. default: true')
-        opts.on('-q BOOLEAN', FalseClass, '--qiime2', 'QIIME2 Taxonomy files, includes a taxonomy text file and a fasta file.')
-        opts.on('-k BOOLEAN', FalseClass, '--kraken2', 'Kraken2 fasta file, works only with NCBI taxonomy.')
-        opts.on('-d BOOLEAN', FalseClass, '--dada2_taxonomy', 'Fasta output file for the dada2 assignTaxonomy function.')
-        opts.on('-s BOOLEAN', FalseClass, '--dada2_species', 'Fasta output file for the dada2 assignSpecies function')
-    end,
-
    	setup: OptionParser.new do |opts|
 		opts.banner = "Usage: setup [options]"
 		opts.on('-n', '--ncbi_taxonomy', 'Setup the NCBI Taxonomy database')
@@ -150,9 +139,21 @@ subcommands = {
 
    	update: OptionParser.new do |opts|
 		opts.banner = "Usage: update [options]"
+		opts.on('-a', '--all')
 		opts.on('-b', '--gbif_taxonomy')
 		opts.on('-n', '--ncbi_taxonomy')
 	end,
+
+    output: OptionParser.new do |opts|
+        opts.banner = "Usage: output [options]"
+        opts.on('-t BOOLEAN', TrueClass, '--table', 'TSV Table. default: true')
+        opts.on('-f BOOLEAN', TrueClass, '--fasta', 'fasta file. default: true')
+        opts.on('-c BOOLEAN', TrueClass, '--comparison', 'Comparison TSV, shows initial Taxon information and normalization by Taxonomy. default: true')
+        opts.on('-q BOOLEAN', FalseClass, '--qiime2', 'QIIME2 Taxonomy files, includes a taxonomy text file and a fasta file.')
+        opts.on('-k BOOLEAN', FalseClass, '--kraken2', 'Kraken2 fasta file, works only with NCBI taxonomy.')
+        opts.on('-d BOOLEAN', FalseClass, '--dada2_taxonomy', 'Fasta output file for the dada2 assignTaxonomy function.')
+        opts.on('-s BOOLEAN', FalseClass, '--dada2_species', 'Fasta output file for the dada2 assignSpecies function')
+    end,
 
 	filter: OptionParser.new do |opts|
 		opts.banner = "Usage: filter [options]"
@@ -363,6 +364,8 @@ end
 
 if params[:version]
     puts 'taxalogue v0.9.0'
+    
+    exit
 end
 
 ## if taxonomy was chosen by user, it needs to be updated
@@ -685,8 +688,13 @@ if params[:setup].any?
 end
 
 if params[:update].any?
+    if params[:update][:all]
+        params[:update][:ncbi_taxonomy] = true
+        params[:update][:gbif_taxonomy] = true
+    end
+
     params[:update].each do |key, value|
-        if key == :ncbi_taxonomy && params[:update][key]
+        if key == :gbif_taxonomy && params[:update][key]
             MiscHelper.OUT_header("Checking if a new GBIF Taxonomy backbone is available")
             puts
             
@@ -730,28 +738,4 @@ if params[:update].any?
             end
         end
     end
-end
-
-if params[:setup][:terrestrial_ecoregions]
-	RegionHelper.get_shape_terreco_regions
-end
-
-if params[:setup][:biogeographic_realms]
-	RegionHelper.get_shape_fada_regions
-end
-
-if params[:update][:all_taxonomies]
-	if TaxonomyHelper.new_gbif_taxonomy_available?
-		
-		gbif_taxonomy_job = GbifTaxonomyJob.new
-		gbif_taxonomy_job.run
-	else
-	end
-
-	if TaxonomyHelper.new_ncbi_taxonomy_available?
-		
-		ncbi_taxonomy_job = NcbiTaxonomyJob.new(config_file_name: '.lib/configs/ncbi_taxonomy_config.json')
-		ncbi_taxonomy_job.run
-	else
-	end
 end
