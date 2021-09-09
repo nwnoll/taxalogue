@@ -44,8 +44,14 @@ db_config 		= YAML::load(db_config_file)
 if File.exists?(db_config[mode]['database'])
 	ActiveRecord::Base.establish_connection(db_config[mode])
 else
-	ActiveRecord::Base.establish_connection(db_config[mode])
-	DatabaseSchema.create_db
+    state = TaxonomyHelper.download_predefined_database
+    
+    if state == :success
+        ActiveRecord::Base.establish_connection(db_config[mode])
+    else
+        ActiveRecord::Base.establish_connection(db_config[mode])
+	    DatabaseSchema.create_db
+    end
 end
 
 sections = ['helpers', 'decorators', 'services', 'models', 'importers', 'classifiers', 'jobs', 'downloaders', 'configs', 'output_formats']
