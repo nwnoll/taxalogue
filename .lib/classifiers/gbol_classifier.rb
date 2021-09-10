@@ -30,6 +30,8 @@ class GbolClassifier
     end
 
     def run
+        MiscHelper.OUT_header('Starting to classify GBOL downloads')
+        puts
         specimens_of_taxon      = Hash.new { |hash, key| hash[key] = {} }
         specimens_of_sequence   = Hash.new
         file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'gbol') unless params[:derep].any? { |opt| opt.last == true }
@@ -56,6 +58,9 @@ class GbolClassifier
             SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
         end
 
+        puts "file '#{file_name}'' was read"
+        puts 
+
         # Parallel.map(specimens_of_taxon.keys, in_threads: 10) do |taxon_name|
         #     ActiveRecord::Base.connection_pool.with_connection do
         #         nomial  = specimens_of_taxon[taxon_name][:nomial]
@@ -66,6 +71,8 @@ class GbolClassifier
         #         end
         #     end
         # end
+
+        puts 'Starting search for taxa in chosen taxonomy'
 
         specimens_of_taxon.keys.each do |taxon_name|
             nomial              = specimens_of_taxon[taxon_name][:nomial]
@@ -87,14 +94,20 @@ class GbolClassifier
                 DerepHelper.fill_specimens_of_sequence(specimens: specimens_of_taxon[taxon_name][:data], specimens_of_sequence: specimens_of_sequence, taxonomic_info: taxonomic_info, taxon_name: taxon_name, first_specimen_info: first_specimen_info)
             else
                 MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
-                OutputFormat::Tsv.rewind
             end
         end
 
+        puts 'taxon search completed'
+        puts
+
         if params[:derep].any? { |opt| opt.last == true }
+            puts "Starting dereplication for file #{file_name}"
+            
             DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name)
+            
+            puts 'dereplication finished'
+            puts
         else
-            MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
             ## TODO: Check if it should also be done for Comparison
             OutputFormat::Tsv.rewind
             file_of.each { |fc, fh| fh.close }

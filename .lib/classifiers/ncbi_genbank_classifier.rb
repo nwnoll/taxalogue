@@ -28,6 +28,9 @@ class NcbiGenbankClassifier
     end
 
     def run
+        MiscHelper.OUT_header('Starting to classify NCBI GenBank downloads')
+        puts
+
         file_names = []
         file_names.push(file_name)
 
@@ -37,6 +40,8 @@ class NcbiGenbankClassifier
             file_name_match             = file.to_s.match(/gb\w+\d+/)
             base_name                   = file_name_match[0]
             specimens_of_taxon          = Hash.new { |hash, key| hash[key] = {} }
+            specimens_of_sequence       = Hash.new
+
             file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'gbol') unless params[:derep].any? { |opt| opt.last == true }
             
             begin
@@ -71,6 +76,11 @@ class NcbiGenbankClassifier
                 return erroneous_files
             end
 
+            puts "file '#{file_name}'' was read"
+            puts 
+    
+            puts 'Starting search for taxa in chosen taxonomy'
+
             specimens_of_taxon.keys.each do |taxon_name|
                 nomial              = specimens_of_taxon[taxon_name][:nomial]
                 next unless nomial
@@ -87,7 +97,7 @@ class NcbiGenbankClassifier
                 end
     
                 if params[:derep].any? { |opt| opt.last == true }
-                    DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name)
+                    DerepHelper.fill_specimens_of_sequence(specimens: specimens_of_taxon[taxon_name][:data], specimens_of_sequence: specimens_of_sequence, taxonomic_info: taxonomic_info, taxon_name: taxon_name, first_specimen_info: first_specimen_info)
                 else
                     MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
                     ## TODO: Check if it should also be done for Comparison
@@ -95,6 +105,23 @@ class NcbiGenbankClassifier
                     file_of.each { |fc, fh| fh.close }
                 end
             end
+
+            puts 'taxon search completed'
+            puts
+
+            if params[:derep].any? { |opt| opt.last == true }
+                puts "Starting dereplication for file #{file_name}"
+                
+                DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name)
+                
+                puts 'dereplication finished'
+                puts
+            else
+                ## TODO: Check if it should also be done for Comparison
+                OutputFormat::Tsv.rewind
+                file_of.each { |fc, fh| fh.close }
+            end
+
         end
 
         return erroneous_files

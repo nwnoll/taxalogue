@@ -11,6 +11,7 @@ class NcbiDownloadCheckHelper
     }
     def self.ask_user_about_download_dirs(params, only_successful = true)
         MiscHelper.OUT_header("Looking for NCBI database downloads")
+        puts
         
         dirs = FileManager.directories_with_name_of(dir: NcbiGenbankConfig::DOWNLOAD_DIR, dir_name: 'release')
         return nil if DownloadCheckHelper.is_nil_or_empty?(dirs)

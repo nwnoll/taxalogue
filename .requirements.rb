@@ -11,6 +11,7 @@ require 'parallel'
 require 'pastel'
 require 'countries'
 require 'shp'
+require 'biodiversity'
 
 require "yaml"
 require 'optparse'
@@ -28,7 +29,7 @@ require 'digest/md5'
 require 'digest/bubblebabble'
 require 'time'
 require 'rexml/document'
-require 'biodiversity'
+require 'set'
 
 require_relative ".db/database_schema"
 require_relative '.lib/output_formats/output_format'

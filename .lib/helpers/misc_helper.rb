@@ -231,7 +231,7 @@ class MiscHelper
     end
 
     def self.run_file_merger(file_manager:, params:)
-        return nil if params[:derep].any? {|opt| opt.last == true }
+        return nil if params[:derep].any? {|opt| opt.last == true } && !params[:merge].any? { |opt| opt.last == true}
         
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)                    if params[:output][:table]
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)                  if params[:output][:fasta]

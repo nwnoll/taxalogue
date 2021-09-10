@@ -113,6 +113,7 @@ class BoldDownloadCheckHelper
 
     def self.ask_user_about_download_dirs(params, only_successful = false)
         MiscHelper.OUT_header "Looking for BOLD database downloads"
+        puts
 
         dirs = FileManager.directories_of(dir: BoldConfig::DOWNLOAD_DIR)
         return nil if DownloadCheckHelper.is_nil_or_empty?(dirs)
@@ -135,7 +136,7 @@ class BoldDownloadCheckHelper
     
         # nested_dir_name = FileManager.dir_name_of(dir: selected_download_dir)
         # download_dir = selected_download_dir + nested_dir_name
-    
+        
         user_input  = gets.chomp
         use_latest_download = (user_input =~ /y|yes/i) ? true : false
     

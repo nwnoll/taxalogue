@@ -147,7 +147,7 @@ class DerepHelper
                     seq_top_arys_to_import.push([seq_id, top_id, value.specimens_nums[index], value.first_specimen_identifiers[index], value.first_specimen_locations[index], value.first_specimen_latitudes[index], value.first_specimen_longitudes[index]])
                 end
 
-                $seq_ids.push(seq_id)
+                $seq_ids.add(seq_id)
             end
         end
 

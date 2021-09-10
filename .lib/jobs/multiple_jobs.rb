@@ -18,7 +18,7 @@ class MultipleJobs
         gbol_dir = nil
         ncbi_dir = nil
 
-        $seq_ids = []# if params[:derep].any?
+        $seq_ids = Set.new# if params[:derep].any?
         
         jobs.each do |job|
             if job.class == BoldJob
@@ -175,6 +175,7 @@ class MultipleJobs
 
         puts
         MiscHelper.OUT_header "Output locations:"
+        puts
         result_file_manager = nil
         count_cant_classify = 0
         results_of.each do |key, value|

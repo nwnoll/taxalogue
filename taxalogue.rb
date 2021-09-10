@@ -612,6 +612,7 @@ if params[:merge].any?
     MiscHelper.print_params(params, file)
 
     MiscHelper.OUT_header "Output locations:"
+    puts
     MiscHelper.OUT_success file_manager.dir_path
 
     exit

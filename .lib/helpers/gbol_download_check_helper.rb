@@ -3,6 +3,7 @@
 class GbolDownloadCheckHelper
     def self.ask_user_about_gbol_download_dirs(params)
         MiscHelper.OUT_header "Looking for GBOL database downloads"
+        puts
 
         dirs = FileManager.directories_of(dir: GbolConfig::DOWNLOAD_DIR)
         current_release = nil

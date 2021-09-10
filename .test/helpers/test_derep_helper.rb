@@ -105,6 +105,6 @@ class TestDerepHelper < Test::Unit::TestCase
         SequenceTaxonObjectProxy.delete_all
         TaxonObjectProxy.delete_all
         Sequence.delete_all
-        $seq_ids = []
+        $seq_ids = Set.new
     end
 end
