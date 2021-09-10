@@ -22,7 +22,7 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
 
 1. Get the latest [release](https://github.com/nwnoll/taxalogue/releases)
 
-        wget https://github.com/nwnoll/taxalogue/archive/v0.9.0.tar.gz
+        wget https://github.com/nwnoll/taxalogue/archive/refs/tags/v0.9.0.tar.gz
 
 2. Unzip the file to a location of your choice
 
