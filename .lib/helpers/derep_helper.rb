@@ -71,6 +71,8 @@ class DerepHelper
                     used_taxonomy_string = 'gbif_backbone'
                 elsif taxonomy_params[:gbif]
                     used_taxonomy_string = 'gbif'
+                elsif taxonomy_params[:unmapped]
+                    used_taxonomy_string = 'unmapped'
                 end
                 
                 taxon_object_proxy_string = "#{seq_meta.taxonomic_infos.regnum}|#{seq_meta.taxonomic_infos.phylum}|#{seq_meta.taxonomic_infos.classis}|#{seq_meta.taxonomic_infos.ordo}|#{seq_meta.taxonomic_infos.familia}|#{seq_meta.taxonomic_infos.genus}|#{seq_meta.taxonomic_infos.canonical_name}|#{seq_meta.taxonomic_infos.scientific_name}|#{used_taxonomy_string}"
@@ -133,6 +135,7 @@ class DerepHelper
         seq_columns     = Sequence.column_names - ["id", "created_at", "updated_at"]
         top_columns     = TaxonObjectProxy.column_names - ["id", "created_at", "updated_at"]
         seq_top_columns = SequenceTaxonObjectProxy.column_names - ["id", "created_at", "updated_at"]
+        # byebug
         TaxonObjectProxy.import top_columns, top_arys_to_import, validate: false, batch_size: 100_000 if top_arys_to_import.any?
         Sequence.import seq_columns, seq_arys_to_import, validate: false, batch_size: 100_000 if seq_arys_to_import.any?
         sleep 1

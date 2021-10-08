@@ -79,7 +79,7 @@ class NcbiGenbankClassifier
             puts "file '#{file_name}'' was read"
             puts 
     
-            puts 'Starting search for taxa in chosen taxonomy'
+            puts 'Starting taxa search'
 
             specimens_of_taxon.keys.each do |taxon_name|
                 nomial              = specimens_of_taxon[taxon_name][:nomial]

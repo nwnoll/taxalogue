@@ -314,6 +314,7 @@ class NcbiGenbankJob
     end
 
     def _classify_downloads(download_file_managers:)
+        byebug
         erroneous_files_of = Hash.new
         download_file_managers.each do |download_file_manager|
             division_codes_for_taxon = division_codes_for(division_ids)

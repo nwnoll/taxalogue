@@ -9,11 +9,77 @@ class GbolClassifier
         'Hemiptera' => ['Auchenorrhyncha', 'Heteroptera', 'Sternorrhyncha']
     }
 
+    RANKS = {
+        1 => ['regnum'],
+        2 => ['regnum', 'phylum'],
+        3 => ['regnum', 'phylum', 'familia'],
+        4 => ['regnum', 'phylum', 'classis', 'familia',],
+        5 => ['regnum', 'phylum', 'classis', 'ordo', 'familia'],
+        6 => ['regnum', 'subphylum', 'phylum', 'classis', 'ordo', 'familia'],
+        7 => ['regnum', 'subphylum', 'phylum', 'classis', 'ordo', 'familia', 'subfamilia'],
+    }
+
     def self.get_source_lineage(row)
         OpenStruct.new(
             name:     row["Species"],
             combined: row['HigherTaxa'].split(', ').push(row["Species"])
         )
+    end
+
+    def self.get_taxon_object_for_unmapped(first_specimen)
+        canonical_name          = first_specimen["Species"]
+        lineage                 = first_specimen['HigherTaxa']
+        splitted_lineage        = lineage.split(', ')
+        splitted_canonical_name = canonical_name.split(' ')
+
+        return nil if splitted_lineage.size > 7
+        return nil if splitted_lineage.size < 1
+
+        ranks_for_specimen = RANKS[splitted_lineage.size]
+
+        index = ranks_for_specimen.index('regnum')
+        regnum = index.nil? ? '' : splitted_lineage[index]
+
+        index = ranks_for_specimen.index('phylum')
+        phylum = index.nil? ? '' : splitted_lineage[index]
+
+        index = ranks_for_specimen.index('classis')
+        classis = index.nil? ? '' : splitted_lineage[index]
+
+        index = ranks_for_specimen.index('ordo')
+        ordo = index.nil? ? '' : splitted_lineage[index]
+
+        index = ranks_for_specimen.index('familia')
+        familia = index.nil? ? '' : splitted_lineage[index]
+
+        if splitted_canonical_name.size > 1
+            genus = splitted_canonical_name.first
+        else
+            genus = ''
+        end
+
+        index = splitted_lineage.index(canonical_name)
+        taxon_rank = index.nil? ? 'species' : TaxonomyHelper.anglicise_rank(ranks_for_specimen[index])
+
+        combined = first_specimen['HigherTaxa'].split(', ').push(first_specimen["Species"])
+
+        obj = OpenStruct.new(
+            taxon_id:               'no_info',
+            regnum:                 regnum,
+            phylum:                 phylum,
+            classis:                classis,
+            ordo:                   ordo,
+            familia:                familia,
+            genus:                  genus,
+            canonical_name:         canonical_name,
+            scientific_name:        'no_info',
+            taxonomic_status:       'no_info',
+            taxon_rank:             taxon_rank,
+            combined:               combined,
+            comment:                ''
+        )
+
+        return obj
     end
 
     def initialize(params:, file_name:, file_manager:)
@@ -58,7 +124,7 @@ class GbolClassifier
             SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
         end
 
-        puts "file '#{file_name}'' was read"
+        puts "file '#{csv_file_name}'' was read"
         puts 
 
         # Parallel.map(specimens_of_taxon.keys, in_threads: 10) do |taxon_name|
@@ -72,7 +138,7 @@ class GbolClassifier
         #     end
         # end
 
-        puts 'Starting search for taxa in chosen taxonomy'
+        puts 'Starting taxa search'
 
         specimens_of_taxon.keys.each do |taxon_name|
             nomial              = specimens_of_taxon[taxon_name][:nomial]
@@ -101,7 +167,7 @@ class GbolClassifier
         puts
 
         if params[:derep].any? { |opt| opt.last == true }
-            puts "Starting dereplication for file #{file_name}"
+            puts "Starting dereplication for file #{csv_file_name}"
             
             DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name)
             

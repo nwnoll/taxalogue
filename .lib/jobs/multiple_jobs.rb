@@ -75,6 +75,7 @@ class MultipleJobs
                 sorted = seq.taxon_object_proxies.to_a.sort_by do |taxon_object_proxy|
                     specimens_num = -(taxon_object_proxy.sequence_taxon_object_proxies.find_by(sequence_id: seq.id).specimens_num)
                     rank = GbifTaxonomy.possible_ranks.index(taxon_object_proxy.taxon_rank)
+
                     if rank.nil?
                         deduced_rank = TaxonHelper.deduce_rank(taxon_object_proxy)
                         rank = deduced_rank.nil? ? (GbifTaxonomy.possible_ranks.size -1) : GbifTaxonomy.possible_ranks.index(deduced_rank)
@@ -117,8 +118,18 @@ class MultipleJobs
                         lca_rank            = GbifTaxonomy.rank_mappings.values[lca_rank_index]
                         taxon_name          = sorted.first.public_send(lca_rank)
 
+                        if params[:taxonomy][:unmapped]
+                            taxon_record = sorted.first
+                            taxon_record.canonical_name = taxon_name
+                            taxon_record.taxon_rank = lca_rank
+                            ## go through every rank that should no information anymore
+                            (1...lca_rank_index).each do |i|
+                                taxon_record[GbifTaxonomy.rank_mappings.values[i]] = ""
+                            end
+                        else
+                            taxon_record = TaxonHelper.get_taxon_record(params, taxon_name, automatic: true)
+                        end
                         
-                        taxon_record        = TaxonHelper.get_taxon_record(params, taxon_name, automatic: true)
                         next if taxon_record.nil?
                         # pp sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)
                         # p taxon_record

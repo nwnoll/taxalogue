@@ -211,6 +211,41 @@ class DatabaseSchema
                     t.timestamps
                 end
             end
+        elsif table_name == :sequences && ActiveRecord::Base.connection.table_exists?(:sequences) == false
+            ActiveRecord::Schema.define do
+                create_table :sequences do |t|
+                    t.string    :sha256_bubblebabble, index: true
+                    t.text      :nucleotides
+    
+                    t.timestamps
+                end
+            end
+        
+        elsif table_name == :taxon_object_proxies && ActiveRecord::Base.connection.table_exists?(:taxon_object_proxies) == false
+            ActiveRecord::Schema.define do
+                create_table :taxon_object_proxies do |t|
+                    t.integer :taxon_id
+                    t.string :regnum
+                    t.string :phylum
+                    t.string :classis
+                    t.string :ordo
+                    t.string :familia
+                    t.string :genus
+                    t.string :canonical_name, index: true
+                    t.string :scientific_name
+                    t.string :taxonomic_status
+                    t.string :taxon_rank
+                    t.string :combined
+                    t.string :comment
+                    t.string :query_taxon_name
+                    t.string :used_taxonomy
+                    t.boolean :synonyms_allowed
+                    t.string :source_taxon_name, index: true
+                    t.string :sha256_bubblebabble, index: true
+
+                    t.timestamps
+                end
+            end
         end
     end
 end

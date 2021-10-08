@@ -72,6 +72,10 @@ class TaxonomyHelper
         GbifTaxonomy.rank_mappings["#{rank}"]
     end
 
+    def self.anglicise_rank(rank)
+        GbifTaxonomy.rank_mappings.invert[rank]
+    end
+
     def self.get_source_db(taxonomy_params)
         if taxonomy_params[:gbif] || taxonomy_params[:gbif_backbone]
             return GbifTaxonomy

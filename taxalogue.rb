@@ -203,23 +203,32 @@ subcommands = {
 		opts.on('-b', '--gbif', 'Taxon information is mapped to GBIF Taxonomy backbone + additional available datasets from the GBIF API') do |opt|
 			params[:taxonomy][:gbif_backbone] = false
 			params[:taxonomy][:ncbi] = false
+			params[:taxonomy][:unmapped] = false
 
 			opt
 		end
 		opts.on('-B', '--gbif_backbone', 'Taxon information is mapped to GBIF Taxonomy backbone') do |opt|
 			params[:taxonomy][:gbif] = false
 			params[:taxonomy][:ncbi] = false
+			params[:taxonomy][:unmapped] = false
 
 			opt
 		end
 		opts.on('-n', '--ncbi', 'Taxon information is mapped to NCBI Taxonomy') do |opt|
 			params[:taxonomy][:gbif_backbone] = false
 			params[:taxonomy][:gbif] = false
+			params[:taxonomy][:unmapped] = false
 
 			opt
 		end
-		opts.on('-u', '--unmapped', 'No mapping takes place, original specimen information is used but only standard ranks are used (e.g. no subfamilies)')
-		opts.on('-s', '--synonyms_allowed', 'Allows Taxon information of synonyms to be set to sequences')
+		opts.on('-u', '--unmapped', 'No mapping takes place, original specimen information is used but only standard ranks are used (e.g. no subfamilies)') do |opt|
+            params[:taxonomy][:gbif_backbone] = false
+            params[:taxonomy][:gbif] = false
+            params[:taxonomy][:ncbi] = false
+
+            opt
+        end
+        opts.on('-s', '--synonyms_allowed', 'Allows Taxon information of synonyms to be set to sequences')
         opts.on('-r', '--retain', 'retains sequences for taxa that are not present in chosen taxonomy')
 	end,
 
@@ -356,10 +365,14 @@ if params[:derep].values.count(true) > 1
 end
 
 if params[:merge].any? && params[:derep].any? { |opt| opt.last == true }
-    puts "Merging while dereplicating is not possibble at the moment"
+    puts "Merging while dereplicating is not possible at the moment"
     puts "Only merging will be executed"
 
-    params[:derep].each { |param| param = false }
+    params[:derep].keys.each { |key| params[:derep][key] = false }
+end
+
+if params[:download].any? && params[:derep].any? { |opt| opt.last == true }
+    params[:derep].keys.each { |key| params[:derep][key] = false }
 end
 
 if params[:version]
@@ -374,8 +387,16 @@ params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 
 MiscHelper.print_params(params)
 
+## TODO: 
+# ZFMK-TIS-2604647 misses canonical name
+# bundle exec ruby taxalogue.rb -t Apidae classify --gbol taxonomy --unmapped
+
 if params[:derep].any? { |opt| opt.last == true }
     DatabaseSchema.drop(:sequence_taxon_object_proxies) if ActiveRecord::Base.connection.table_exists?(:sequence_taxon_object_proxies)
+    DatabaseSchema.drop(:taxon_object_proxies) if ActiveRecord::Base.connection.table_exists?(:taxon_object_proxies)
+    DatabaseSchema.drop(:sequences) if ActiveRecord::Base.connection.table_exists?(:sequences)
+    DatabaseSchema.create_table(:sequences)
+    DatabaseSchema.create_table(:taxon_object_proxies)
     DatabaseSchema.create_table(:sequence_taxon_object_proxies)
 end
 

@@ -44,8 +44,6 @@ class FileManager
         return nil unless dir
         datetime = FileManager.datetime_of(dir: dir)
 
-
-        
         return nil unless datetime
         return nil if datetime == "not_versioned"
 
