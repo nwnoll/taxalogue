@@ -127,6 +127,65 @@ class NcbiGenbankClassifier
         return erroneous_files
     end
 
+    def self.get_taxon_object_for_unmapped(first_specimen)
+        ncbi_ranked_lineage = _get_ncbi_ranked_lineage(first_specimen)
+        return nil if ncbi_ranked_lineage.nil?
+
+        regnum = ncbi_ranked_lineage.regnum
+        phylum = ncbi_ranked_lineage.phylum
+        classis = ncbi_ranked_lineage.classis
+        ordo = ncbi_ranked_lineage.ordo
+        familia = ncbi_ranked_lineage.familia
+        genus = ncbi_ranked_lineage.genus
+        species = ncbi_ranked_lineage.species
+        canonical_name = ncbi_ranked_lineage.name
+
+        ncbi_node = NcbiNode.find_by(tax_id: ncbi_ranked_lineage.tax_id)
+        return nil if ncbi_node.nil?
+
+        taxon_rank = ncbi_node.rank
+        ## TODO:
+        #  add other taxa to lineage 
+        lineage = []
+
+        obj = OpenStruct.new(
+            taxon_id:               ncbi_ranked_lineage.tax_id,
+            regnum:                 regnum,
+            phylum:                 phylum,
+            classis:                classis,
+            ordo:                   ordo,
+            familia:                familia,
+            genus:                  genus,
+            canonical_name:         canonical_name,
+            scientific_name:        'no_info',
+            taxonomic_status:       'no_info',
+            taxon_rank:             taxon_rank,
+            combined:               lineage,
+            comment:                ''
+        )
+
+        if GbifTaxonomy.possible_ranks.include?(ncbi_node.rank)
+            latinized_rank = TaxonomyHelper.latinize_rank(ncbi_node.rank)
+            obj[latinized_rank] = ncbi_ranked_lineage.name
+        else
+            Gbiftaxonomy.possible_ranks.each do |possible_rank|
+                latinized_possible_rank = TaxonomyHelper.latinize_rank(possible_rank)
+                name_for_possible_rank  = ncbi_ranked_lineage.public_send(latinized_possible_rank).to_s
+                next if name_for_possible_rank.empty?
+                
+                obj[latinized_possible_rank]    = name_for_possible_rank
+                obj.canonical_name              = name_for_possible_rank
+            end
+        end
+
+        GbifTaxonomy.possible_ranks.each do |possible_ranks|
+            latinized_possible_rank = TaxonomyHelper.latinize_rank(possible_rank)
+            obj.lineage.push(obj[latinized_possible_rank]) unless obj[latinized_possible_rank].to_s.empty? 
+        end
+
+        return obj
+    end
+
     private
     def _is_gene_feature?(s)
         s == 'gene'
@@ -183,6 +242,7 @@ class NcbiGenbankClassifier
         ncbi_taxon_id       = taxon_db_xref.value.gsub('taxon:', '').to_i
 
         ranked = NcbiRankedLineage.find_by(tax_id: ncbi_taxon_id)
+        
         return ranked
     end
 
