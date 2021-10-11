@@ -217,7 +217,19 @@ class Monomial
         # return obj
 
         obj = importer.get_taxon_object_for_unmapped(first_specimen_info)
+        parsed = Biodiversity::Parser.parse(obj.canonical_name)
 
+        if parsed[:parsed]
+            name_full = parsed[:canonical][:full]
+            if obj.taxon_rank.match?('species')
+                obj.canonical_name = name_full
+                obj.taxon_rank = 'genus' unless name_full.match(' ')
+            else
+                latinized_taxon_rank        = TaxonomyHelper.latinize_rank(obj.taxon_rank)
+                obj.canonical_name          = name_full
+                obj[latinized_taxon_rank]   = name_full
+            end
+        end
 
         return obj
     end

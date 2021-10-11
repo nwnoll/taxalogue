@@ -29,25 +29,4 @@ class SpecimensOfTaxon
 
         return specimens_of_taxon
     end
-
-    def self.find_lowest_ranking_taxon(specimen_data, index_by_column_name)
-        _possible_taxa.each do |taxon|
-            return specimen_data[index_by_column_name[taxon]] unless specimen_data[index_by_column_name[taxon]].blank?
-            return nil if specimen_data[index_by_column_name[taxon]] == _possible_taxa.last
-        end
-    end
-
-    def self.create_lineage_ary(specimen_data, index_by_column_name)
-        lineage_ary = []
-        _possible_taxa.reverse.each do |taxon|
-            lineage_ary.push(specimen_data[index_by_column_name[taxon]]) unless specimen_data[index_by_column_name[taxon]].blank?
-        end
-
-        return lineage_ary
-    end
-
-    def self._possible_taxa
-        ## BOLD
-        ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'class_name', 'phylum_name']
-    end
 end

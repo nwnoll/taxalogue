@@ -11,7 +11,7 @@ module StringFormatting
 
     def _to_taxon_info_fasta_all_standard_ranks(obj, divider: '|', last_divider: nil)
         return "#{obj.regnum}#{divider}#{obj.phylum}#{divider}#{obj.classis}#{divider}#{obj.ordo}#{divider}#{obj.familia}#{divider}#{obj.genus}#{divider}#{obj.canonical_name}#{last_divider}" if obj.taxon_rank == 'species' || obj.taxon_rank == 'unranked' || obj.taxon_rank == 'subspecies'
-        return "#{obj.regnum}#{divider}#{obj.phylum}#{divider}#{obj.classis}#{divider}#{obj.ordo}#{divider}#{obj.familia}#{divider}#{divider}#{obj.canonical_name}#{last_divider}"             if obj.taxon_rank == 'genus'
+        return "#{obj.regnum}#{divider}#{obj.phylum}#{divider}#{obj.classis}#{divider}#{obj.ordo}#{divider}#{obj.familia}#{divider}#{obj.canonical_name}#{last_divider}"                       if obj.taxon_rank == 'genus'
         return "#{obj.regnum}#{divider}#{obj.phylum}#{divider}#{obj.classis}#{divider}#{obj.ordo}#{divider}#{obj.canonical_name}#{last_divider}"                                               if obj.taxon_rank == 'family'
         return "#{obj.regnum}#{divider}#{obj.phylum}#{divider}#{obj.classis}#{divider}#{obj.canonical_name}#{last_divider}"                                                                    if obj.taxon_rank == 'order'
         return "#{obj.regnum}#{divider}#{obj.phylum}#{divider}#{obj.canonical_name}#{last_divider}"                                                                                            if obj.taxon_rank == 'class'

@@ -5,6 +5,63 @@ class BoldClassifier
     attr_reader :file_name, :params, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :markers, :regexes_for_markers, :taxonomy_params, :region_params
 
     @@index_by_column_name = nil
+    POSSIBLE_RANKS = ['subspecies_name', 'species_name', 'genus_name', 'family_name', 'order_name', 'class_name', 'phylum_name']
+    
+    ## Had to include these mappings from phylum to kingdom, sicne I do not get the kingdom
+    #  information with the download record and this information should be available for 
+    #  further downstream processing
+    KINGDOM_BY_PHYLUM = {
+        "Acanthocephala" => "Metazoa",
+        "Acoelomorpha" => "Metazoa",
+        "Annelida" => "Metazoa",
+        "Arthropoda" => "Metazoa",
+        "Brachiopoda" => "Metazoa",
+        "Bryozoa" => "Metazoa",
+        "Chaetognatha" => "Metazoa",
+        "Chordata" => "Metazoa",
+        "Cnidaria" => "Metazoa",
+        "Ctenophora" => "Metazoa",
+        "Cycliophora" => "Metazoa",
+        "Echinodermata" => "Metazoa",
+        "Entoprocta" => "Metazoa",
+        "Gastrotricha" => "Metazoa",
+        "Gnathostomulida" => "Metazoa",
+        "Hemichordata" => "Metazoa",
+        "Kinorhyncha" => "Metazoa",
+        "Mollusca" => "Metazoa",
+        "Nematoda" => "Metazoa",
+        "Nematomorpha" => "Metazoa",
+        "Nemertea" => "Metazoa",
+        "Onychophora" => "Metazoa",
+        "Phoronida" => "Metazoa",
+        "Placozoa" => "Metazoa",
+        "Platyhelminthes" => "Metazoa",
+        "Porifera" => "Metazoa",
+        "Priapulida" => "Metazoa",
+        "Rhombozoa" => "Metazoa",
+        "Rotifera" => "Metazoa",
+        "Sipuncula" => "Metazoa",
+        "Tardigrada" => "Metazoa",
+        "Xenacoelomorpha" => "Metazoa",
+        "Bryophyta" => "Plantae",
+        "Chlorophyta" => "Plantae",
+        "Lycopodiophyta" => "Plantae",
+        "Magnoliophyta" => "Plantae",
+        "Pinophyta" => "Plantae",
+        "Pteridophyta" => "Plantae",
+        "Rhodophyta" => "Plantae",
+        "Ascomycota" => "Fungi", 
+        "Basidiomycota" => "Fungi", 
+        "Chytridiomycota" => "Fungi", 
+        "Glomeromycota" => "Fungi", 
+        "Myxomycota" => "Fungi", 
+        "Zygomycota" => "Fungi",
+        "Chlorarachniophyta" => "Protista", 
+        "Ciliophora" => "Protista", 
+        "Heterokontophyta" => "Protista", 
+        "Pyrrophycophyta" => "Protista"
+    }
+
     def initialize(file_name:, params:, file_manager:)
         @file_name            = file_name
         @params               = params
@@ -90,10 +147,68 @@ class BoldClassifier
         return nil
     end
 
+    def self.get_taxon_object_for_unmapped(first_specimen)
+        lineage = BoldClassifier.create_lineage_ary(first_specimen)
+        return nil if lineage.size > 7
+        return nil if lineage.size < 1
+
+        taxon_rank_column_name  = BoldClassifier.get_taxon_rank_field(first_specimen)
+        taxon_rank              = taxon_rank_column_name[0 .. -6]
+
+        phylum          = first_specimen[@@index_by_column_name["phylum_name"]]
+        regnum          = KINGDOM_BY_PHYLUM[phylum]
+        classis         = first_specimen[@@index_by_column_name["class_name"]]
+        ordo            = first_specimen[@@index_by_column_name["order_name"]]
+        familia         = first_specimen[@@index_by_column_name["family_name"]]
+        genus           = first_specimen[@@index_by_column_name["genus_name"]]
+        canonical_name  = first_specimen[@@index_by_column_name[taxon_rank_column_name]]
+
+        obj = OpenStruct.new(
+            taxon_id:               'no_info',
+            regnum:                 regnum,
+            phylum:                 phylum,
+            classis:                classis,
+            ordo:                   ordo,
+            familia:                familia,
+            genus:                  genus,
+            canonical_name:         canonical_name,
+            scientific_name:        'no_info',
+            taxonomic_status:       'no_info',
+            taxon_rank:             taxon_rank,
+            combined:               lineage,
+            comment:                ''
+        )
+        
+        return obj
+    end
+
+    def self.create_lineage_ary(specimen_data)
+        lineage_ary = []
+        POSSIBLE_RANKS.reverse.each do |taxon|
+            next if taxon == "subspecies_name"
+            lineage_ary.push(specimen_data[@@index_by_column_name[taxon]]) unless specimen_data[@@index_by_column_name[taxon]].blank?
+        end
+
+        return lineage_ary
+    end
+
+    def self.find_lowest_ranking_taxon(specimen_data)
+        POSSIBLE_RANKS.each do |taxon|
+            return specimen_data[@@index_by_column_name[taxon]] unless specimen_data[@@index_by_column_name[taxon]].blank?
+            return nil if specimen_data[@@index_by_column_name[taxon]] == POSSIBLE_RANKS.last
+        end
+    end
+
+    def self.get_taxon_rank_field(specimen_data)
+        POSSIBLE_RANKS.each do |taxon|
+            return taxon unless specimen_data[@@index_by_column_name[taxon]].blank?
+        end
+    end
+
     private
     def _get_specimen(row:)
         identifier                    = row[@@index_by_column_name["processid"]]
-        source_taxon_name             = SpecimensOfTaxon.find_lowest_ranking_taxon(row, @@index_by_column_name)
+        source_taxon_name             = BoldClassifier.find_lowest_ranking_taxon(row)
         sequence                      = row[@@index_by_column_name['nucleotides']]
         return nil if sequence.nil? || sequence.blank?
         
@@ -127,10 +242,10 @@ class BoldClassifier
     end
 
     def self.get_source_lineage(row)
-        lineage_ary = SpecimensOfTaxon.create_lineage_ary(row, @@index_by_column_name)
+        lineage_ary = BoldClassifier.create_lineage_ary(row)
     
         OpenStruct.new(
-            name: SpecimensOfTaxon.find_lowest_ranking_taxon(row, @@index_by_column_name),
+            name: BoldClassifier.find_lowest_ranking_taxon(row),
             combined: lineage_ary
         )
     end

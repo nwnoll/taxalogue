@@ -342,7 +342,6 @@ class TaxonHelper
 
     def self.deduce_rank(obj)
         return nil if obj.nil?
-        pp obj
 
         if obj.canonical_name.split(' ').size > 1
             return 'species'

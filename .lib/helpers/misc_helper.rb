@@ -294,7 +294,15 @@ class MiscHelper
         file_of.each do |output_file_class, file|
 
             if output_file_class == OutputFormat::Comparison
-                syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [TaxonomyHelper.get_source_db(params[:taxonomy])])
+                if params[:taxonomy][:unmapped]
+                    ## TODO:
+                    #  Change so that maybe there will be all possible synonyms from all possible sources
+                    #  or that the synonyms of the chosen taxonomy? but ther is no taxonomy chosen
+                    #  it is NcbiTaxonomy in the compariosn file since it is in the else...
+                    syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [TaxonomyHelper.get_source_db(params[:taxonomy])])
+                else
+                    syn = Synonym.new(accepted_taxon: taxonomic_info, sources: [TaxonomyHelper.get_source_db(params[:taxonomy])])
+                end
                 OutputFormat::Comparison.write_to_file(file: file, nomial: nomial, accepted_taxon: taxonomic_info, synonyms_of_taxonomy: syn.synonyms_of_taxonomy, used_taxonomy: TaxonomyHelper.get_source_db(params[:taxonomy]))
                 # OutputFormat::Synonyms.write_to_file(file: synonyms_file, accepted_taxon: syn.accepted_taxon, synonyms_of_taxonomy: syn.synonyms_of_taxonomy)
             end
@@ -329,7 +337,7 @@ class MiscHelper
     def self.write_marshal_file(dir:, file_name:, data:)
         marshal_dump_file_name = dir + file_name
         data_dump = Marshal.dump(data)
-        
+        # byebug
         File.open(marshal_dump_file_name, 'wb') { |f| f.write(data_dump) }
     end
 end

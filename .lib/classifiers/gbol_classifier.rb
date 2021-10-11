@@ -106,6 +106,7 @@ class GbolClassifier
             MiscHelper.extract_zip(name: file_name, destination: file_name.dirname, files_to_extract: [file_name.basename.sub_ext('.csv').to_s, 'metadata.xml'])
         rescue Zip::Error => e
             pp e
+            
             return file_name
         end 
     
@@ -153,6 +154,7 @@ class GbolClassifier
 
             if filter_params[:taxon_rank]
                 has_user_taxon_rank = FilterHelper.has_taxon_tank(rank: filter_params[:taxon_rank], taxonomic_info: taxonomic_info)
+                
                 next unless has_user_taxon_rank
             end
 

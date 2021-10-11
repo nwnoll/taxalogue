@@ -18,7 +18,7 @@ class MultipleJobs
         gbol_dir = nil
         ncbi_dir = nil
 
-        $seq_ids = Set.new# if params[:derep].any?
+        $seq_ids = Set.new # if params[:derep].any?
         
         jobs.each do |job|
             if job.class == BoldJob
@@ -195,6 +195,7 @@ class MultipleJobs
             
             if value.last == :cant_classify
                 count_cant_classify += 1
+
                 next
             end
 
