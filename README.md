@@ -1,4 +1,6 @@
 # taxalogue
+*taxalogue* ist still in development.
+
 *taxalogue* collects DNA sequences from several online sources ([BOLD](https://www.boldsystems.org/), [GenBank](https://www.ncbi.nlm.nih.gov/genbank/) & [GBOL](https://bolgermany.de/gbol1/ergebnisse/results)) and combines them to a reference database. The reference database is useable in the taxonomic assignment step of metabarcoding analyses. Taxonomic incongruencies between the different data sources can be harmonized with respect to available taxonomies. Various filtering options are available regarding sequence quality or metadata information.
 
 ## Table of contents
