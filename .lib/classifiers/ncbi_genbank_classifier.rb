@@ -38,7 +38,7 @@ class NcbiGenbankClassifier
 
         file_names.each do |file|
             file_name_match             = file.to_s.match(/gb\w+\d+/)
-            next unless file.to_s.match?('gbinv113') ## to speed up tests
+            # next unless file.to_s.match?('gbinv113') ## to speed up tests
             base_name                   = file_name_match[0]
             specimens_of_taxon          = Hash.new { |hash, key| hash[key] = {} }
             specimens_of_sequence       = Hash.new
