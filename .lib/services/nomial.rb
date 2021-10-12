@@ -223,7 +223,7 @@ class Monomial
             name_full = parsed[:canonical][:full]
             if obj.taxon_rank.match?('species')
                 obj.canonical_name = name_full
-                obj.taxon_rank = 'genus' unless name_full.match(' ')
+                obj.taxon_rank = 'genus' unless name_full.match?(' ')
             else
                 latinized_taxon_rank        = TaxonomyHelper.latinize_rank(obj.taxon_rank)
                 obj.canonical_name          = name_full

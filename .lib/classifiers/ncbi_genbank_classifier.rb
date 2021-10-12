@@ -38,6 +38,7 @@ class NcbiGenbankClassifier
 
         file_names.each do |file|
             file_name_match             = file.to_s.match(/gb\w+\d+/)
+            next unless file.to_s.match?('gbinv113') ## to speed up tests
             base_name                   = file_name_match[0]
             specimens_of_taxon          = Hash.new { |hash, key| hash[key] = {} }
             specimens_of_sequence       = Hash.new
@@ -128,7 +129,7 @@ class NcbiGenbankClassifier
     end
 
     def self.get_taxon_object_for_unmapped(first_specimen)
-        ncbi_ranked_lineage = _get_ncbi_ranked_lineage(first_specimen)
+        ncbi_ranked_lineage = NcbiGenbankClassifier.get_ncbi_ranked_lineage(first_specimen)
         return nil if ncbi_ranked_lineage.nil?
 
         regnum = ncbi_ranked_lineage.regnum
@@ -143,9 +144,7 @@ class NcbiGenbankClassifier
         ncbi_node = NcbiNode.find_by(tax_id: ncbi_ranked_lineage.tax_id)
         return nil if ncbi_node.nil?
 
-        taxon_rank = ncbi_node.rank
-        ## TODO:
-        #  add other taxa to lineage 
+        taxon_rank = ncbi_node.rank 
         lineage = []
 
         obj = OpenStruct.new(
@@ -164,6 +163,7 @@ class NcbiGenbankClassifier
             comment:                ''
         )
 
+        ## add missing taxa names to obj
         if GbifTaxonomy.possible_ranks.include?(ncbi_node.rank)
             latinized_rank = TaxonomyHelper.latinize_rank(ncbi_node.rank)
             obj[latinized_rank] = ncbi_ranked_lineage.name
@@ -178,12 +178,31 @@ class NcbiGenbankClassifier
             end
         end
 
-        GbifTaxonomy.possible_ranks.each do |possible_ranks|
+        ## add taxa to lineage
+        GbifTaxonomy.possible_ranks.each do |possible_rank|
             latinized_possible_rank = TaxonomyHelper.latinize_rank(possible_rank)
-            obj.lineage.push(obj[latinized_possible_rank]) unless obj[latinized_possible_rank].to_s.empty? 
+            obj.combined.push(obj[latinized_possible_rank]) unless obj[latinized_possible_rank].to_s.empty? 
         end
 
         return obj
+    end
+
+    def self.get_ncbi_ranked_lineage(gb)
+        source_feature      = gb.features.select { |f| NcbiGenbankClassifier.is_source_feature?(f.feature) }.first
+        taxon_db_xref       = source_feature.qualifiers.select { |q| NcbiGenbankClassifier.is_db_taxon_xref_qualifier?(q) }.first
+        ncbi_taxon_id       = taxon_db_xref.value.gsub('taxon:', '').to_i
+
+        ranked = NcbiRankedLineage.find_by(tax_id: ncbi_taxon_id)
+        
+        return ranked
+    end
+
+    def self.is_db_taxon_xref_qualifier?(qualifier)
+        qualifier.qualifier == 'db_xref' && /^taxon:/ === qualifier.value
+    end
+
+    def self.is_source_feature?(s)
+        s == 'source'
     end
 
     private
@@ -230,20 +249,6 @@ class NcbiGenbankClassifier
 
     def _is_no_pseudogene?(qualifiers)
         qualifiers.none? { |q| q.qualifier == 'pseudo' }
-    end
-
-    def self._is_db_taxon_xref_qualifier?(qualifier)
-        qualifier.qualifier == 'db_xref' && /^taxon:/ === qualifier.value
-    end
-
-    def _get_ncbi_ranked_lineage(gb)
-        source_feature      = gb.features.select { |f| _is_source_feature?(f.feature) }.first
-        taxon_db_xref       = source_feature.qualifiers.select { |q| _is_db_taxon_xref_qualifier?(q) }.first
-        ncbi_taxon_id       = taxon_db_xref.value.gsub('taxon:', '').to_i
-
-        ranked = NcbiRankedLineage.find_by(tax_id: ncbi_taxon_id)
-        
-        return ranked
     end
 
     def _get_specimen(gb:, nucs:)

@@ -121,8 +121,9 @@ class MultipleJobs
                         if params[:taxonomy][:unmapped]
                             taxon_record = sorted.first
                             taxon_record.canonical_name = taxon_name
-                            taxon_record.taxon_rank = lca_rank
-                            ## go through every rank that should no information anymore
+                            taxon_record.taxon_rank = lca_rank == 'canonical_name' ? 'species' : lca_rank
+                            
+                            ## go through every rank that should have no information anymore
                             (1...lca_rank_index).each do |i|
                                 taxon_record[GbifTaxonomy.rank_mappings.values[i]] = ""
                             end

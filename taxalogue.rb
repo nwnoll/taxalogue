@@ -388,8 +388,7 @@ params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 MiscHelper.print_params(params)
 
 ## TODO:
-# test implementation of ncbi unmapped!
-byebug
+#  Rank inconsistencies still causin trouble with unmapped gbol
 
 if params[:derep].any? { |opt| opt.last == true }
     DatabaseSchema.drop(:sequence_taxon_object_proxies) if ActiveRecord::Base.connection.table_exists?(:sequence_taxon_object_proxies)
