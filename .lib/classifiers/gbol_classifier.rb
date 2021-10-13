@@ -6,7 +6,7 @@ class GbolClassifier
     attr_reader :file_name, :query_taxon_object, :query_taxon_rank, :fast_run, :query_taxon_name, :file_manager, :filter_params, :taxonomy_params, :region_params, :params
 
     INCLUDED_TAXA = {
-        'Hemiptera' => ['Auchenorrhyncha', 'Heteroptera', 'Sternorrhyncha']
+        'Hemiptera' => ['Auchenorrhyncha', 'Heteroptera', 'Sternorrhyncha'],
     }
 
     RANKS = {
@@ -15,8 +15,8 @@ class GbolClassifier
         3 => ['regnum', 'phylum', 'familia'],
         4 => ['regnum', 'phylum', 'classis', 'familia',],
         5 => ['regnum', 'phylum', 'classis', 'ordo', 'familia'],
-        6 => ['regnum', 'subphylum', 'phylum', 'classis', 'ordo', 'familia'],
-        7 => ['regnum', 'subphylum', 'phylum', 'classis', 'ordo', 'familia', 'subfamilia'],
+        6 => ['regnum', 'phylum', 'subphylum', 'classis', 'ordo', 'familia'],
+        7 => ['regnum', 'phylum', 'subphylum', 'classis', 'ordo', 'familia', 'subfamilia'],
     }
 
     def self.get_source_lineage(row)
