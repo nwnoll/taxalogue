@@ -387,6 +387,12 @@ params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 
 MiscHelper.print_params(params)
 
+# byebug
+# get taxa for other than standard ranks (needs Ncbi taxonomy atm in params):
+# apo = TaxonHelper.get_taxon_record(params, "Apoidea", automatic: true)
+# apos = NcbiNode.where(parent_tax_id: apo.taxon_id)
+# apos.each { |a| pp NcbiRankedLineage.where(tax_id: a.tax_id) }
+
 if params[:derep].any? { |opt| opt.last == true }
     DatabaseSchema.drop(:sequence_taxon_object_proxies) if ActiveRecord::Base.connection.table_exists?(:sequence_taxon_object_proxies)
     DatabaseSchema.drop(:taxon_object_proxies) if ActiveRecord::Base.connection.table_exists?(:taxon_object_proxies)
