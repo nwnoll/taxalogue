@@ -38,11 +38,12 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
         
         bundle install
 
-            If you do get an error message like: **Could not find 'bundler' (2.2.3) required by your /home/user/taxalogue-0.9.0/Gemfile.lock. (Gem::GemNotFoundException)**
-            
-            try the following:
-            gem install bundler:2.2.3
-            bundle update --bundler
+        # If you do get an error message like: Could not find 'bundler' (2.2.3) required by your /home/user/taxalogue-0.9.0/Gemfile.lock. (Gem::GemNotFoundException)
+        
+        # try the following:
+        gem install bundler:2.2.3
+        bundle update --bundler
+        bundle install
 
 5. Create a co1 reference database for a taxon of your choice, e.g. Arthropoda:
 
