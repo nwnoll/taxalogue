@@ -45,6 +45,13 @@ class BoldJob
                 ## TODO:
                 ## here i shoul call functions for user provided dirs that have not been
                 ## downloaded by taxalogue
+            elsif params[:download][:bold_dir]
+                ## NEXT
+                ## now i need to download the failed files
+                ## the problem is that it will create a new folder...
+                ## it should "just" add the downloads to the existing folder
+                puts "There were no downloads available, therefore also no failed downloads. Consider starting again: bundle exec ruby taxalogue.rb download --all"
+                exit
             else
                 download_file_managers  = _download_files
             end
@@ -52,6 +59,11 @@ class BoldJob
             did_use_marshal_file    = false
         else
             did_use_marshal_file    =  true
+        end
+
+        if params[:download][:bold_dir]
+            download_file_managers = _download_failed_files
+            _write_marshal_files(download_file_managers) 
         end
 
         _classify_downloads(download_file_managers)     unless download_only
@@ -121,10 +133,148 @@ class BoldJob
         return :success
     end
 
+    def _download_failed_files
+        tree_file_name                  = params[:download][:bold_dir] + ".bold_download_tree_info.txt"
+        tree                            = DownloadInfoParser._parse(tree_file_name)
+        failed_tree_nodes               = DownloadInfoParser.get_download_failures(tree_file_name)
+        download_file_managers          = DownloadInfoParser.get_file_managers_from_download_info_tree(tree_file_name)
+        failed_names                    = failed_tree_nodes.collect { |node| node.name }
+        failed_download_file_managers   = download_file_managers.select { |dfm| failed_names.include?(dfm.config.name)  }
+        still_failed_nodes              = []
+        root_node                       = tree.root
+
+        root_dfm = download_file_managers.detect { |dfm| dfm.config.name == tree.root.name }
+        return :cant_find_root if root_dfm.nil?
+
+        @root_download_dir = root_dfm.base_dir.basename
+
+        GbifTaxonomy.possible_ranks.size.times do |i|
+            break if i >= (GbifTaxonomy.possible_ranks.size - 1)
+            break if failed_tree_nodes.empty?
+
+            ## go through each failed tree node and try downloading it
+            # failed_tree_nodes.each do |node|
+            Parallel.map(failed_tree_nodes, in_threads: num_threads) do |node|
+                file_manager = failed_download_file_managers.detect { |dfm| node.name == dfm.config.name }
+                next if file_manager.nil?
+    
+                stats_file_path = file_manager.dir_path + "#{node.name}_stats.json"
+                stats_downloader = HttpDownloader2.new(address: _bold_stats_api(node.name), destination: stats_file_path)
+                no_stats_file = nil
+    
+                stats_file_path = file_manager.dir_path + "#{node.name}_stats.json"
+                rank_status = _get_rank_status(node.name, stats_file_path)
+                
+                file_manager.status = 'loading'
+                config = file_manager.config
+
+                puts "downloading failed taxon: #{node.name}"
+    
+                downloader = config.downloader.new(config: config)
+                download_response = _download_response(downloader: downloader, file_path: file_manager.file_path)
+    
+                node_record  = TaxonHelper.get_taxon_record(params, node.name, automatic: true)
+                next if node_record.nil?
+
+                node.content = [node_record]
+                if download_response == :success
+                    node.content[1] = @success
+                    node.content[2] = download_response.to_s
+                    file_manager.status = 'success'
+                    sleep 1
+
+                elsif download_response == :empty_file
+                    node.content[1] = @failure
+                    node.content[2] = download_response.to_s
+                    file_manager.status = 'failure'
+                    sleep 5
+
+                elsif download_response == :read_timeout
+                    node.content[1] = @failure
+                    node.content[2] = download_response.to_s
+                    file_manager.status = 'failure'
+                    sleep 5
+
+                elsif download_response == :open_timeout || download_response == :server_offline || download_response == :socket_error || download_response == :other_error 
+                    node.content[1] = @failure
+                    node.content[2] = download_response.to_s
+                    file_manager.status = 'failure'
+                end
+
+                puts "downloading failed taxon: #{node.name} => #{file_manager.status}"
+                if file_manager.status == 'failure' && node_record.taxon_rank != 'species'
+                    puts "starting lower ranks soon"
+                    still_failed_nodes.push(node)
+                end
+            end
+
+            failed_tree_nodes = still_failed_nodes
+            
+            ## find lower ranks for failed nodes
+            failed_tree_nodes.each do |failed_node|
+                node_record                     = failed_node.content.first
+                node_name                       = failed_node.name
+                index_of_rank                   = GbifTaxonomy.possible_ranks.index(node_record.taxon_rank)
+                index_of_lower_rank             = index_of_rank - 1
+                taxon_rank_to_try               = GbifTaxonomy.possible_ranks[index_of_lower_rank]
+                
+                taxa_records_and_names_to_try = nil
+                if taxonomy_params[:gbif] || taxonomy_params[:gbif_backbone]
+                    taxa_records_and_names_to_try   = GbifTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
+        
+                elsif taxonomy_params[:ncbi]
+                    taxa_records_and_names_to_try   = NcbiTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try, params: params)
+        
+                else
+                    taxa_records_and_names_to_try   = NcbiTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try, params: params)
+                end
+    
+                next if taxa_records_and_names_to_try.nil?
+    
+                added_names = []
+                taxa_records_and_names_to_try.each do |record_and_name|
+    
+                    record  = record_and_name.first
+                    name    = record_and_name.last
+                    
+                    next if TaxonHelper.is_extinct?(name)
+                    next if added_names.include?(name) # prevent breaking if name occurs multiple times maybe due to wrong backbone
+    
+                    failed_node << Tree::TreeNode.new(name, [record, @pending, 'pending'])
+                    added_names.push(name)
+                end
+            end
+        end
+
+        dl_path_public      = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_NAME)
+        dl_path_hidden      = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_NAME}")
+        rs_path_public      = Pathname.new(result_file_manager.dir_path + DOWNLOAD_INFO_NAME)
+        rs_path_hidden      = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
+        dl_tree_path_hidden = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_TREE_NAME}")
+        dl_tree_path_public = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_TREE_NAME)
+        
+        _write_download_info_tree(paths: [dl_tree_path_hidden, dl_tree_path_public], root_node: root_node)
+        
+        failures    = DownloadInfoParser.get_download_failures(dl_tree_path_hidden)
+        success     = failures.empty? ? true : false
+        
+        if download_only
+            DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden], success: success, download_file_managers: download_file_managers, result_file_manager: result_file_manager)
+        else
+            DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers, result_file_manager: result_file_manager)
+        end
+        
+        unless failures.empty?
+            ## maybe directly try to download again?
+        end
+
+        return download_file_managers
+    end
+
     def _download_files
         root_node               = Tree::TreeNode.new(taxon_name, [taxon, @pending, 'pending'])
         num_of_ranks            = GbifTaxonomy.possible_ranks.size
-        reached_genus_level     = false
+        reached_species_level   = false
         download_file_managers  = []
         rest_taxa               = Hash.new
 
@@ -146,7 +296,7 @@ class BoldJob
                 no_stats_file = nil
 
                 stats_file_path = file_manager.dir_path + "#{node.name}_stats.json"
-                rank_status = _get_rank_status(node.name, stats_file_path, reached_genus_level)
+                rank_status = _get_rank_status(node.name, stats_file_path, reached_species_level)
 
                 node.content[1] = @loading
                 node.content[2] = 'loading'
@@ -180,7 +330,7 @@ class BoldJob
                     sleep 5
 
                 elsif download_response == :read_timeout
-                    if reached_genus_level
+                    if reached_species_level
                         3.times do
                             sleep 5
                             download_response = _download_response(downloader: downloader, file_path: file_manager.file_path)
@@ -227,7 +377,7 @@ class BoldJob
                 _print_download_progress_report(root_node: root_node, rank_level: i)
             end
 
-            break if reached_genus_level
+            break if reached_species_level
             # break if i == 2
 
             failed_nodes = root_node.find_all { |node| node.content[1] == @failure && node.is_leaf? }
@@ -236,7 +386,7 @@ class BoldJob
                 node_name                       = failed_node.name
                 index_of_rank                   = GbifTaxonomy.possible_ranks.index(node_record.taxon_rank)
                 index_of_lower_rank             = index_of_rank - 1
-                reached_genus_level             = true if index_of_lower_rank == 1
+                reached_species_level           = true if index_of_lower_rank == 0
                 taxon_rank_to_try               = GbifTaxonomy.possible_ranks[index_of_lower_rank]
                 
                 taxa_records_and_names_to_try = nil
@@ -303,7 +453,7 @@ class BoldJob
 
             root_node_copy = root_node.detached_subtree_copy
             root_node_copy.each do |node|
-                node.content = node.content.last
+                node.content = node.content.is_a?(Array) ? node.content.last : node.content 
             end
 
             real_failed_nodes = root_node.find_all { |node| node.is_leaf? && _real_failure(node.content[2]) }
@@ -515,7 +665,7 @@ class BoldJob
         "http://www.boldsystems.org/index.php/API_Public/stats?taxon=#{name}&format=json"
     end
 
-    def _get_rank_status(name, file_path, reached_genus_level)
+    def _get_rank_status(name, file_path, reached_species_level = nil)
         failing_taxa = ['Arthropoda', 'Insecta', 'Arachnida', 'Collembola', 'Malacostraca', 'Carabidae']#, 'Insecta', 'Arachnida', 'Malacostraca', 'Collembola']
         stats_downloader = HttpDownloader2.new(address: _bold_stats_api(name), destination: file_path)
         no_stats_file = nil
@@ -532,14 +682,14 @@ class BoldJob
 
         rank_status = nil
         if no_stats_file
-            if reached_genus_level
-                rank_status = :genus_rank
+            if reached_species_level
+                rank_status = :species_rank
             else
                 rank_status = :failing_taxon
             end
         else
-            if reached_genus_level
-                rank_status = :genus_rank
+            if reached_species_level
+                rank_status = :species_rank
             else
                 stats = MiscHelper.json_file_to_hash(file_path)
                 num_total_records = stats["total_records"]

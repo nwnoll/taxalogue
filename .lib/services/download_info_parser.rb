@@ -84,6 +84,7 @@ class DownloadInfoParser
         file_managers = []
         tree.each do |node|
             config = DownloadInfoParser._create_config(node, root_download_dir)
+            
             if node.is_root?
                 file_manager = config.file_manager(root_download_dir)
                 file_manager.status = node.content
@@ -92,9 +93,11 @@ class DownloadInfoParser
                 file_manager.status = node.content
             end
 
+            
 
-            if node.is_leaf? && node.content == 'read_timeout'
-                file_manager.status = 'success'
+
+            # if node.is_leaf? && node.content == 'read_timeout'
+            #     file_manager.status = 'success'
                 ## TODO: remove lateron, this is atm the case since I downloaded the failed ones
                 ## manually
                 
@@ -105,7 +108,7 @@ class DownloadInfoParser
                 # puts file_manager.file_path
                 # pp node.content
                 # sleep 2
-            end
+            # end
 
             file_managers.push(file_manager)
         end

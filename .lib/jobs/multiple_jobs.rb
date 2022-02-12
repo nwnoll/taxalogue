@@ -22,14 +22,21 @@ class MultipleJobs
         
         jobs.each do |job|
             if job.class == BoldJob
-                bold_dir = BoldDownloadCheckHelper.ask_user_about_download_dirs(params, only_successful = false)
+                if params[:download][:bold_dir]
+                    bold_dir = Pathname.new(params[:download][:bold_dir])
+                else
+                    bold_dir = BoldDownloadCheckHelper.ask_user_about_download_dirs(params, only_successful = false)
+                end
             elsif job.class == GbolJob
+                ## TODO: implement user provided gbol_dir for failure check and download
                 gbol_dir = GbolDownloadCheckHelper.ask_user_about_gbol_download_dirs(params)
             elsif job.class == NcbiGenbankJob
+                ## TODO: implement user provided ncbi_dir for failure check and download
+                ## NcbiDownloadCheckHelper gives a struct back with additional infos...
                 ncbi_dir = NcbiDownloadCheckHelper.ask_user_about_download_dirs(params, only_successful = true)
             end
         end
-    
+
         used_source_db_ary = []
         jobs.each do |job|
             if job.class == BoldJob
@@ -44,6 +51,7 @@ class MultipleJobs
             end
         end
 
+        ## dereplicate
         if params[:derep].any? { |opt| opt.last == true }
             seqs            = Sequence.where(id: $seq_ids)
             file_manager    = jobs.last.result_file_manager

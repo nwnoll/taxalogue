@@ -101,10 +101,18 @@ subcommands = {
 
     download: OptionParser.new do |opts|
 		opts.banner = "Usage: download [options]"
-		opts.on('-a', '--all')
-		opts.on('-g', '--gbol')
-		opts.on('-o', '--bold')
-		opts.on('-k', '--genbank')
+		opts.on('-a', '--all', 'Download records from BOLD, GenBank and GBOL')
+		opts.on('-g', '--gbol', 'Download records from GBOL')
+		opts.on('-o', '--bold', 'Download records from BOLD')
+		opts.on('-G GBOL_DIR', String, '--gbol_dir', 'Path of GBOL directory that should be checked for failures. The failed downloads will be downloaded again. !not implemented yet!') do |opt|
+            Pathname.new(opt)
+        end
+		opts.on('-G BOLD_DIR', String, '--bold_dir', 'Path of BOLD directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
+            Pathname.new(opt)
+        end
+		opts.on('-G GENBANK_DIR', String, '--genbank_dir', 'Path of GenBank directory that should be checked for failures. The failed downloads will be downloaded again. !not implemented yet!') do |opt|
+            Pathname.new(opt)
+        end
 		opts.on('-i', '--inv_contaminants', 'Download possible invertebrate contaminants')
    	end,
 
@@ -375,6 +383,11 @@ if params[:download].any? && params[:derep].any? { |opt| opt.last == true }
     params[:derep].keys.each { |key| params[:derep][key] = false }
 end
 
+## TODO: maybe I have to prevent create, classify, etc if this is done...
+params[:download][:bold]    = true if params[:download][:bold_dir]
+params[:download][:gbol]    = true if params[:download][:gbol_dir]
+params[:download][:genbank] = true if params[:download][:genbank_dir]
+
 if params[:version]
     puts 'taxalogue v0.9.0'
     
@@ -386,6 +399,19 @@ end
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 
 MiscHelper.print_params(params)
+
+
+# ## BOLD/Arthropoda-20220208T2257
+# tree_file_name = "/home/nnoll/phd/taxalogue/downloads/BOLD/Arthropoda-20220208T2257/.bold_download_tree_info.txt"
+# download_file_name = "/home/nnoll/phd/taxalogue/downloads/BOLD/Arthropoda-20220208T2257/.bold_download_info.txt"
+# p DownloadInfoParser.download_was_successful?(download_file_name)
+# failures = DownloadInfoParser.get_download_failures(tree_file_name)
+
+# failures.each { |failure| byebug }
+# # failures.each { |failure| puts failure.name }
+
+
+# exit
 
 # byebug
 # get taxa for other than standard ranks (needs Ncbi taxonomy atm in params):
