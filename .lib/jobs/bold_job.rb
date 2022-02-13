@@ -120,13 +120,13 @@ class BoldJob
             downloader.run
             return :empty_file if File.empty?(file_path)
             return :server_offline if _server_is_offline(file_path)
-        rescue Net::ReadTimeout
+        rescue Net::ReadTimeout => e
             return :read_timeout
-        rescue Net::OpenTimeout
+        rescue Net::OpenTimeout => e
             return :open_timeout
-        rescue SocketError
+        rescue SocketError => e
             return :socket_error
-        rescue StandardError
+        rescue StandardError => e
             return :other_error
         end
 
