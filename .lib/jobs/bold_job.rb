@@ -303,7 +303,7 @@ class BoldJob
                 file_manager.status = 'loading'
 
                 ## skip since download never succeeds due to too many records or other reasons
-                if rank_status == :no_records || rank_status == :too_many_records || rank_status == :failing_taxon
+                if rank_status == :no_records || rank_status == :failing_taxon # || rank_status == :too_many_records 
                     node.content[1] = @failure
                     node.content[2] = rank_status.to_s
                     file_manager.status = 'failure'
@@ -666,7 +666,7 @@ class BoldJob
     end
 
     def _get_rank_status(name, file_path, reached_species_level = nil)
-        failing_taxa = ['Arthropoda', 'Insecta', 'Arachnida', 'Collembola', 'Malacostraca', 'Carabidae']#, 'Insecta', 'Arachnida', 'Malacostraca', 'Collembola']
+        failing_taxa = ['Arthropoda', 'Insecta', 'Arachnida', 'Collembola', 'Malacostraca']
         stats_downloader = HttpDownloader2.new(address: _bold_stats_api(name), destination: file_path)
         no_stats_file = nil
 
@@ -691,14 +691,19 @@ class BoldJob
             if reached_species_level
                 rank_status = :species_rank
             else
-                stats = MiscHelper.json_file_to_hash(file_path)
+                begin
+                    stats = MiscHelper.json_file_to_hash(file_path)
+                rescue StandardError
+                    return :malformed_stats_file
+                end
                 num_total_records = stats["total_records"]
+                
                 if !num_total_records.nil? && num_total_records == 0
                     rank_status = :no_records
-                elsif !num_total_records.nil? && num_total_records <= 90_000
-                    rank_status = :suitable_records_num
-                else
-                    rank_status = :too_many_records
+                # elsif !num_total_records.nil? && num_total_records <= 90_000
+                #     rank_status = :suitable_records_num
+                # else
+                #     rank_status = :too_many_records
                 end
             end
         end
