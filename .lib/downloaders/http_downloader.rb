@@ -5,9 +5,9 @@ class HttpDownloader
     attr_reader :config, :address
 
     public
-    def initialize(config: nil, address: nil)
+    def initialize(config: nil)
         @config = config
-        @address = address
+        @address = config.address
     end
 
     def run

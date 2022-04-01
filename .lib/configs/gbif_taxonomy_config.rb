@@ -5,7 +5,7 @@ class GbifTaxonomyConfig
     def initialize()
         @name = 'GBIF_TAXONOMY'
     end
-  
+
     def downloader
         HttpDownloader
     end
@@ -15,9 +15,9 @@ class GbifTaxonomyConfig
             'GbifTaxonomyImporter': 'Taxon.tsv',
         }
     end
-  
+
     def address
-        'https://hosted-datasets.gbif.org/datasets/backbone/backbone-current.zip'
+        'https://hosted-datasets.gbif.org/datasets/backbone/current/backbone.zip'
     end
 
     def file_type
@@ -26,6 +26,6 @@ class GbifTaxonomyConfig
 
     def file_manager
         FileManager.new(name: name, versioning: false, base_dir: 'downloads/', config: self)
-      end
-  end
+    end
+end
   

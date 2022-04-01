@@ -26,7 +26,7 @@ class TestGbifTaxonomyConfig < Test::Unit::TestCase
     end
 
     def test_address
-        assert_equal 'https://hosted-datasets.gbif.org/datasets/backbone/backbone-current.zip', @gbif_taxonomy_config.address
+        assert_equal 'https://hosted-datasets.gbif.org/datasets/backbone/current/backbone.zip', @gbif_taxonomy_config.address
     end
 
     def test_file_type
