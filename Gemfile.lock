@@ -57,7 +57,7 @@ GEM
       power_assert
     thread_safe (0.3.6)
     tty-color (0.5.2)
-    tzinfo (1.2.7)
+    tzinfo (1.2.10)
       thread_safe (~> 0.1)
     zeitwerk (2.4.0)
 
