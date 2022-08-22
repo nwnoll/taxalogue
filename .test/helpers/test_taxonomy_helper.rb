@@ -9,7 +9,7 @@ class TestTaxonomyHelper < Test::Unit::TestCase
         assert_equal 'ordo',    TaxonomyHelper.latinize_rank('order')
         assert_equal 'familia', TaxonomyHelper.latinize_rank('family')
         assert_equal 'genus',   TaxonomyHelper.latinize_rank('genus')
-        assert_equal 'species', TaxonomyHelper.latinize_rank('species')
+        assert_equal 'canonical_name', TaxonomyHelper.latinize_rank('species')
         assert_equal nil, TaxonomyHelper.latinize_rank(nil)
         assert_equal nil, TaxonomyHelper.latinize_rank([])
         assert_equal nil, TaxonomyHelper.latinize_rank(['test1', 'test2'])

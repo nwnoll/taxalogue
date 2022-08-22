@@ -31,9 +31,11 @@ class MultipleJobs
                 ## TODO: implement user provided gbol_dir for failure check and download
                 gbol_dir = GbolDownloadCheckHelper.ask_user_about_gbol_download_dirs(params)
             elsif job.class == NcbiGenbankJob
-                ## TODO: implement user provided ncbi_dir for failure check and download
-                ## NcbiDownloadCheckHelper gives a struct back with additional infos...
-                ncbi_dir = NcbiDownloadCheckHelper.ask_user_about_download_dirs(params, only_successful = true)
+                if params[:download][:genbank_dir]
+                    ncbi_dir = NcbiDownloadCheckHelper.create_release_info_struct(params[:download][:genbank_dir], params)
+                else
+                    ncbi_dir = NcbiDownloadCheckHelper.ask_user_about_download_dirs(params, only_successful = true)
+                end
             end
         end
 
@@ -65,7 +67,9 @@ class MultipleJobs
                 source_db: source_db_string
             )
 
-            seqs.each do |seq|
+            Sequence.where(id: $seq_ids).find_each do |seq|
+            # Sequence.find_each do |seq|
+                # p seq
                 if seq.taxon_object_proxies.size < 2
                     specimen_data = _create_specimen_data(seq, seq.sequence_taxon_object_proxies.first)
                     MiscHelper.write_to_files(
@@ -195,18 +199,38 @@ class MultipleJobs
 
         puts
         MiscHelper.OUT_header "Output locations:"
-        puts
         result_file_manager = nil
         count_cant_classify = 0
+
+
         results_of.each do |key, value|
             result_file_manager     = value.first
             download_file_managers  = value.last
             
-            if value.last == :cant_classify
-                count_cant_classify += 1
+            ## TODO
+            # What should I do with incomplete classifications?
+            # I halso have to see what i do at caller
+            if download_file_managers == :cant_classify
+                MiscHelper.OUT_error "#{_from_class_to_source_db(key)} classification failed, please try again"
 
+
+                count_cant_classify += 1
                 next
             end
+
+
+            if download_file_managers == :cant_download
+                MiscHelper.OUT_error "#{_from_class_to_source_db(key)} download failed, please try again"
+                next
+            end
+
+
+            if key == NcbiGenbankJob && download_file_managers == :not_current_release
+                MiscHelper.OUT_error "You have an old #{_from_class_to_source_db(key)} release. Only the current release is downloadable"
+                puts "Consider downloading the current release with: bundle exec ruby taxalogue.rb download --genbank"
+                next
+            end
+
 
             download_file_managers.each_with_index do |download_file_manager, i|
                 if key == BoldJob
@@ -219,17 +243,20 @@ class MultipleJobs
             end
         end
 
+
         if count_cant_classify == results_of.keys.size
             MiscHelper.OUT_error 'No output' unless download_only
             FileUtils.rm_rf(result_file_manager.dir_path)
 
+            
             return :failure
         else
             unless download_only
                 MiscHelper.write_marshal_file(dir: result_file_manager.dir_path, data: result_file_manager, file_name: '.result_file_manager.dump')
                 MiscHelper.OUT_success result_file_manager.dir_path
             end
-            
+
+
             return :success
         end
     end
@@ -242,6 +269,17 @@ class MultipleJobs
         specimen_data[:latitude]    =  seq_top.first_specimen_latitude
         specimen_data[:longitude]   =  seq_top.first_specimen_longitude
 
+
         return specimen_data
+    end
+
+    def _from_class_to_source_db(klass)
+        if klass == BoldJob
+            return "BOLD"
+        elsif klass == NcbiGenbankJob
+            return "GenBank"
+        elsif klass == GbolJob
+            return "GBOL"
+        end
     end
 end

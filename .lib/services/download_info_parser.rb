@@ -5,12 +5,12 @@ class DownloadInfoParser
     def self.download_was_successful?(file_path)
         return false unless File.file?(file_path)
         
-        file = File.open(file_path, 'r')
 
-        line = File.readlines(file)[1]
+        file    = File.open(file_path, 'r')
+        line    = File.readlines(file)[1]
         success = line =~ /success: true/ ? true : false
-
         file.rewind
+
 
         return success
     end
@@ -19,17 +19,16 @@ class DownloadInfoParser
         success = DownloadInfoParser.download_was_successful?(file_path)
         return [] if success
         
+
         tree = DownloadInfoParser._parse(file_path)
-
         failures = tree.find_all { |node| node.is_leaf? && _real_failure(node.content) }
-
         # tree.print_tree(level = tree.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content}" })
+
 
         return failures
     end
 
     def self._parse(file_path)
-
         file = File.open(file_path, 'r')
         hash = nil
         file.each do |line|
@@ -37,21 +36,20 @@ class DownloadInfoParser
                 hash = JSON.parse(line)
             end
         end
-
         file.rewind
 
-        tree = Tree::TreeNode.from_hash(hash)
 
+        tree = Tree::TreeNode.from_hash(hash)
         tree.each do |node|
             name_content = node.name
             name_content = name_content[1..-2]
             name_content.gsub!('"', '')
             name, content = name_content.split(', ')
 
+
             node.rename(name)
             node.content = content
         end
-
         # tree.print_tree(level = tree.node_depth, max_depth = nil, block = lambda { |node, prefix| puts "#{prefix} #{node.name}".ljust(30) + " #{node.content}" })
 
 
@@ -77,13 +75,13 @@ class DownloadInfoParser
         end
     end
 
-    def self.get_file_managers_from_download_info_tree(tree_file_name)
+    def self.get_file_managers_from_download_info_tree(tree_file_name:, marker_objects:)
         tree_file_path = Pathname.new(tree_file_name)
         tree = DownloadInfoParser._parse(tree_file_path)
         root_download_dir = Pathname.new(tree_file_path.dirname.basename)
         file_managers = []
         tree.each do |node|
-            config = DownloadInfoParser._create_config(node, root_download_dir)
+            config = DownloadInfoParser._create_config(node: node, root_download_dir: root_download_dir, marker_objects: marker_objects)
             
             if node.is_root?
                 file_manager = config.file_manager(root_download_dir)
@@ -112,18 +110,18 @@ class DownloadInfoParser
 
             file_managers.push(file_manager)
         end
+    
         
         return file_managers
     end
 
 
-
-    def self._create_config(node, root_download_dir)
+    def self._create_config(node:, root_download_dir:, marker_objects:)
         if node.parentage
             parent_dir    = _get_parentage_as_dir_structure(node, root_download_dir)
-            config        = BoldConfig.new(name: node.name, markers: nil, parent_dir: parent_dir)
+            config        = BoldConfig.new(name: node.name, markers: marker_objects, parent_dir: parent_dir)
         else
-            config        = BoldConfig.new(name: node.name, markers: nil, is_root: true)
+            config        = BoldConfig.new(name: node.name, markers: marker_objects, is_root: true)
         end
     end
 

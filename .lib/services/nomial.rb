@@ -179,44 +179,9 @@ class Monomial
     end
 
     def unmapped_taxonomy(first_specimen_info:, importer:)
-        # # TODO: just exclude unmapped and retain? seems no direct value and every sequence gets catched atm 
-        # ## just exclude?
-        # ncbi_name_record = NcbiName.find_by(name: name)
-        # tax_id = ncbi_name_record.tax_id if ncbi_name_record
-        # ncbi_node_record = NcbiNode.find_by(tax_id: tax_id) if ncbi_name_record
-        # ncbi_ranked_lineage_record = NcbiRankedLineage.find_by(tax_id: tax_id) if ncbi_name_record
-        # gbif_record = GbifTaxonomy.where(canonical_name: name)
-
-        # regnum = ncbi_name_record.nil? ? (gbif_record ? gbif_record.regnum : nil) : (ncbi_node_record.rank == 'kingdom' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.regnum)
-        # phylum = ncbi_name_record.nil? ? (gbif_record ? gbif_record.phylum : nil) : (ncbi_node_record.rank == 'phylum' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.phylum)
-        # classis = ncbi_name_record.nil? ? (gbif_record ? gbif_record.classis : nil) : (ncbi_node_record.rank == 'class' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.classis)
-        # ordo = ncbi_name_record.nil? ? (gbif_record ? gbif_record.ordo : nil) : (ncbi_node_record.rank == 'order' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.ordo)
-        # familia = ncbi_name_record.nil? ? (gbif_record ? gbif_record.familia : nil) : (ncbi_node_record.rank == 'family' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.familia)
-        # genus = ncbi_name_record.nil? ? (gbif_record ? gbif_record.genus : nil) : (ncbi_node_record.rank == 'genus' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.genus)
-        # canonical_name = ncbi_name_record.nil? ? (gbif_record ? gbif_record.canonical_name : nil) : (ncbi_node_record.rank == 'species' ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.species)
-
-        # rank = ncbi_node_record.nil? ? (gbif_record ? gbif_record.taxon_rank : nil) : ncbi_node_record.rank
-        # source_lineage = importer.get_source_lineage(first_specimen_info)
-
-        # obj = OpenStruct.new(
-        #     taxon_id:               tax_id,
-        #     regnum:                 regnum,
-        #     phylum:                 phylum,
-        #     classis:                classis,
-        #     ordo:                   ordo,
-        #     familia:                familia,
-        #     genus:                  genus,
-        #     canonical_name:         canonical_name,
-        #     scientific_name:        'no_info',
-        #     taxonomic_status:       'no_info',
-        #     taxon_rank:             rank,
-        #     combined:               source_lineage.combined,
-        #     comment:                ''
-        # )
-
-        # return obj
-
         obj = importer.get_taxon_object_for_unmapped(first_specimen_info)
+        return nil if obj.nil?
+        
         parsed = Biodiversity::Parser.parse(obj.canonical_name)
 
         if parsed[:parsed]
@@ -226,8 +191,13 @@ class Monomial
                 obj.taxon_rank = 'genus' unless name_full.match?(' ')
             else
                 latinized_taxon_rank        = TaxonomyHelper.latinize_rank(obj.taxon_rank)
-                obj.canonical_name          = name_full
-                obj[latinized_taxon_rank]   = name_full
+                
+                obj.canonical_name = name_full
+                if latinized_taxon_rank.nil?
+                    nil
+                else
+                    obj[latinized_taxon_rank] = name_full
+                end
             end
         end
 

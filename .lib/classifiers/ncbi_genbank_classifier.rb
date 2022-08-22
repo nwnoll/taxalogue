@@ -28,31 +28,29 @@ class NcbiGenbankClassifier
     end
 
     def run
-        MiscHelper.OUT_header('Starting to classify NCBI GenBank downloads')
-        puts
+        # MiscHelper.OUT_header('Starting to classify NCBI GenBank downloads')
+
 
         file_names = []
         file_names.push(file_name)
-
         erroneous_files = []
+
 
         file_names.each do |file|
             file_name_match             = file.to_s.match(/gb\w+\d+/)
-            # next unless file.to_s.match?('gbinv113') ## to speed up tests
+            # next unless file.to_s.match?('gbinv194') ## to speed up tests
             base_name                   = file_name_match[0]
             specimens_of_taxon          = Hash.new { |hash, key| hash[key] = {} }
             specimens_of_sequence       = Hash.new
 
-            file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'gbol') unless params[:derep].any? { |opt| opt.last == true }
+            file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'ncbi') unless params[:derep].any? { |opt| opt.last == true }
             
             begin
                 Zlib::GzipReader.open(file) do |gz_file|
-
-                    ff = Bio::FlatFile.new(Bio::GenBank, gz_file)
-
+                    ff = Bio::FlatFile.new(Bio::GenBank, gz_file)                    
                     ff.each_entry do |gb|
                         _matches_query_taxon(gb) ? nil : next if fast_run
-                        
+
                         features_of_gene  = gb.features.select { |f| _is_gene_feature?(f.feature) && _is_gene_of_marker?(f.qualifiers) && _is_no_pseudogene?(f.qualifiers) }
                         next unless features_of_gene.size == 1 ## TODO: why 1 ?
                         
@@ -72,15 +70,17 @@ class NcbiGenbankClassifier
                     end
                 end
             rescue Zlib::Error => e
+                puts file
+                p e
                 erroneous_files.push(file)
-                
-                return erroneous_files
             end
 
-            puts "file '#{file_name}'' was read"
+
+            puts "file '#{file_name}' was read"
             puts 
     
             puts 'Starting taxa search'
+
 
             specimens_of_taxon.keys.each do |taxon_name|
                 nomial              = specimens_of_taxon[taxon_name][:nomial]
@@ -92,8 +92,9 @@ class NcbiGenbankClassifier
                 next unless taxonomic_info
                 next unless taxonomic_info.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name
                 
+
                 if filter_params[:taxon_rank]
-                    has_user_taxon_rank = FilterHelper.has_taxon_tank(rank: filter_params[:taxon_rank], taxonomic_info: taxonomic_info)
+                    has_user_taxon_rank = FilterHelper.has_taxon_rank(rank: filter_params[:taxon_rank], taxonomic_info: taxonomic_info)
                     next unless has_user_taxon_rank
                 end
     
@@ -101,19 +102,24 @@ class NcbiGenbankClassifier
                     DerepHelper.fill_specimens_of_sequence(specimens: specimens_of_taxon[taxon_name][:data], specimens_of_sequence: specimens_of_sequence, taxonomic_info: taxonomic_info, taxon_name: taxon_name, first_specimen_info: first_specimen_info)
                 else
                     MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
-                    ## TODO: Check if it should also be done for Comparison
-                    OutputFormat::Tsv.rewind
-                    file_of.each { |fc, fh| fh.close }
                 end
             end
+
+            unless params[:derep].any? { |opt| opt.last == true }
+                ## TODO: Check if it should also be done for Comparison
+                OutputFormat::Tsv.rewind
+                file_of.each { |fc, fh| fh.close }
+            end
+
 
             puts 'taxon search completed'
             puts
 
+
             if params[:derep].any? { |opt| opt.last == true }
                 puts "Starting dereplication for file #{file_name}"
                 
-                DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name)
+                DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name, 'ncbi')
                 
                 puts 'dereplication finished'
                 puts
@@ -125,6 +131,7 @@ class NcbiGenbankClassifier
 
         end
 
+        
         return erroneous_files
     end
 
@@ -132,14 +139,14 @@ class NcbiGenbankClassifier
         ncbi_ranked_lineage = NcbiGenbankClassifier.get_ncbi_ranked_lineage(first_specimen)
         return nil if ncbi_ranked_lineage.nil?
 
-        regnum = ncbi_ranked_lineage.regnum
-        phylum = ncbi_ranked_lineage.phylum
-        classis = ncbi_ranked_lineage.classis
-        ordo = ncbi_ranked_lineage.ordo
-        familia = ncbi_ranked_lineage.familia
-        genus = ncbi_ranked_lineage.genus
-        species = ncbi_ranked_lineage.species
-        canonical_name = ncbi_ranked_lineage.name
+        regnum          = ncbi_ranked_lineage.regnum
+        phylum          = ncbi_ranked_lineage.phylum
+        classis         = ncbi_ranked_lineage.classis
+        ordo            = ncbi_ranked_lineage.ordo
+        familia         = ncbi_ranked_lineage.familia
+        genus           = ncbi_ranked_lineage.genus
+        species         = ncbi_ranked_lineage.species
+        canonical_name  = ncbi_ranked_lineage.name
 
         ncbi_node = NcbiNode.find_by(tax_id: ncbi_ranked_lineage.tax_id)
         return nil if ncbi_node.nil?
@@ -168,9 +175,14 @@ class NcbiGenbankClassifier
             latinized_rank = TaxonomyHelper.latinize_rank(ncbi_node.rank)
             obj[latinized_rank] = ncbi_ranked_lineage.name
         else
-            Gbiftaxonomy.possible_ranks.each do |possible_rank|
+            GbifTaxonomy.possible_ranks.each do |possible_rank|
                 latinized_possible_rank = TaxonomyHelper.latinize_rank(possible_rank)
-                name_for_possible_rank  = ncbi_ranked_lineage.public_send(latinized_possible_rank).to_s
+                if latinized_possible_rank == 'canonical_name'
+                    name_for_possible_rank  = ncbi_ranked_lineage.public_send('species').to_s
+                else
+                    name_for_possible_rank  = ncbi_ranked_lineage.public_send(latinized_possible_rank).to_s
+                end
+
                 next if name_for_possible_rank.empty?
                 
                 obj[latinized_possible_rank]    = name_for_possible_rank
@@ -189,8 +201,14 @@ class NcbiGenbankClassifier
 
     def self.get_ncbi_ranked_lineage(gb)
         source_feature      = gb.features.select { |f| NcbiGenbankClassifier.is_source_feature?(f.feature) }.first
+        return nil if source_feature.nil?
+
         taxon_db_xref       = source_feature.qualifiers.select { |q| NcbiGenbankClassifier.is_db_taxon_xref_qualifier?(q) }.first
+        return nil if taxon_db_xref.nil?
+
         ncbi_taxon_id       = taxon_db_xref.value.gsub('taxon:', '').to_i
+        return nil if ncbi_taxon_id.nil?
+
 
         ranked = NcbiRankedLineage.find_by(tax_id: ncbi_taxon_id)
         

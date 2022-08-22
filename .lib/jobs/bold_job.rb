@@ -66,9 +66,11 @@ class BoldJob
             _write_marshal_files(download_file_managers) 
         end
 
+
         _classify_downloads(download_file_managers)     unless download_only
         _write_marshal_files(download_file_managers)    unless did_use_marshal_file || classify_only || classify_dir
-        # byebug
+
+
         return [result_file_manager, download_file_managers]
     end
 
@@ -136,17 +138,20 @@ class BoldJob
     def _download_failed_files
         tree_file_name                  = params[:download][:bold_dir] + ".bold_download_tree_info.txt"
         tree                            = DownloadInfoParser._parse(tree_file_name)
-        failed_tree_nodes               = DownloadInfoParser.get_download_failures(tree_file_name)
-        download_file_managers          = DownloadInfoParser.get_file_managers_from_download_info_tree(tree_file_name)
+        failed_tree_nodes               = tree.find_all { |node| node.is_leaf? && _real_failure(node.content) }
+        download_file_managers          = DownloadInfoParser.get_file_managers_from_download_info_tree(tree_file_name: tree_file_name, marker_objects: markers)
         failed_names                    = failed_tree_nodes.collect { |node| node.name }
         failed_download_file_managers   = download_file_managers.select { |dfm| failed_names.include?(dfm.config.name)  }
         still_failed_nodes              = []
         root_node                       = tree.root
 
+
         root_dfm = download_file_managers.detect { |dfm| dfm.config.name == tree.root.name }
         return :cant_find_root if root_dfm.nil?
 
+
         @root_download_dir = root_dfm.base_dir.basename
+
 
         GbifTaxonomy.possible_ranks.size.times do |i|
             break if i >= (GbifTaxonomy.possible_ranks.size - 1)
@@ -208,8 +213,10 @@ class BoldJob
                 end
             end
 
+
             failed_tree_nodes = still_failed_nodes
             
+
             ## find lower ranks for failed nodes
             failed_tree_nodes.each do |failed_node|
                 node_record                     = failed_node.content.first
@@ -257,16 +264,15 @@ class BoldJob
         
         failures    = DownloadInfoParser.get_download_failures(dl_tree_path_hidden)
         success     = failures.empty? ? true : false
-        
+        _MESSAGE_download_fail unless success
+
+
         if download_only
             DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden], success: success, download_file_managers: download_file_managers, result_file_manager: result_file_manager)
         else
             DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers, result_file_manager: result_file_manager)
         end
         
-        unless failures.empty?
-            ## maybe directly try to download again?
-        end
 
         return download_file_managers
     end
@@ -389,6 +395,7 @@ class BoldJob
                 reached_species_level           = true if index_of_lower_rank == 0
                 taxon_rank_to_try               = GbifTaxonomy.possible_ranks[index_of_lower_rank]
                 
+                
                 taxa_records_and_names_to_try = nil
                 if taxonomy_params[:gbif] || taxonomy_params[:gbif_backbone]
                     taxa_records_and_names_to_try   = GbifTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
@@ -401,16 +408,19 @@ class BoldJob
                 
                 end
 
+
                 next if taxa_records_and_names_to_try.nil?
+
 
                 added_names = []
                 taxa_records_and_names_to_try.each do |record_and_name|
-
                     record  = record_and_name.first
                     name    = record_and_name.last
                     
+
                     next if TaxonHelper.is_extinct?(name)
                     next if added_names.include?(name) # prevent breaking if name occurs multiple times maybe due to wrong backbone
+
 
                     failed_node << Tree::TreeNode.new(name, [record, @pending, 'pending'])
                     added_names.push(name)
@@ -418,30 +428,32 @@ class BoldJob
             end
         end
 
-        # _write_result_files(root_node: root_node, download_file_managers: download_file_managers)
 
+        # _write_result_files(root_node: root_node, download_file_managers: download_file_managers)
         dl_path_public = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_NAME)
         dl_path_hidden = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_NAME}")
         rs_path_public = Pathname.new(result_file_manager.dir_path + DOWNLOAD_INFO_NAME)
         rs_path_hidden = Pathname.new(result_file_manager.dir_path + ".#{DOWNLOAD_INFO_NAME}")
-        
+
+
         dl_tree_path_hidden = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + ".#{DOWNLOAD_INFO_TREE_NAME}")
         dl_tree_path_public = Pathname.new(BoldConfig::DOWNLOAD_DIR + @root_download_dir + DOWNLOAD_INFO_TREE_NAME)
-        
+
+
         _write_download_info_tree(paths: [dl_tree_path_hidden, dl_tree_path_public], root_node: root_node)
+        
         
         failures = DownloadInfoParser.get_download_failures(dl_tree_path_hidden)
         success = failures.empty? ? true : false
+        _MESSAGE_download_fail unless success
+
         
         if download_only
             DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden], success: success, download_file_managers: download_file_managers, result_file_manager: result_file_manager)
         else
             DownloadCheckHelper.write_download_info(paths: [dl_path_public, dl_path_hidden, rs_path_public, rs_path_hidden], success: success, download_file_managers: download_file_managers, result_file_manager: result_file_manager)
         end
-        
-        unless failures.empty?
-            ## maybe directly try to download again?
-        end
+
 
         return download_file_managers
     end
@@ -568,6 +580,7 @@ class BoldJob
         puts
     end
 
+
     def _create_config(node:)
         if node.parentage
             parent_dir    = _get_parentage_as_dir_structure(node)
@@ -576,6 +589,7 @@ class BoldJob
             config        = BoldConfig.new(name: node.name, markers: markers, is_root: true)
         end
     end
+
 
     def _get_parentage_as_dir_structure(node)
         if node.parentage
@@ -592,6 +606,7 @@ class BoldJob
             return parent_dir
         end
     end
+
 
     ## TODO: same for NcbiTaxonomy
     ## UNUSED
@@ -630,6 +645,7 @@ class BoldJob
         end
     end
 
+
     def _write_result_files(root_node:, download_file_managers:)
         root_dir              = download_file_managers.select { |m| m.name == root_node.name }.first
         # merged_download_file  = File.open(root_dir.dir_path + "#{root_dir.name}_merged.tsv", 'w') 
@@ -639,15 +655,26 @@ class BoldJob
         # OutputFormat::MergedBoldDownload.write_to_file(file: merged_download_file, data: download_successes, header_length: HEADER_LENGTH, include_header: true)
         OutputFormat::DownloadInfo.write_to_file(file: download_info_file, download_file_managers: download_file_managers)
     end
+    
 
     def _classify_downloads(download_file_managers)
         download_file_managers.each do |download_file_manager|
             next unless download_file_manager.status == 'success'
             next unless File.file?(download_file_manager.file_path)
 
+
             bold_classifier   = BoldClassifier.new(params: params, file_name: download_file_manager.file_path, file_manager: result_file_manager)
             bold_classifier.run ## result_file_manager creates new files and will push those into internal array
         end
+    end
+
+    def _MESSAGE_download_fail
+        puts
+        MiscHelper.OUT_error("Download was not successfull")
+        puts "Some taxa have not been successfully downloaded"
+        puts "Download failed taxa with:"
+        puts "bundle exec ruby taxalogue.rb -t #{taxon_name} download --bold_dir #{BoldConfig::DOWNLOAD_DIR + @root_download_dir}"
+        puts
     end
 
     ## UNUSED

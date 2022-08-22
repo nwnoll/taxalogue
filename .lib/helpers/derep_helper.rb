@@ -2,6 +2,8 @@
 
 class DerepHelper
 
+    BATCH_SIZE = 35_000
+
     def self.fill_specimens_of_sequence(specimens:, specimens_of_sequence:, taxonomic_info:, taxon_name:, first_specimen_info:)
         canonical_name = taxonomic_info.canonical_name
         # specimens_of_taxon[taxon_name][:data].each do |specimen|
@@ -37,7 +39,7 @@ class DerepHelper
         end
     end
 
-    def self.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name)
+    def self.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name, used_source_db)
         seq_arys_to_import              = []
         top_arys_to_import              = []
         related_seqs_and_taxon_infos    = Hash.new
@@ -111,10 +113,10 @@ class DerepHelper
                         end
                         ## combined and comment is missing in Gbiftaxonomy objects
                         ## therefore i have to add it to get to the same column number
-                        taxon_object_proxy_ary_or_id.push("", "", query_taxon_name, used_taxonomy_string, taxonomy_params[:synonyms_allowed], seq_meta.source_taxon_name, taxon_object_proxy_string_as_sha256_bubblebabble)
+                        taxon_object_proxy_ary_or_id.push("", "", query_taxon_name, used_taxonomy_string, taxonomy_params[:synonyms_allowed], seq_meta.source_taxon_name, taxon_object_proxy_string_as_sha256_bubblebabble, used_source_db)
                     else
                         taxon_object_proxy_ary_or_id = seq_meta_hash.values
-                        taxon_object_proxy_ary_or_id.push(query_taxon_name, used_taxonomy_string, taxonomy_params[:synonyms_allowed], seq_meta.source_taxon_name, taxon_object_proxy_string_as_sha256_bubblebabble)
+                        taxon_object_proxy_ary_or_id.push(query_taxon_name, used_taxonomy_string, taxonomy_params[:synonyms_allowed], seq_meta.source_taxon_name, taxon_object_proxy_string_as_sha256_bubblebabble, used_source_db)
                     end
 
                     top_arys_to_import.push(taxon_object_proxy_ary_or_id)
@@ -135,9 +137,8 @@ class DerepHelper
         seq_columns     = Sequence.column_names - ["id", "created_at", "updated_at"]
         top_columns     = TaxonObjectProxy.column_names - ["id", "created_at", "updated_at"]
         seq_top_columns = SequenceTaxonObjectProxy.column_names - ["id", "created_at", "updated_at"]
-        # byebug
-        TaxonObjectProxy.import top_columns, top_arys_to_import, validate: false, batch_size: 100_000 if top_arys_to_import.any?
-        Sequence.import seq_columns, seq_arys_to_import, validate: false, batch_size: 100_000 if seq_arys_to_import.any?
+        TaxonObjectProxy.import top_columns, top_arys_to_import, validate: false, batch_size: BATCH_SIZE if top_arys_to_import.any?
+        Sequence.import seq_columns, seq_arys_to_import, validate: false, batch_size: BATCH_SIZE if seq_arys_to_import.any?
         sleep 1
 
         seq_top_arys_to_import = []
@@ -154,7 +155,7 @@ class DerepHelper
             end
         end
 
-        SequenceTaxonObjectProxy.import seq_top_columns, seq_top_arys_to_import, validate: false, batch_size: 100_000 if seq_top_arys_to_import.any?
+        SequenceTaxonObjectProxy.import seq_top_columns, seq_top_arys_to_import, validate: false, batch_size: BATCH_SIZE if seq_top_arys_to_import.any?
         sleep 1
     end
 end

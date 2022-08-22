@@ -52,11 +52,15 @@ db_config 		= YAML::load(db_config_file)
 
 if File.exists?(db_config[mode]['database'])
 	ActiveRecord::Base.establish_connection(db_config[mode])
+    if mode == 'test'
+        DatabaseSchema.destroy_whole_db(db_config[mode]['database'])
+        DatabaseSchema.create_db
+    end
 else
     ActiveRecord::Base.establish_connection(db_config[mode])
     DatabaseSchema.create_db
 
-    ## Find a way to download from goodle drive or find another repo
+    ## Find a way to download from google drive or find another repo
     # state = TaxonomyHelper.download_predefined_database
     
     # if state == :success

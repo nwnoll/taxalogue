@@ -19,8 +19,8 @@ class GbolDownloadCheckHelper
 
 
         if current_release
-            ## NEXT
             ## TODO:
+            ## NEXT
             ## Check for download success
             
             puts "You already have the latest GBOL release"

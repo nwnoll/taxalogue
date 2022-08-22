@@ -59,7 +59,8 @@ class GbolClassifier
         end
 
         index = splitted_lineage.index(canonical_name)
-        taxon_rank = index.nil? ? 'species' : TaxonomyHelper.anglicise_rank(ranks_for_specimen[index])
+        
+        taxon_rank = index.nil? ? 'species' : index == 6 ? 'subfamily' : TaxonomyHelper.anglicise_rank(ranks_for_specimen[index])
 
         combined = first_specimen['HigherTaxa'].split(', ').push(first_specimen["Species"])
 
@@ -125,7 +126,7 @@ class GbolClassifier
             SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
         end
 
-        puts "file '#{csv_file_name}'' was read"
+        puts "file '#{csv_file_name}' was read"
         puts 
 
         # Parallel.map(specimens_of_taxon.keys, in_threads: 10) do |taxon_name|
@@ -153,7 +154,7 @@ class GbolClassifier
             next unless taxonomic_info.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
             if filter_params[:taxon_rank]
-                has_user_taxon_rank = FilterHelper.has_taxon_tank(rank: filter_params[:taxon_rank], taxonomic_info: taxonomic_info)
+                has_user_taxon_rank = FilterHelper.has_taxon_rank(rank: filter_params[:taxon_rank], taxonomic_info: taxonomic_info)
                 
                 next unless has_user_taxon_rank
             end
@@ -171,7 +172,7 @@ class GbolClassifier
         if params[:derep].any? { |opt| opt.last == true }
             puts "Starting dereplication for file #{csv_file_name}"
             
-            DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name)
+            DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name, 'gbol')
             
             puts 'dereplication finished'
             puts

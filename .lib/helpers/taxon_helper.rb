@@ -75,7 +75,7 @@ class TaxonHelper
     
             authority         = nil
             canonical_name    = nil
-            genus             = nil
+            genus             = ""
             taxonomic_status  = nil
             familia           = ncbi_node_record.rank == 'family'   ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.familia
             ordo              = ncbi_node_record.rank == 'order'    ? ncbi_ranked_lineage_record.name : ncbi_ranked_lineage_record.ordo
@@ -92,7 +92,6 @@ class TaxonHelper
                 authority = authority_record.nil? ? canonical_name : authority_record.name
 
                 taxonomic_status = _taxonomic_status(usable_ncbi_name_record)
-
                 if ncbi_node_record.rank == 'species' || ncbi_node_record.rank == 'subspecies' || ncbi_node_record.rank == 'genus' 
                     genus = usable_ncbi_name_record.name.split(' ')[0]
                 end
@@ -131,7 +130,6 @@ class TaxonHelper
     
             ncbi_taxonomy_objects.push(obj)
         end
-    
         # records = _is_homonym?(current_name) ? _records_with_matching_lineage(current_name: current_name, lineage: importer.get_source_lineage(first_specimen_info), all_records: ncbi_taxonomy_objects) : ncbi_taxonomy_objects
     
         return ncbi_taxonomy_objects
@@ -161,7 +159,6 @@ class TaxonHelper
     
         records_with_available_ranks = records.select { |record| NcbiTaxonomy.possible_ranks.include?(record.taxon_rank) }
         chosen_taxon_object = nil
-    
         return records.first if records.size == 1 || automatic
     
         puts "The following taxa are available:"
@@ -174,7 +171,6 @@ class TaxonHelper
       
             record_counter += 1
         end
-    
         record_counter = 1
 
         if records_with_available_ranks.size < records.size
@@ -277,6 +273,7 @@ class TaxonHelper
     def self.get_taxon_record(params, taxon_name = nil, automatic: false)
         taxon_object = nil
         taxon_name = params[:taxon] if taxon_name.nil?
+        # byebug
         
         if params[:taxonomy][:ncbi]
             record = TaxonHelper.choose_ncbi_record(taxon_name: taxon_name, automatic: automatic, params: params)
@@ -308,9 +305,7 @@ class TaxonHelper
     end
 
     def self.assign_taxon_info_to_params(params, taxon_name)
-
         taxon_object = TaxonHelper.get_taxon_record(params, taxon_name)
-            
         if taxon_object
             params[:taxon_rank]   = taxon_object.taxon_rank
             params[:taxon_object] = taxon_object

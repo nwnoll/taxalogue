@@ -24,15 +24,15 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
 
 1. Get the latest [release](https://github.com/nwnoll/taxalogue/releases)
 
-        wget https://github.com/nwnoll/taxalogue/archive/refs/tags/v0.9.0.tar.gz
+        wget https://github.com/nwnoll/taxalogue/archive/refs/tags/v0.9.2.tar.gz
 
 2. Unzip the file to a location of your choice
 
-        tar xzf v0.9.0.tar.gz
+        tar xzf v0.9.2.tar.gz
 
 3. Change to the directory where you unzipped the source code
         
-        cd taxalogue-0.9.0
+        cd taxalogue-0.9.2
 
 4. Install all the dependencies
         
@@ -47,7 +47,8 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
 
 5. Create a co1 reference database for a taxon of your choice, e.g. Arthropoda:
 
-        bundle exec ruby taxalogue.rb --taxon Arthropoda create --all
+        bundle exec ruby taxalogue.rb --taxon Arthropoda download --all
+        bundle exec ruby taxalogue.rb --taxon Arthropoda classify --all
 
 If this is the first start of *taxalogue*, it will at the beginning download taxonomies from NCBI and GBIF. After download, the taxonomies will be imported into a SQL database. The whole process might take a little less than 2 hours. If the setup for the taxonomies is complete, the download of the actual sequences begins. As mentioned earlier the duration of the download depends on the chosen taxon, but if you use the example command with Arthropoda then **at least one full day** must be expected.
 

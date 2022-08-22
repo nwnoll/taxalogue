@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 class MiscHelper
-    PASTEL = Pastel.new
+    PASTEL                          = Pastel.new
+    GENBANK_MARKER_FILES_DIR        = ".genbank_files_with_markers"
+    GENBANK_MARKER_FILES_DIR_PATH   = Pathname.new(GENBANK_MARKER_FILES_DIR)
+    GENBANK_MARKER_INFO_FILE        = ".config/genbank_markers.json"
 
     def self.json_file_to_hash(file_name)
         file = File.read(file_name)
@@ -121,7 +124,7 @@ class MiscHelper
         end
     end
 
-    def merge_files_in_dir(dir_name)
+    def self.merge_files_in_dir(dir_name)
         ## TODO: refactor and maybe implement into FileMerger?
         dir = Pathname.new(dir_name)
     
@@ -232,7 +235,7 @@ class MiscHelper
 
     def self.run_file_merger(file_manager:, params:)
         return nil if params[:derep].any? {|opt| opt.last == true } && !params[:merge].any? { |opt| opt.last == true}
-        
+        ## TODO: add other output formats
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)                    if params[:output][:table]
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)                  if params[:output][:fasta]
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)             if params[:output][:comparison]
@@ -337,7 +340,170 @@ class MiscHelper
     def self.write_marshal_file(dir:, file_name:, data:)
         marshal_dump_file_name = dir + file_name
         data_dump = Marshal.dump(data)
-        # byebug
         File.open(marshal_dump_file_name, 'wb') { |f| f.write(data_dump) }
+    end
+
+    def self.is_gz_valid?(file_name)
+        return false unless file_name
+        return false unless File.file?(file_name)
+        f = File.open(file_name, 'r')
+        return false unless f
+
+
+        valid = true
+        begin 
+            Zlib::GzipReader.zcat(f)
+        rescue Zlib::Error
+            valid = false
+        end
+
+        
+        f.close
+        return valid
+    end
+
+    def self.get_error_gzip_files(file_names)
+        error_files = []
+        file_names.each do |file_name|
+            puts file_name
+            f = File.open(file_name, 'r')
+            begin 
+                Zlib::GzipReader.zcat(f)
+            rescue => e
+                puts "true"
+                p e
+                error_files.push(file_name)
+            end
+            puts
+            f.close
+        end
+
+
+        return error_files
+    end
+
+
+    ## 
+    # goes through every file in the dir end checks if a file 
+    # has a certain marker
+    def self.search_for_markers_in_genbank_files(marker_objects:, dir_name:)
+        # dir = Pathname.new("downloads/NCBIGENBANK/release247/inv/")
+        dir         = Pathname.new(dir_name)
+        files       = dir.glob('*')
+        # files       = files.first(50)
+
+            
+        genbank_file_release = dir.ascend.to_a[1].basename
+        FileUtils.mkdir_p "#{GENBANK_MARKER_FILES_DIR}/#{genbank_file_release}"
+        sleep 0.1
+        
+
+        searchterms_of = Marker.searchterms_of
+        searchterms = []
+        searchterms_per_marker_tag = Hash.new
+
+
+        marker_objects.each do |marker_object|
+            current_searchterms = []
+            searchterms_of[marker_object.marker_tag][:ncbi].each do |searchterm|
+                mod_searchterm = searchterm.gsub('^', '\"')
+                mod_searchterm.gsub!('$', '\"')
+                searchterms.push(mod_searchterm)
+                current_searchterms.push(mod_searchterm)
+            end
+            searchterms_per_marker_tag[marker_object.marker_tag] = Regexp.new(current_searchterms.join('|').prepend('(').concat(')'), Regexp::IGNORECASE)
+        end
+        regexes = Regexp.new(searchterms.join('|').prepend('(').concat(')'), Regexp::IGNORECASE)
+
+        
+        Parallel.map(files, in_processes: 10) do |file|
+            Zlib::GzipReader.open(file) do |gz_file|
+                found_marker_tags = []
+                gz_file.each_line do |line|
+                    if line =~ /^\s{21}\/gene=/
+                        if line =~ regexes
+                            searchterms_per_marker_tag.each do |marker_tag, regex_for_marker|
+                                if $1 =~ regex_for_marker
+                                    found_marker_tags.push(marker_tag.to_s)
+                                end
+                            end
+
+                            break
+                        end
+                    end
+                end
+
+
+                fo = File.open("#{GENBANK_MARKER_FILES_DIR}/#{genbank_file_release}/#{file.basename.sub_ext('').sub_ext('')}", 'w')
+                found_marker_tags.each do |found_marker|
+                    fo.puts "#{file}\t#{found_marker}\ttrue"
+                end
+
+
+                marker_tags = []
+                marker_objects.each { |marker_object| marker_tags.push(marker_object.marker_tag.to_s) }
+                (marker_tags - found_marker_tags).each do |not_found_marker_tag|
+                    fo.puts "#{file}\t#{not_found_marker_tag}\tfalse"
+                end
+                fo.close
+            end
+        end    
+    end
+
+
+    ##
+    # collects found markers in GenBank files into one file
+    def self.create_genbank_marker_info_file
+        markers_of = Hash.new { |h1,k1| h1[k1] = Hash.new }
+        
+        
+        files = GENBANK_MARKER_FILES_DIR_PATH.glob("**/*")
+        files.each do |file|
+            next unless File.file?(file)
+
+
+            fi = File.open(file, 'r')
+            fi.each do |line|
+                line.chomp!
+                line                        =~ /^(.*?)\t(.*?)\t(.*)/
+                genbank_full_relative_path  = $1
+                marker                      = $2
+                marker_found                = $3 == 'true' ? true : false 
+
+
+                markers_of[genbank_full_relative_path][marker] = marker_found
+            end
+        end
+
+
+        json_markers_of = markers_of.to_json
+        fo              = File.open(GENBANK_MARKER_INFO_FILE, 'w')
+        fo.puts json_markers_of
+    end
+
+
+    def self.get_genbank_marker_info
+        if File.file?(GENBANK_MARKER_INFO_FILE)
+            return json_file_to_hash(GENBANK_MARKER_INFO_FILE)
+        else
+            return nil
+        end
+    end
+
+
+    ##
+    # Since I create the GenBank marker Info JSON only at classify
+    # I have to check if the release was already searched for this particular marker
+    def self.get_not_searched_markers(marker_objects:, genbank_marker_info_of:, download_file_manager:)
+        file_name = genbank_marker_info_of.keys.detect { |e| e.to_s.match?(download_file_manager.dir_path.to_s) }
+        
+        
+        not_searched_marker_objects = [] 
+        marker_objects.each do |marker_object|
+            not_searched_marker_objects.push(marker_object) unless genbank_marker_info_of[file_name][marker_object.marker_tag.to_s]
+        end
+
+        
+        return not_searched_marker_objects
     end
 end

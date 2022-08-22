@@ -117,6 +117,7 @@ class DatabaseSchema
                     t.boolean :synonyms_allowed
                     t.string :source_taxon_name, index: true
                     t.string :sha256_bubblebabble, index: true
+                    t.string :used_source_db
     
                     t.timestamps
                 end
@@ -189,10 +190,23 @@ class DatabaseSchema
         end
     end
 
+    
     def self.drop(table_name)
         ActiveRecord::Schema.verbose = false
         ActiveRecord::Migration.drop_table(table_name)
     end
+
+
+    def self.add_column(table_name:, column_name:, column_type:)
+        if ActiveRecord::Base.connection.table_exists?(table_name) 
+            ActiveRecord::Migration.add_column(table_name, column_name, column_type)
+        end
+    end
+
+    def self.destroy_whole_db(db_name)
+        FileUtils.rm(db_name)
+    end
+
 
     def self.create_table(table_name)
         ActiveRecord::Schema.verbose = false
@@ -242,6 +256,7 @@ class DatabaseSchema
                     t.boolean :synonyms_allowed
                     t.string :source_taxon_name, index: true
                     t.string :sha256_bubblebabble, index: true
+                    t.string :used_source_db
 
                     t.timestamps
                 end

@@ -104,13 +104,14 @@ subcommands = {
 		opts.on('-a', '--all', 'Download records from BOLD, GenBank and GBOL')
 		opts.on('-g', '--gbol', 'Download records from GBOL')
 		opts.on('-o', '--bold', 'Download records from BOLD')
+		opts.on('-k', '--genbank', 'Download records from GenBank')
 		opts.on('-G GBOL_DIR', String, '--gbol_dir', 'Path of GBOL directory that should be checked for failures. The failed downloads will be downloaded again. !not implemented yet!') do |opt|
             Pathname.new(opt)
         end
-		opts.on('-G BOLD_DIR', String, '--bold_dir', 'Path of BOLD directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
+		opts.on('-B BOLD_DIR', String, '--bold_dir', 'Path of BOLD directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
             Pathname.new(opt)
         end
-		opts.on('-G GENBANK_DIR', String, '--genbank_dir', 'Path of GenBank directory that should be checked for failures. The failed downloads will be downloaded again. !not implemented yet!') do |opt|
+		opts.on('-K GENBANK_DIR', String, '--genbank_dir', 'Path of GenBank directory that should be checked for failures. The failed downloads will be downloaded again. !not implemented yet!') do |opt|
             Pathname.new(opt)
         end
 		opts.on('-i', '--inv_contaminants', 'Download possible invertebrate contaminants')
@@ -150,6 +151,8 @@ subcommands = {
 		opts.on('-a', '--all')
 		opts.on('-b', '--gbif_taxonomy')
 		opts.on('-n', '--ncbi_taxonomy')
+        opts.on('-B', '--check_gbif_taxonomy', 'Checks if a new GBIF Taxonomy backbone is available')
+        opts.on('-N', '--check_ncbi_taxonomy', 'Checks if a new NCBI Taxonomy backbone is available')
 	end,
 
     output: OptionParser.new do |opts|
@@ -389,7 +392,7 @@ params[:download][:gbol]    = true if params[:download][:gbol_dir]
 params[:download][:genbank] = true if params[:download][:genbank_dir]
 
 if params[:version]
-    puts 'taxalogue v0.9.0'
+    puts 'taxalogue v0.9.2'
     
     exit
 end
@@ -397,36 +400,8 @@ end
 ## if taxonomy was chosen by user, it needs to be updated
 ## object is also not set in opts.on
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
-
 MiscHelper.print_params(params)
 
-
-# ## BOLD/Arthropoda-20220208T2257
-# tree_file_name = "/home/nnoll/phd/taxalogue/downloads/BOLD/Arthropoda-20220208T2257/.bold_download_tree_info.txt"
-# download_file_name = "/home/nnoll/phd/taxalogue/downloads/BOLD/Arthropoda-20220208T2257/.bold_download_info.txt"
-# p DownloadInfoParser.download_was_successful?(download_file_name)
-# failures = DownloadInfoParser.get_download_failures(tree_file_name)
-
-# failures.each { |failure| byebug }
-# # failures.each { |failure| puts failure.name }
-
-
-# exit
-
-# byebug
-# get taxa for other than standard ranks (needs Ncbi taxonomy atm in params):
-# apo = TaxonHelper.get_taxon_record(params, "Apoidea", automatic: true)
-# apos = NcbiNode.where(parent_tax_id: apo.taxon_id)
-# apos.each { |a| pp NcbiRankedLineage.where(tax_id: a.tax_id) }
-
-if params[:derep].any? { |opt| opt.last == true }
-    DatabaseSchema.drop(:sequence_taxon_object_proxies) if ActiveRecord::Base.connection.table_exists?(:sequence_taxon_object_proxies)
-    DatabaseSchema.drop(:taxon_object_proxies) if ActiveRecord::Base.connection.table_exists?(:taxon_object_proxies)
-    DatabaseSchema.drop(:sequences) if ActiveRecord::Base.connection.table_exists?(:sequences)
-    DatabaseSchema.create_table(:sequences)
-    DatabaseSchema.create_table(:taxon_object_proxies)
-    DatabaseSchema.create_table(:sequence_taxon_object_proxies)
-end
 
 if params[:create].any?
     jobs = []
@@ -563,11 +538,14 @@ if params[:classify].any?
     ## TODO: why dont create marshal files etc if no_merge?
     unless params[:classify][:no_merge]
         if jobs_state == :success
+            puts
+            puts 'merging output files, this might take a while'
             MiscHelper.run_file_merger(file_manager: file_manager, params: params)
             MiscHelper.write_marshal_file(dir: file_manager.dir_path, file_name: '.params.dump', data: params)
             
             file = File.open(file_manager.dir_path + 'taxalogue.txt', 'w')
             MiscHelper.print_params(params, file)
+            puts 'finished'
         end
     end
 

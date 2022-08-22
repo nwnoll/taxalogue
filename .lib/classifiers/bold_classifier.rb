@@ -77,13 +77,14 @@ class BoldClassifier
         @region_params        = params[:region]
     end
 
+
     def run
         MiscHelper.OUT_header('Starting to classify BOLD downloads')
         puts
         
         specimens_of_taxon = Hash.new { |hash, key| hash[key] = {} }
         specimens_of_sequence = Hash.new
-        file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'gbol') unless params[:derep].any? { |opt| opt.last == true }
+        file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'bold') unless params[:derep].any? { |opt| opt.last == true }
 
         file = File.file?(file_name) ? File.open(file_name, 'r') : nil
         return nil if file.nil?
@@ -94,7 +95,6 @@ class BoldClassifier
             _matches_query_taxon(row.scrub!) ? nil : next if fast_run
 
             scrubbed_row = row.scrub!.chomp.split("\t")
-
             specimen = _get_specimen(row: scrubbed_row)
             next if specimen.nil? || specimen.sequence.nil? || specimen.sequence.empty?
             next unless specimen_is_from_area(specimen: specimen, region_params: region_params) if region_params.any?
@@ -102,7 +102,8 @@ class BoldClassifier
             SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
         end
         
-        puts "file '#{file_name}'' was read"
+        
+        puts "file '#{file_name}' was read"
         puts 
 
         puts 'Starting taxa search'
@@ -118,7 +119,7 @@ class BoldClassifier
             next unless taxonomic_info.public_send(TaxonomyHelper.latinize_rank(query_taxon_rank)) == query_taxon_name
 
             if filter_params[:taxon_rank]
-                has_user_taxon_rank = FilterHelper.has_taxon_tank(rank: filter_params[:taxon_rank], taxonomic_info: taxonomic_info)
+                has_user_taxon_rank = FilterHelper.has_taxon_rank(rank: filter_params[:taxon_rank], taxonomic_info: taxonomic_info)
                 next unless has_user_taxon_rank
             end
 
@@ -135,7 +136,7 @@ class BoldClassifier
         if params[:derep].any? { |opt| opt.last == true }
             puts "Starting dereplication for file #{file_name}"
 
-            DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name)
+            DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name, 'bold')
             puts 'dereplication finished'
             puts
         else

@@ -37,11 +37,11 @@ class NcbiGenbankExtractor
         tsv   = File.open(result_file_name.sub_ext('.tsv'), 'w')
         fasta = File.open(result_file_name.sub_ext('.fas'), 'w')
 
-        tsv.puts "identifier\tkingdom\tphylum\tclass\torder\tfamily\tspecies\tlocation\tlatitude\tlongitude\tsequence"
+        tsv.puts "identifier\tkingdom\tphylum\tclass\torder\tfamily\tgenus\tspecies\tlocation\tlatitude\tlongitude\tsequence"
     
         specimens_of_taxon.keys.each do |taxon_name|
             specimens_of_taxon[taxon_name][:data].each do |data|
-                tsv.puts "#{data[:identifier]}\t\t\t\t\t\t#{taxon_name}\t#{data[:location]}\t#{data[:latitude]}\t#{data[:longitude]}\t#{data[:sequence]}"
+                tsv.puts "#{data[:identifier]}\t\t\t\t\t\t\t#{taxon_name}\t#{data[:location]}\t#{data[:latitude]}\t#{data[:longitude]}\t#{data[:sequence]}"
                 fasta.puts ">#{data[:identifier]}|#{taxon_name}"
                 fasta.puts "#{data[:sequence]}"
             end

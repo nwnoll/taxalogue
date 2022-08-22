@@ -2,6 +2,8 @@
 
 class NcbiNameImporter
 	attr_reader :file_name, :file_manager
+    
+    NUM_RECORDS = 35_000
 
 	def initialize(file_name:, file_manager:)
 		@file_name		= file_name
@@ -18,7 +20,7 @@ class NcbiNameImporter
 				input.each_line do |line|
 					name = line.scan(/\t?(.*?)\t\|/).flatten
 					name_records.push(name)
-					if input.lineno % 100_000 == 0
+					if input.lineno % NUM_RECORDS == 0
 						_batch_import(columns, name_records)
 						name_records = []
 					end
@@ -30,6 +32,7 @@ class NcbiNameImporter
 
 	private
 	def _batch_import(columns, records)
+        puts "importing #{NUM_RECORDS} NCBI Name records"
 		NcbiName.import columns, records, validate: false
 	end
 end

@@ -3,6 +3,8 @@
 class NcbiNodeImporter
 	attr_reader :file_name, :file_manager
 
+    NUM_RECORDS = 35_000
+
 	def initialize(file_name:, file_manager:)
 		@file_name		= file_name
 		@file_manager	= file_manager
@@ -22,7 +24,7 @@ class NcbiNodeImporter
 					node = [node[0], node[1], node[2], node[4],
 							node[6], node[8], node[13], node[15]]
 					node_records.push(node)
-					if input.lineno % 100_000 == 0
+					if input.lineno % NUM_RECORDS == 0
 						_batch_import(columns, node_records)
 						node_records = []
 					end
@@ -34,6 +36,7 @@ class NcbiNodeImporter
 
 	private
 	def _batch_import(columns, records)
+        puts "importing #{NUM_RECORDS} NCBI Node records"
 		NcbiNode.import columns, records, validate: false
 	end
 end

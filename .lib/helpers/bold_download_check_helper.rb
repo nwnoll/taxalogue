@@ -52,7 +52,6 @@ class BoldDownloadCheckHelper
     def self.download_dirs_for_taxon(params:, dirs:, only_successful: true)
         taxon_dirs = []
         dirs.each do |dir|
-            # byebug
             taxon_download_status = BoldDownloadCheckHelper.taxon_download_status(dir: dir, params: params)
             taxon_dirs.push([dir, taxon_download_status]) unless taxon_download_status == :dir_name_not_found || taxon_download_status == :taxon_not_found
         end
@@ -78,13 +77,16 @@ class BoldDownloadCheckHelper
         if taxon_object_from_marshal_dump
             ## since there are some differences between the taxonomies the taxon_object should only
             ## come from the same taxonomy as ther user specified taxonomy
-            if taxon_object_from_marshal_dump.is_a?(GbifTaxonomy) && (params[:taxonomy][:gbif] || params[:taxonomy][:gbif_backbone])
-                record_for_dir_name = taxon_object_from_marshal_dump
-            elsif taxon_object_from_marshal_dump.is_a?(OpenStruct) && (params[:taxonomy][:ncbi] || params[:taxonomy][:unmapped])
-                record_for_dir_name = taxon_object_from_marshal_dump
-            else
-                record_for_dir_name = nil
-            end
+            ## !this is now obsolete!
+            # if taxon_object_from_marshal_dump.is_a?(GbifTaxonomy) && (params[:taxonomy][:gbif] || params[:taxonomy][:gbif_backbone])
+            #     record_for_dir_name = taxon_object_from_marshal_dump
+            # elsif taxon_object_from_marshal_dump.is_a?(OpenStruct) && (params[:taxonomy][:ncbi] || params[:taxonomy][:unmapped])
+            #     record_for_dir_name = taxon_object_from_marshal_dump
+            # else
+            #     record_for_dir_name = nil
+            # end
+
+            record_for_dir_name = taxon_object_from_marshal_dump
         else
             dir_name = FileManager.dir_name_of(dir: dir)
             record_for_dir_name = TaxonHelper.get_taxon_record(params, dir_name)

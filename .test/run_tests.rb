@@ -9,12 +9,15 @@ require_relative '../.requirements'
 
 @original_stdout = $stdout
 @original_stderr = $stderr
-$stdout = File.open(File::NULL, 'w')
-$stderr = File.open(File::NULL, 'w')
+# $stdout = File.open(File::NULL, 'w')
+# $stderr = File.open(File::NULL, 'w')
+
 
 Test::Unit::AutoRunner.run(true, test_dir)
 
-$stdout = @original_stdout
-$stderr = @original_stderr
+# $stdout = @original_stdout
+# $stderr = @original_stderr
 
 exit
+
+# ruby -I test test/unit/my_model_test.rb -n test_name

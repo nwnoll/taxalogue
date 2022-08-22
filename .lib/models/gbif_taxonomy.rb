@@ -47,7 +47,6 @@ class GbifTaxonomy < ActiveRecord::Base
         return nil if next_higher_rank.nil?
         
         latinized_next_higher_rank  = TaxonomyHelper.latinize_rank(next_higher_rank)
-        # byebug if latinized_next_higher_rank.nil?
         taxa                        = GbifTaxonomy.where(taxonomic_status: 'accepted', taxon_rank: rank, latinized_next_higher_rank => taxon.public_send(latinized_next_higher_rank))
         taxa_names                  = []
         taxa.each { |tax| taxa_names.push([tax, tax.canonical_name]) }

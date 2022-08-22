@@ -3,6 +3,8 @@
 class NcbiRankedLineageImporter
 	attr_reader :file_name, :file_manager
 
+    NUM_RECORDS = 35_000
+
 	def initialize(file_name:, file_manager:)
 		@file_name		= file_name
 		@file_manager	= file_manager
@@ -18,7 +20,7 @@ class NcbiRankedLineageImporter
 				input.each_line do |line|
 					lineage = line.scan(/\t?(.*?)\t\|/).flatten
 					lineage_records.push(lineage)
-					if input.lineno % 100_000 == 0
+					if input.lineno % NUM_RECORDS == 0
 						_batch_import(columns, lineage_records)
 						lineage_records = []
 					end
@@ -30,6 +32,7 @@ class NcbiRankedLineageImporter
 
 	private
 	def _batch_import(columns, records)
+        puts "importing #{NUM_RECORDS} NCBI Ranked Lineage records"
 		NcbiRankedLineage.import columns, records, validate: false
 	end
 end
