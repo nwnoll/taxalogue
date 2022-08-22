@@ -24,7 +24,6 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
 
 1. Get the latest [release](https://github.com/nwnoll/taxalogue/releases)
 
-<<<<<<< HEAD
         wget https://github.com/nwnoll/taxalogue/archive/refs/tags/v0.9.2.tar.gz
 
 2. Unzip the file to a location of your choice
@@ -34,17 +33,6 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
 3. Change to the directory where you unzipped the source code
         
         cd taxalogue-0.9.2
-=======
-        wget https://github.com/nwnoll/taxalogue/archive/refs/tags/v0.9.1.tar.gz
-
-2. Unzip the file to a location of your choice
-
-        tar xzf v0.9.1.tar.gz
-
-3. Change to the directory where you unzipped the source code
-        
-        cd taxalogue-0.9.1
->>>>>>> 5fe6de2338cf78dcc53050377b9f53ef2239f3e0
 
 4. Install all the dependencies
         
