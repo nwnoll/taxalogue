@@ -4,7 +4,7 @@ source "https://rubygems.org"
 
 git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 
-gem 'activerecord', '~> 6.0', '>= 6.0.3.3'
+gem 'activerecord', '~> 6.1'
 gem 'sqlite3'
 gem 'activerecord-import'
 gem 'bio'
