@@ -191,4 +191,20 @@ class RegionHelper
             end
         end
     end
+
+    def self.use_custom_shapefile(params)
+        
+        custom_shapefile_pathname = Pathname.new(params[:region][:custom_shapefile])
+        
+        if File.file?(custom_shapefile_pathname) && File.file?(custom_shapefile_pathname.sub_ext('.dbf')) && File.file?(custom_shapefile_pathname.sub_ext('.shx'))
+            $custom_regions_of = get_areas_of_shapefiles(file_name: params[:region][:custom_shapefile], attr_name: params[:region][:custom_shapefile_attribute])
+        else
+            puts "Need to have the following 3 files in the same folder:"
+            puts custom_shapefile_pathname
+            puts custom_shapefile_pathname.sub_ext('.dbf')
+            puts custom_shapefile_pathname.sub_ext('.shx')
+
+            exit
+        end
+    end
 end

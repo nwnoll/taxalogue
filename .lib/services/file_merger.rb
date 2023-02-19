@@ -46,6 +46,8 @@ class FileMerger
             return 'merged_dada2_taxonomy.fas'
         elsif type == OutputFormat::Dada2SpeciesFasta
             return 'merged_dada2_species.fas'
+        elsif type == OutputFormat::SintaxFasta
+            return 'merged_sintax.fas'
         else
             return nil
         end
@@ -68,6 +70,8 @@ class FileMerger
             return OutputFormat::MergedDada2TaxonomyFasta
         elsif type == OutputFormat::Dada2SpeciesFasta
             return OutputFormat::MergedDada2SpeciesFasta
+        elsif type == OutputFormat::SintaxFasta
+            return OutputFormat::MergedSintaxFasta
         else
             return nil
         end

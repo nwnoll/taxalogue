@@ -15,14 +15,6 @@ module GeoUtils
 
     def get_areas_of_shapefiles(file_name:, attr_name:)
 
-        # shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.shp', 'rb')
-        # dbf = SHP::DBF.open('/home/nnoll/bioinformatics/wwf_eco/wwf_terr_ecos.dbf', 'rb')
-        # shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/CMEC_updated_wallace_regions/realms.shp', 'rb')
-        # dbf = SHP::DBF.open('/home/nnoll/bioinformatics/CMEC_updated_wallace_regions/realms.dbf', 'rb')   
-        # shp = SHP::Shapefile.open('/home/nnoll/bioinformatics/fadaregions/fadaregions.shp', 'rb')
-        # dbf = SHP::DBF.open('/home/nnoll/bioinformatics/fadaregions/fadaregions.dbf', 'rb')   
-
-
         pathname = Pathname.new(file_name)
         shp = SHP::Shapefile.open(pathname.to_s, 'rb')
         dbf = SHP::DBF.open(pathname.sub_ext('.dbf').to_s, 'rb')
@@ -35,7 +27,6 @@ module GeoUtils
         # field_num_of.each do |field, num|
         #     puts "#{field}: #{dbf.read_string_attribute(shp_obj.get_shape_id, num)}"
         # end
-        # exit
 
         eco_zones_of = Hash.new { |h, k| h[k] = [] }
         realms_of = Hash.new { |h, k| h[k] = [] }
@@ -210,6 +201,13 @@ module GeoUtils
                 end
             elsif $fada_regions_of.key?(area)
                 polygons = $fada_regions_of[area]
+                polygons.each do |polygon|
+                    if polygon.contains?(specimen_locality)
+                        return true
+                    end
+                end
+            elsif $custom_regions_of.key?(area)
+                polygons = $custom_regions_of[area]
                 polygons.each do |polygon|
                     if polygon.contains?(specimen_locality)
                         return true

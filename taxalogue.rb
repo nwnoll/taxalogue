@@ -20,6 +20,7 @@ params = {
 $fada_regions_of    = Hash.new
 $eco_zones_of 		= Hash.new
 $continent_of 		= Hash.new
+$custom_regions_of  = Hash.new
 
 CONFIG_FILE = 'default_config.yaml'
 
@@ -164,6 +165,7 @@ subcommands = {
         opts.on('-k BOOLEAN', FalseClass, '--kraken2', 'Kraken2 fasta file, works only with NCBI taxonomy.')
         opts.on('-d BOOLEAN', FalseClass, '--dada2_taxonomy', 'Fasta output file for the dada2 assignTaxonomy function.')
         opts.on('-s BOOLEAN', FalseClass, '--dada2_species', 'Fasta output file for the dada2 assignSpecies function')
+        opts.on('-x BOOLEAN', FalseClass, '--sintax', 'Fasta output file for the SINTAX program')
     end,
 
 	filter: OptionParser.new do |opts|
@@ -290,7 +292,7 @@ subcommands = {
 				exit
 			end
 		end
-		opts.on('-e TERRESTRIAL_ECOREGION', String,'--terrestrial_ecoregion', 'create a database consisting of sequences only from this terrestrial ecoregion or a set of regions: if you want to specifiy a region please use quotes e.g. "North Atlantic moist mixed forests". For multiple realms pleas use quotes and semicolons without spaces e.g."North Atlantic moist mixed forests;Highveld grasslands"') do |opt|
+		opts.on('-e TERRESTRIAL_ECOREGION', String, '--terrestrial_ecoregion', 'create a database consisting of sequences only from this terrestrial ecoregion or a set of regions: if you want to specifiy a region please use quotes e.g. "North Atlantic moist mixed forests". For multiple realms pleas use quotes and semicolons without spaces e.g."North Atlantic moist mixed forests;Highveld grasslands"') do |opt|
 			
 			params = RegionHelper.check_fada(params)
 			
@@ -317,6 +319,9 @@ subcommands = {
 				exit
 			end
 		end
+		opts.on('-s CUSTOM_SHAPEFILE', String, '--custom_shapefile', 'Provide the path of the custom shapefile (only the *.shp is needed here, .shx and .dbf are inferred, and need to be in the same folder), has to be used with the -S option to provide the attribute name that should be used')
+        opts.on('-S CUSTOM_SHAPEFILE_ATTRIBUTE', String, '--custom_shapefile_attribute', 'Provide the wanted attribute in shapefile, has to be used with the -s option to specify the according shape file')
+        opts.on('-v CUSTOM_SHAPEFILE_VALUES', String, '--custom_shapefile_values', 'create a database consisting of sequences only from regions with the specified value: if you want to specifiy a region please use quotes e.g. "North Atlantic moist mixed forests". For multiple realms pleas use quotes and semicolons without spaces e.g."North Atlantic moist mixed forests;Highveld grasslands"')
 	end
 }
 global.order!
@@ -368,6 +373,23 @@ if params[:output][:dada2_species] && !(params[:filter][:taxon_rank] == 'species
 
     exit
 end
+
+set_custom_shapefile_params_count = MiscHelper.custom_shapefile_params_count(params)
+if set_custom_shapefile_params_count > 0 && set_custom_shapefile_params_count != 3
+    puts "If a custom shape file should be used, you need to specify these 3 parameters:"
+    puts "--custom_shapefile"
+    puts "--custom_shapefile_attribute"
+    puts "--custom_shapefile_values"
+    puts
+    puts 'e.g.:'
+    puts 'bundle exec ruby taxalogue.rb region --custom_shapefile downloads/SHAPEFILES/fada_regions/fadaregions.shp --custom_shapefile_attribute name --custom_shapefile_values "Nearctic;Palaearctic"'
+    puts
+
+    exit
+elsif set_custom_shapefile_params_count == 3
+    RegionHelper.use_custom_shapefile(params)
+end
+# bundle exec ruby taxalogue.rb region -s downloads/SHAPEFILES/fada_regions/fadaregions.shp -S name -v "Nearctic;Palaearctic"
 
 if params[:derep].values.count(true) > 1
     puts "Only one derep strategy is allowed"

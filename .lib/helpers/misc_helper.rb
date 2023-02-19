@@ -203,6 +203,15 @@ class MiscHelper
         end
     end
 
+    def self.custom_shapefile_params_count(params)
+        set_params_count = 0
+        set_params_count += params[:region][:custom_shapefile]              ? 1 : 0
+        set_params_count += params[:region][:custom_shapefile_attribute]    ? 1 : 0
+        set_params_count += params[:region][:custom_shapefile_values]       ? 1 : 0
+
+        return set_params_count
+    end
+
     def self.message_for_missing_download_file_managers(db_source, taxon)
         puts "Cannot classify #{db_source} downloads, since no downloads are available for #{taxon}."
         puts "Please use download command before you classify."
@@ -244,6 +253,7 @@ class MiscHelper
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Kraken2Fasta)           if params[:output][:kraken2]
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Dada2TaxonomyFasta)     if params[:output][:dada2_taxonomy]
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Dada2SpeciesFasta)      if params[:output][:dada2_species]
+        FileMerger.run(file_manager: file_manager, file_type: OutputFormat::SintaxFasta)            if params[:output][:sintax]
     end
 
     def self.create_output_files(file_manager:, query_taxon_name:, file_name:, params:, source_db:)
@@ -283,11 +293,17 @@ class MiscHelper
             dada2_taxonomy_fasta                        = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_dada2_taxonomy.fas",   OutputFormat::Dada2TaxonomyFasta)   
             file_of[OutputFormat::Dada2TaxonomyFasta]   = dada2_taxonomy_fasta
         end
-        
+
         if params[:output][:dada2_species]
             dada2_species_fasta                         = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_dada2_species.fas",   OutputFormat::Dada2SpeciesFasta)
             file_of[OutputFormat::Dada2SpeciesFasta]    = dada2_species_fasta
         end
+
+        if params[:output][:sintax]
+            sintax                              = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_sintax.fas",   OutputFormat::SintaxFasta)
+            file_of[OutputFormat::SintaxFasta]  = sintax
+        end
+
 
         return file_of
     end
@@ -332,6 +348,9 @@ class MiscHelper
 
                 elsif output_file_class == OutputFormat::Dada2SpeciesFasta
                     OutputFormat::Dada2SpeciesFasta.write_to_file(fasta: file, data: datum, taxonomic_info: taxonomic_info)
+
+                elsif output_file_class == OutputFormat::SintaxFasta
+                    OutputFormat::SintaxFasta.write_to_file(fasta: file, data: datum, taxonomic_info: taxonomic_info)
                 end
             end
         end

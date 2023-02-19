@@ -47,6 +47,38 @@ module StringFormatting
         return "k__#{obj.canonical_name}; p__; c__; o__; f__; g__; s__"                                                                         if obj.taxon_rank == 'kingdom'
     end
 
+    def _to_taxon_info_sintax(obj)
+
+        fasta_header_standard =  _to_taxon_info_fasta_all_standard_ranks(obj)
+        ranks = [nil, 'k', 'p', 'c', 'o', 'f', 'g', 's']
+		
+		splitted_line = fasta_header_standard.split('|')
+
+		tax_string = "tax="
+		taxon_count = 0
+		splitted_line.each do |taxon|
+			taxon_count += 1
+			# if ranks[taxon_count] == 'g'
+			# 	if taxon =~ /^(.*)_/
+			# 		genus = $1
+			# 		tax_string += "#{ranks[taxon_count]}:#{genus},"
+			# 		taxon_count += 1
+			# 		tax_string += "#{ranks[taxon_count]}:#{taxon};"
+
+			# 		break
+			# 	end
+			# end
+
+			if taxon_count == splitted_line.size
+				tax_string += "#{ranks[taxon_count]}:#{taxon};"
+			else
+				tax_string += "#{ranks[taxon_count]}:#{taxon},"
+			end
+		end
+
+        return tax_string
+    end
+
     def _tsv_header_all_standard_ranks
         "identifier\tkingdom\tphylum\tclass\torder\tfamily\tgenus\tspecies\tlocation\tlatitude\tlongitude\tsequence"
     end
@@ -116,5 +148,9 @@ module StringFormatting
 
     def _qiime2_taxonomy_row(taxonomic_info:, identifier:)
         "#{identifier}\t#{_to_taxon_info_qiime2_taxonomy(taxonomic_info)}"
+    end
+
+    def _fasta_header_sintax(data:, taxonomic_info:)
+        ">#{data[:identifier]};#{_to_taxon_info_sintax(taxonomic_info)}"
     end
 end

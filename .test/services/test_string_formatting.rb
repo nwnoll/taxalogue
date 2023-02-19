@@ -49,4 +49,13 @@ class TestStringFormatting < Test::Unit::TestCase
         assert_equal ">#{@data[:identifier]}|Animalia|Arthropoda|Insecta|Hymenoptera|Apidae|Apis mellifera", OutputFormat::Fasta._fasta_header(data: @data, taxonomic_info: @lineage_data)
         assert_equal ">#{@data[:identifier]}|Animalia|Arthropoda|Insecta|Hymenoptera|Apidae|Apis", OutputFormat::Fasta._fasta_header(data: @data, taxonomic_info: lineage_data2)
     end
+
+    def test__fasta_header_sintax
+        lineage_data2 = @lineage_data.dup
+        lineage_data2.canonical_name = 'Apis'
+        lineage_data2.taxon_rank = 'genus'
+
+        assert_equal ">#{@data[:identifier]};tax=k:Animalia,p:Arthropoda,c:Insecta,o:Hymenoptera,f:Apidae,g:Apis,s:Apis mellifera;", OutputFormat::SintaxFasta._fasta_header_sintax(data: @data, taxonomic_info: @lineage_data)
+        assert_equal ">#{@data[:identifier]};tax=k:Animalia,p:Arthropoda,c:Insecta,o:Hymenoptera,f:Apidae,g:Apis;", OutputFormat::SintaxFasta._fasta_header_sintax(data: @data, taxonomic_info: lineage_data2)
+    end
 end
