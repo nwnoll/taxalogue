@@ -10,7 +10,6 @@ require 'bundler/inline'
 gemfile do
   source 'https://rubygems.org'
   
-  gem 'byebug'
   gem 'bio'
   gem 'fuzzy-string-match', '~> 0.9.7'
 end

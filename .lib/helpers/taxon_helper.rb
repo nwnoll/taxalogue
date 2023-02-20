@@ -273,7 +273,6 @@ class TaxonHelper
     def self.get_taxon_record(params, taxon_name = nil, automatic: false)
         taxon_object = nil
         taxon_name = params[:taxon] if taxon_name.nil?
-        # byebug
         
         if params[:taxonomy][:ncbi]
             record = TaxonHelper.choose_ncbi_record(taxon_name: taxon_name, automatic: automatic, params: params)

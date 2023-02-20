@@ -71,12 +71,6 @@ seq_of_cluster.each do |cluster, seq_of|
         count_of[taxa] += 1
     end
 
-    # count_of.each do |taxa_ary, count|
-    #     print "#{cluster} => #{count}:   "
-    #     puts taxa_ary.join(', ')
-    # end
-    # puts
-
     count_of = count_of.sort_by do |key, value|
         [key.size, value]
     end.reverse.to_h
@@ -129,20 +123,6 @@ seq_of_cluster.each do |cluster, seq_of|
             
             break
         end
-
-        # if count_of[top_taxa] > count
-        #     # puts 'INCONGRUENCY'
-
-        #     next
-        # end
-        
-        # if count_of[top_taxa] == count
-        #     ## Got hrough taxa
-        # else
-        #     top_taxa = taxa_ary
-        # end
-
-
     end
     if params[:choose_by_resolution_and_count] && sum_of_merged_lineage.size > 1
         sum_of_merged_lineage.each do |taxa_ary, sum|
@@ -163,25 +143,6 @@ seq_of_cluster.each do |cluster, seq_of|
         end
     end
     
-    # puts "#{top_taxa.join(', ')}: #{sum_of_merged_lineage[top_taxa]}"
-
-    # if params[:choose_by_lca]
-    #     # pp count_of
-    #     # puts
-    #     # puts "#{top_taxa.join(', ')}: #{count_of[top_taxa]}"
-    #     # puts
-    #     # puts
-
-    # # |cluster, seq_of|
-    
-    #     seq_of.each do |header, sequence|
-    #         p header
-    #         puts "#{top_taxa.join(', ')}: #{count_of[top_taxa]}"
-    #         p sequence
-    #         puts
-    #     end
-    # end
-
     if params[:choose_by_lowest_taxon_with_congruent_lineage]
         seq_of.each do |header, sequence|
             next if top_taxa.nil?

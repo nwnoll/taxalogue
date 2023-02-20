@@ -49,9 +49,9 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
 
         bundle exec ruby taxalogue.rb --taxon Arthropoda download --all
 
-If this is the first start of *taxalogue*, it will at the beginning download taxonomies from NCBI and GBIF. After download, the taxonomies will be imported into a SQL database. The whole process might take a little less than 2 hours. If the setup for the taxonomies is complete, the download of the actual sequences begins. As mentioned earlier the duration of the download depends on the chosen taxon, but if you use the example command with Arthropoda then **at least one full day** must be expected.
+If this is the first start of *taxalogue*, it starts by downloading taxonomies from NCBI and GBIF. After download, the taxonomies will be imported into a SQL database. The whole process might take a little less than 2 hours. If the setup for the taxonomies is complete, the download of the actual sequences begins. As mentioned earlier the duration of the download depends on the chosen taxon, but if you use the example command with Arthropoda then **at least one full day** must be expected.
 
-6. Check for download failures. Some downloads might fail due to download restriction or connection losses. Check and automatically download the failed download with the following command examples. Change the directory pathes according to your own files.
+6. Check for download failures. Some downloads might fail due to download restrictions or connection losses. Check and automatically download the failed download with the following command examples. Change the directory pathes according to your own files.
 
         bundle exec ruby taxalogue.rb --taxon Arthropoda download --bold_dir downloads/BOLD/Arthropoda-20220203T2218
         bundle exec ruby taxalogue.rb --taxon Arthropoda download --genbank_dir downloads/NCBIGENBANK/release247
@@ -61,7 +61,7 @@ If this is the first start of *taxalogue*, it will at the beginning download tax
         
         bundle exec ruby taxalogue.rb --taxon Arthropoda classify --all
         
-9. Have a look at the results:
+8. Have a look at the results:
 
         ├── results/
         │   ├── Arthropoda-20210317T1604/
@@ -78,7 +78,7 @@ If this is the first start of *taxalogue*, it will at the beginning download tax
         │   │   ├── bold_download_info.txt
         │   │   ├── taxalogue.txt
 
-10. Done!
+9. Done!
 
 If this is the first start of *taxalogue*, it has to download and setup taxonomies. These are needed to correctly assign taxonomic lineage information in case of missing or erroneous data. Since these are several Gigabyte of data, this might take while. The download time for the actual sequence data from BOLD, GenBank and GBOL depends on the taxon, but will also take quite some time. After the data are downloaded, the taxonomic lookup, mapping and formatting starts and the output files get created. 
 
