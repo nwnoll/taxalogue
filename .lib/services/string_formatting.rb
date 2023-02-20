@@ -57,18 +57,8 @@ module StringFormatting
 		tax_string = "tax="
 		taxon_count = 0
 		splitted_line.each do |taxon|
-			taxon_count += 1
-			# if ranks[taxon_count] == 'g'
-			# 	if taxon =~ /^(.*)_/
-			# 		genus = $1
-			# 		tax_string += "#{ranks[taxon_count]}:#{genus},"
-			# 		taxon_count += 1
-			# 		tax_string += "#{ranks[taxon_count]}:#{taxon};"
-
-			# 		break
-			# 	end
-			# end
-
+			
+            taxon_count += 1
 			if taxon_count == splitted_line.size
 				tax_string += "#{ranks[taxon_count]}:#{taxon};"
 			else

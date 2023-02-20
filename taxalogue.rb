@@ -106,13 +106,13 @@ subcommands = {
 		opts.on('-g', '--gbol', 'Download records from GBOL')
 		opts.on('-o', '--bold', 'Download records from BOLD')
 		opts.on('-k', '--genbank', 'Download records from GenBank')
-		opts.on('-G GBOL_DIR', String, '--gbol_dir', 'Path of GBOL directory that should be checked for failures. The failed downloads will be downloaded again. !not implemented yet!') do |opt|
+		opts.on('-G GBOL_DIR', String, '--gbol_dir', 'Path of GBOL directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
             Pathname.new(opt)
         end
 		opts.on('-B BOLD_DIR', String, '--bold_dir', 'Path of BOLD directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
             Pathname.new(opt)
         end
-		opts.on('-K GENBANK_DIR', String, '--genbank_dir', 'Path of GenBank directory that should be checked for failures. The failed downloads will be downloaded again. !not implemented yet!') do |opt|
+		opts.on('-K GENBANK_DIR', String, '--genbank_dir', 'Path of GenBank directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
             Pathname.new(opt)
         end
 		opts.on('-i', '--inv_contaminants', 'Download possible invertebrate contaminants')
@@ -186,6 +186,8 @@ subcommands = {
 
             opt
         end
+		# opts.on('-f FASTA_FILE', String, '--file', 'Filter a fasta file.')
+		# opts.on('-s', '--delete_space', 'Exchange spaces in the header with underscores.')
 	end,
 
     derep: OptionParser.new do |opts|

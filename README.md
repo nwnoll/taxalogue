@@ -1,15 +1,17 @@
 # taxalogue
 *taxalogue* collects DNA sequences from several online sources ([BOLD](https://www.boldsystems.org/), [GenBank](https://www.ncbi.nlm.nih.gov/genbank/) & [GBOL](https://bolgermany.de/gbol1/ergebnisse/results)) and combines them to a reference database. The reference database is useable in the taxonomic assignment step of metabarcoding analyses. Taxonomic incongruencies between the different data sources can be harmonized with respect to available taxonomies. Various filtering options are available regarding sequence quality or metadata information.
 
+***
 ## Table of contents
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
+- [Additional filtering](#additional-filtering)
 - [Basics](#basics)
 - [More examples](#more-examples)
 
-
+***
 ## Prerequisites
-You need to have **ruby** installed. *taxalogue* is tested for ruby **2.6.3+, 2.7 and 3.0**. Although older versions of ruby might also work. For detailed instructions go to https://www.ruby-lang.org/en/documentation/installation/ 
+You need to have **ruby** installed. *taxalogue* is tested for ruby **2.6.3+, 2.7 and 3.0**. Although older and newer versions of ruby might also work. For detailed instructions go to https://www.ruby-lang.org/en/documentation/installation/ 
 
 **sqlite3** is also needed, on MacOS it should be already preinstalled. If you use a Linux distribution like Ubuntu you could install it with `sudo apt-get install sqlite3`. For more information consider going to https://www.sqlite.org/
 
@@ -17,7 +19,7 @@ Additionally quite a bit of disk space is needed. The concrete size depends on t
 
 At last, *taxalogue* needs time. Especially the sequence download of species-rich taxa will take a while (e.g.: Arthropoda download takes more than a day). This is mainly because of download speed throttling by the source databases, but also because of occasional waiting times to not overload the providers.
 
-
+***
 ## Getting started
 
 1. Get the latest [release](https://github.com/nwnoll/taxalogue/releases)
@@ -38,23 +40,28 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
 
         # If you do get an error message like: Could not find 'bundler' (2.2.3) required by your /home/user/taxalogue-0.9.1/Gemfile.lock. (Gem::GemNotFoundException)
         
-        # try the following:
-        gem install bundler:2.2.3
-        bundle update --bundler
-        bundle install
+        # try the following (remove the '#'):
+        # gem install bundler:2.2.3
+        # bundle update --bundler
+        # bundle install
 
 5. Create a co1 reference database for a taxon of your choice, e.g. Arthropoda:
 
         bundle exec ruby taxalogue.rb --taxon Arthropoda download --all
-        bundle exec ruby taxalogue.rb --taxon Arthropoda classify --all
 
 If this is the first start of *taxalogue*, it will at the beginning download taxonomies from NCBI and GBIF. After download, the taxonomies will be imported into a SQL database. The whole process might take a little less than 2 hours. If the setup for the taxonomies is complete, the download of the actual sequences begins. As mentioned earlier the duration of the download depends on the chosen taxon, but if you use the example command with Arthropoda then **at least one full day** must be expected.
 
-6. A few moments later:
+6. Check for download failures. Some downloads might fail due to download restriction or connection losses. Check and automatically download the failed download with the following command examples. Change the directory pathes according to your own files.
 
-        ...
+        bundle exec ruby taxalogue.rb --taxon Arthropoda download --bold_dir downloads/BOLD/Arthropoda-20220203T2218
+        bundle exec ruby taxalogue.rb --taxon Arthropoda download --genbank_dir downloads/NCBIGENBANK/release247
+        bundle exec ruby taxalogue.rb --taxon Arthropoda download --gbol_dir downloads/GBOL/GBOL_Dataset_Release-20210128
+
+7. Classify the records
         
-7. Have a look at the results:
+        bundle exec ruby taxalogue.rb --taxon Arthropoda classify --all
+        
+9. Have a look at the results:
 
         ├── results/
         │   ├── Arthropoda-20210317T1604/
@@ -71,8 +78,7 @@ If this is the first start of *taxalogue*, it will at the beginning download tax
         │   │   ├── bold_download_info.txt
         │   │   ├── taxalogue.txt
 
-8. Done!
-
+10. Done!
 
 If this is the first start of *taxalogue*, it has to download and setup taxonomies. These are needed to correctly assign taxonomic lineage information in case of missing or erroneous data. Since these are several Gigabyte of data, this might take while. The download time for the actual sequence data from BOLD, GenBank and GBOL depends on the taxon, but will also take quite some time. After the data are downloaded, the taxonomic lookup, mapping and formatting starts and the output files get created. 
 
@@ -83,20 +89,44 @@ The output files are stored in the results folder, depending on your taxon choic
 The `contaminants` folder contains sequences of frequent unwanted HTS generated by-products. These files can be used as separate reference databases to exclude these most probably unwanted reads from further analysis. Wolbachia is an endoparasite of many insects and could lead to misclassification if not excluded.
 
 The main output files are `Arthropoda_derep_all_output.tsv` and `Arthropoda_derep_all_output.fas`. These will represent the reference databases. The tsv has some additional metadata information, e.g. the location where the specimen has been found. Since the different source databases contain records that have misspelings and or are considered as synonyms, there might be changes to the taxonomi information compared to the original. These are shown in `Arthropoda_derep_all_comparison.tsv`. Go to the [taxonomy section](#taxonomy) for more information.
-## TODO
-* output files
-* subcommands
-* cli colors
-* default config explanatio
 
+***
+## Additional filtering
+**Requires [vsearch](https://github.com/torognes/vsearch) to remove possible contaminants**
+
+```console
+## replace spaces with underscores, vsearch does not allow spaces
+ruby scripts/underscore_fasta.rb results/Arthropoda-20210317T1604/Arthropoda_derep_all_output.fas > Arthropoda_derep_all_output_uc.fas
+
+## remove sequences with stop codons and correct reverse complements, --genetic code 5 for invertebrates
+ruby scripts/stop_codon_filter_and_rc_correcton.rb --input Arthropoda_derep_all_output_uc.fas --output Arthropoda_derep_all_output_uc_STPf.fas --genetic_code 5 --filter_info STPf.tsv
+
+## remove gaps from sequences
+ruby scripts/degap_fasta.rb Arthropoda_derep_all_output_uc_STPf.fas > Arthropoda_derep_all_output_uc_STPf_dg.fas
+
+## remove possible contaminants
+cat results/Arthropoda-20210317T1604/Homo_sapiens_output.fas results/Arthropoda-20210317T1604/Wolbachia_output.fas > contaminants.fas
+vsearch --usearch_global Arthropoda_derep_all_output_uc_STPf_dg.fas --db contaminants.fas --maxaccepts 1 --maxrejects 0 --id 0.9 --dbmask none --qmask none --threads 32 --blast6out contaminants_search.b6 --matched matched_contaminants.fas --notmatched Arthropoda_derep_all_output_uc_STPf_dg_CONTf.fas
+
+## remove sequences with more than 3 Ns
+ruby scripts/filter_Ns.rb Arthropoda_derep_all_output_uc_STPf_dg_CONTf.fas Nf3_discarded.fas 3 > Arthropoda_derep_all_output_uc_STPf_dg_CONTf_Nf3.fas
+
+## remove sequences that have less than 400 bp and more than 1569 bp
+ruby scripts/length_filter.rb Arthropoda_derep_all_output_uc_STPf_dg_CONTf_Nf3.fas 400 1569 STPf_dg_CONTf_Nf3_Lf400_1569.tsv > Arthropoda_derep_all_output_uc_STPf_dg_CONTf_Nf3_Lf400_1569.fas
+
+## some sequences had missing information, e.g. order info was missing => sequence taxon info was removed until class level
+ruby scripts/remove_lower_than_missing_taxon_info.rb Arthropoda_derep_all_output_uc_STPf_dg_CONTf_Nf3_Lf400_1569.fas > Arthropoda_derep_all_output_uc_STPf_dg_CONTf_Nf3_Lf400_1569_TaxR.fas
+```
+
+***
 ## Basics
 This section explains the basic functionalities of *taxalogue*. Additionally, suggested pipelines and useful tips will be shown.
 
 - [Basic usage](#basic-usage)
-  - [create](#create)
   - [download](#download)
   - [classify](#classify)
   - [output](#output)
+  - [create](#create)
   - [Modifying the default config](#modifying-the-default-config)
 - [General options](#general-options)
   - [--taxon](#--taxon)
@@ -105,16 +135,8 @@ This section explains the basic functionalities of *taxalogue*. Additionally, su
   - [--num_threads](#--num_threads)
   - [--version](#--version)
   - [--help](#--help)
-- [More subcommands](#more-subcommands)
-  - [merge](#merge)
-  - [setup](#setup)
-  - [update](#update)
-  - [filter](#filter)
-  - [derep](#derep)
-  - [taxonomy](#taxonomy)
-  - [region](#region)
-  - [import](#import)
 
+***
 ### Basic Usage
 The basic usage looks like: 
 ```console
@@ -151,31 +173,9 @@ The subcommands associated subcommand options should be listed right after the s
 bundle exec ruby taxalogue.rb --taxon Orthoptera create --gbol --bold filter --taxon_rank species --max_N 2 region -country "Germany"
 ```
 The last command would generate a reference database for the taxon Orthoptera with sequences from BOLD and GBOL. It would only contain sequences with at least species information, that have a maximum of 2 Ns and belong to specimens collected in Germany.
-
-#### create
-This command creates a barcode database. It will download all sequences belonging to the specified taxon, after that all downloaded files will be parsed and it is checked if a taxon name is present in the chosen taxonomy (default is the NCBI taxonomy). Depending on your used options it might allow the usage of synonyms, or otherwise the accepted name from the NCBI taxonomy will be used. After that the default option is to dereplicate all the sequences and resolve conflicts.
-
-The results will be written into the `results` folder:
-
-        ├── results/
-        │   ├── Arthropoda-20210317T1604/
-
-
-Examples:
-```console   
-## creates a co1 database for Orthoptera with sequences from BOLD, GBOL and GenBank
-bundle exec ruby taxalogue.rb -t Orthoptera create --all
-
-## creates a co1 database for Orthoptera with sequences that have to be at least determined
-## to the genus level from BOLD, GBOL and GenBank
-bundle exec ruby taxalogue.rb -t Orthoptera create --all filter --taxon_rank genus
-
-## creates a co1 database for Arthropoda with sequences that have to be at least determined
-## to the species level and were collected in Germany, Belgium or France from BOLD, GBOL and GenBank
-bundle exec ruby taxalogue.rb -t Arthropoda create --all filter --taxon_rank species region --country "Germany;France;Belgium"
-```    
-
-#### download
+  
+***
+#### **download**
 This command only downloads sequences for the specified taxon and does not do any other thing like classification or filtering etc.. Options can be used to get sequences from all available source databases (BOLD, GBOL and GenBank) or just for example from GBOL and BOLD.
 
 The results will be written into the `downloads` folder:
@@ -199,7 +199,8 @@ bundle exec ruby taxalogue.rb -t Orthoptera download --all
 bundle exec ruby taxalogue.rb -t Orthoptera download --bold --gbol
 ``` 
 
-#### classify
+***
+#### **classify**
 If you already downloaded sequences with the `create` or `download` subcommand, you could classify these downloads without downloading it again. This is useful if you for example want another version of the database that only allow sequences that are determined until species level. Or you don't want to allow any Ns in the sequences. You could also try a different taxonomy.
 
 If you already downloaded sequences for Arthropoda, you could also generate a subset of only Hymenoptera without having to download Hymenoptera again, since they are already available through the older download. This of course does only work if you already have downloades sequences for your specified taxon or for a higher taxon.
@@ -230,6 +231,7 @@ classify --gbol_dir /home/user/taxalogue/downloads/GBOL/GBOL_Dataset_Release-202
 --genbank_dir /home/user/taxalogue/downloads/NCBIGENBANK/release245
 ```
 
+***
 #### output
 
         ├── results/                                         * All results will be written in this folder 
@@ -252,8 +254,34 @@ classify --gbol_dir /home/user/taxalogue/downloads/GBOL/GBOL_Dataset_Release-202
         │   │   ├── Orthoptera_derep_all_dada2_taxonomy.fas
         │   │   ├── Orthoptera_derep_all_dada2_species.fas
        
+***
+#### create
+**Should only be used for small taxa with few records, since a download failure for millions of records is especially likely for BOLD**
 
-#### Modifying the default config
+This command creates a barcode database. It will download all sequences belonging to the specified taxon, after that all downloaded files will be parsed and it is checked if a taxon name is present in the chosen taxonomy (default is the NCBI taxonomy). Depending on your used options it might allow the usage of synonyms, or otherwise the accepted name from the NCBI taxonomy will be used. After that the default option is to dereplicate all the sequences and resolve conflicts.
+
+The results will be written into the `results` folder:
+
+        ├── results/
+        │   ├── Arthropoda-20210317T1604/
+
+
+Examples:
+```console   
+## creates a co1 database for Orthoptera with sequences from BOLD, GBOL and GenBank
+bundle exec ruby taxalogue.rb -t Orthoptera create --all
+
+## creates a co1 database for Orthoptera with sequences that have to be at least determined
+## to the genus level from BOLD, GBOL and GenBank
+bundle exec ruby taxalogue.rb -t Orthoptera create --all filter --taxon_rank genus
+
+## creates a co1 database for Arthropoda with sequences that have to be at least determined
+## to the species level and were collected in Germany, Belgium or France from BOLD, GBOL and GenBank
+bundle exec ruby taxalogue.rb -t Arthropoda create --all filter --taxon_rank species region --country "Germany;France;Belgium"
+```  
+
+***
+#### **Modifying the default config**
 If *taxalogue* is called without any options it will only use the default values and those that have been specified in the `default_config.yaml` file. The config file can be adopted to your preferences. 
 
 ```yaml
@@ -278,41 +306,32 @@ If *taxalogue* is called without any options it will only use the default values
   :dada2_species: false
 ```
 
+***
 ### General options
-#### --taxon
+#### **--taxon**
 The taxa you are able to use depends on the used taxonomy. Taxa names have to be provided in their latinized form without authorship information. At the moment only taxa names for standard ranks are allowed (species, genus, family, order, class, phylum and kingdom). If the taxon is not available, check for any misspelings and if it belongs to the allowed ranks. Available taxa are listed at [NCBI Taxonomy](https://www.ncbi.nlm.nih.gov/taxonomy) or [GBIF](https://www.gbif.org/species/).
 
-#### --markers
+
+#### **--markers**
 Currently only co1. default: co1
 
-#### --fast_run
+
+#### **--fast_run**
 Accellerates Taxon comparison. Turn it off with --fast_run false. default: true
 
-#### --num_threads
+
+#### **--num_threads**
 Number of threads for downloads. default: 5
 
-#### --version
+
+#### **--version**
 Shows the used version
 
-#### --help
+
+#### **--help**
 Lists all general options and shows available subcommands. If  `--help` is used after a subcommand than it will show all options for that subbcomand
 
-### More subcommands
-#### merge
-#### setup
-#### update
-#### filter
-#### derep
-#### taxonomy
-
-In general it is a good idea to just use the default option, which is the NCBI Taxonomy. However a more comprehensive taxonomy is provided by GBIF. If you use the GBIF Taxonomy this might lead to a lot of renaming of the downloaded sequences due to synonymy (except you do allow synonyms). This normalization based on the synthesized GBIF Taxonomy comes understandably with concerns and critique (for example, see [Franz & Sterner, 2018](https://doi.org/10.1093/database/bax100)).
-
-However, such a system allows the integration of many different datasets and might help to organize biodiversity data. An explanation of the GBIF Taxonomy can be found at https://data-blog.gbif.org/post/gbif-backbone-taxonomy/ . If you like to normalize the sequences based on that, use the --gbif or --gbif_backbone option. The advantage of such a comprehensive taxonomic system with only one accepted name is apparent in the taxonomic assignment step. Such an re-assignment has been suggested as additional curation ([Piper et al., 2021](https://doi.org/10.1101/2021.03.16.435710)). For a detailed description of all taxonomy options please use taxonomy -h
-
-#### region
-#### import
-
-
+***
  ## More examples
  
  ### Combinations
@@ -352,6 +371,9 @@ bundle exec ruby taxalogue.rb taxonomy -h
  
  ## use GBIF Backbone and allow synonyms
  bundle exec ruby taxalogue.rb -t Arthropoda taxonomy --gbif_backbone --allow_syonyms
+
+ ## Disable taxonomic harmonization
+ bundle exec ruby taxalogue.rb -t Arthropoda taxonomy --unmapped
 ```
 
 ### Filter sequences
@@ -393,7 +415,7 @@ bundle exec ruby taxalogue.rb -t Arthropoda region -k "North America;Europe"
 ```
 
 ### Choose sequences by biogegraphic realms
-If you want filter the sequences by biogeographic realms, then only sequences are considered that have latitude and longitude information. Sequences without this information get discared
+If you want filter the sequences by biogeographic realms, then only sequences are considered that have latitude and longitude information. Sequences without this information get discarded
 ```console
 ## show all available realms
 bundle exec ruby taxalogue.rb -B
@@ -417,3 +439,17 @@ bundle exec ruby taxalogue.rb -t Arthropoda region -e "Western European broadlea
 ## sequences from Zambezian coastal flooded savanna and Zambezian flooded grasslands
 bundle exec ruby taxalogue.rb -t Arthropoda region -e "Zambezian coastal flooded savanna;Zambezian flooded grasslands"
 ```
+
+
+### Choose sequences by custom shape file
+If a custom shape file should be used, you need to specify these 3 parameters:
+
+- --custom_shapefile => expects a ESRI shape file. It also expects files with .shx and .dbf extension to be in the same folder
+- --custom_shapefile_attribute => attribute name that should be used
+- --custom_shapefile_values => values of the attribute on which the filtering should be based
+
+An example run could look like this: 
+```console
+bundle exec ruby taxalogue.rb region --custom_shapefile downloads/SHAPEFILES/fada_regions/fadaregions.shp --custom_shapefile_attribute name --custom_shapefile_values "Nearctic;Palaearctic"
+```
+**Since the coordinates from the downloaded sequences are most likely based on the WGS84 coordinate reference system, the custom shapefiles are also expected to be based on WGS84** 
