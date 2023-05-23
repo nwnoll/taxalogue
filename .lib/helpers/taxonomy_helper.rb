@@ -11,7 +11,7 @@ class TaxonomyHelper
         downloader = HttpDownloader2.new(address: config.address, destination: config.file_manager.file_path)
         downloader.run
     
-        unless File.exists?('downloads/NCBI_TAXONOMY/NCBI_TAXONOMY.zip')
+        unless File.exist?('downloads/NCBI_TAXONOMY/NCBI_TAXONOMY.zip')
             puts "The NCBI Taxonomy has not been setup yet, please use setup --ncbi_taxonomy"
             
             return true
@@ -31,7 +31,7 @@ class TaxonomyHelper
 
     def self.new_gbif_taxonomy_available?
 
-        unless File.exists?('downloads/GBIF_TAXONOMY/eml.xml') || File.exists?('downloads/GBIF_TAXONOMY/Taxon.tsv')
+        unless File.exist?('downloads/GBIF_TAXONOMY/eml.xml') || File.exist?('downloads/GBIF_TAXONOMY/Taxon.tsv')
             puts "The GBIF Taxonomy has not been setup yet, please use setup --gbif_taxonomy"
             
             return true

@@ -476,7 +476,7 @@ class BoldJob
             file.puts 'tree:'
 
             basename = path.basename.to_s
-            if basename.starts_with?('.')
+            if basename.start_with?('.')
                 hash = root_node_copy.to_h
                 json_hash = hash.to_json
 

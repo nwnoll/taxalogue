@@ -22,7 +22,7 @@ class TaxonHelper
 
         file_name = Pathname.new('downloads/GBIF_ZOOLOGIAL_NAMES/names.txt')
     
-        unless File.exists?(file_name)
+        unless File.exist?(file_name)
     
             config_name = '.lib/configs/gbif_zoological_names_config.json' 
             params = MiscHelper.json_file_to_hash(config_name)
@@ -33,7 +33,7 @@ class TaxonHelper
             downloader = HttpDownloader2.new(address: config.address, destination: config.file_manager.file_path)
             downloader.run
         
-            unless File.exists?(config.file_manager.file_path)
+            unless File.exist?(config.file_manager.file_path)
                 return false
             end
         

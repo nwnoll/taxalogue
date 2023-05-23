@@ -24,7 +24,7 @@ $custom_regions_of  = Hash.new
 
 CONFIG_FILE = 'default_config.yaml'
 
-if File.exists? CONFIG_FILE
+if File.exist? CONFIG_FILE
 	config_options = YAML.load_file(CONFIG_FILE)
 	params.merge!(config_options)
 
@@ -416,7 +416,7 @@ params[:download][:gbol]    = true if params[:download][:gbol_dir]
 params[:download][:genbank] = true if params[:download][:genbank_dir]
 
 if params[:version]
-    puts 'taxalogue v0.9.3'
+    puts 'taxalogue v0.9.3.1'
     
     exit
 end
@@ -640,18 +640,18 @@ if params[:merge].any?
     end
 
     download_info_files.each do |download_info_file|
-        next unless download_info_file.basename.to_s.starts_with?('.')
+        next unless download_info_file.basename.to_s.start_with?('.')
         
         file = File.read(download_info_file)
         file =~ /^\s{6}(.*?);/
         dir = $1
         dir_path = Pathname.new(dir)
         
-        if download_info_file.basename.to_s.starts_with?('.bold_')
+        if download_info_file.basename.to_s.start_with?('.bold_')
             DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: dir_path, result_file_manager: file_manager, source: BoldJob)
-        elsif download_info_file.basename.to_s.starts_with?('.gbol_')
+        elsif download_info_file.basename.to_s.start_with?('.gbol_')
             DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: dir_path, result_file_manager: file_manager, source: GbolJob)
-        elsif download_info_file.basename.to_s.starts_with?('.ncbi_')
+        elsif download_info_file.basename.to_s.start_with?('.ncbi_')
             DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: dir_path, result_file_manager: file_manager, source: NcbiGenbankJob)
         end
     end

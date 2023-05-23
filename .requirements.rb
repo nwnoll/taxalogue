@@ -50,7 +50,8 @@ mode = 'production' if mode.nil?
 db_config_file 	= File.open(".db/database.yaml")
 db_config 		= YAML::load(db_config_file)
 
-if File.exists?(db_config[mode]['database'])
+
+if File.exist?(db_config[mode]['database'])
 	ActiveRecord::Base.establish_connection(db_config[mode])
     if mode == 'test'
         DatabaseSchema.destroy_whole_db(db_config[mode]['database'])

@@ -11,7 +11,7 @@
 
 ***
 ## Prerequisites
-You need to have **ruby** installed. *taxalogue* is tested for ruby **2.6.3+, 2.7 and 3.0**. Although older and newer versions of ruby might also work. For detailed instructions go to https://www.ruby-lang.org/en/documentation/installation/ 
+You need to have **ruby** installed. *taxalogue* is tested for ruby **3.2.0** but versions from 2.6.3 on should also work. **If you use Ubuntu 22+ you need to have at least ruby version 3.1.0**. For detailed instructions go to https://www.ruby-lang.org/en/documentation/installation/ 
 
 **sqlite3** is also needed, on MacOS it should be already preinstalled. If you use a Linux distribution like Ubuntu you could install it with `sudo apt-get install sqlite3`. For more information consider going to https://www.sqlite.org/
 
@@ -24,18 +24,18 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
 
 1. Get the latest [release](https://github.com/nwnoll/taxalogue/releases)
 
-        wget https://github.com/nwnoll/taxalogue/archive/refs/tags/v0.9.3.tar.gz
+        wget https://github.com/nwnoll/taxalogue/archive/refs/tags/v0.9.3.1.tar.gz
 
 2. Unzip the file to a location of your choice
 
-        tar xzf v0.9.3.tar.gz
+        tar xzf v0.9.3.1.tar.gz
 
 3. Change to the directory where you unzipped the source code
         
-        cd taxalogue-0.9.3
+        cd taxalogue-0.9.3.1
 
 4. Install all the dependencies
-        
+	bundle lock --update        
         bundle install
 
         # If you do get an error message like: Could not find 'bundler' (2.2.3) required by your /home/user/taxalogue-0.9.1/Gemfile.lock. (Gem::GemNotFoundException)
@@ -43,6 +43,7 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
         # try the following (remove the '#'):
         # gem install bundler:2.2.3
         # bundle update --bundler
+	# bundle lock --update
         # bundle install
 
 5. Create a co1 reference database for a taxon of your choice, e.g. Arthropoda:
