@@ -35,6 +35,7 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
         cd taxalogue-0.9.3.1
 
 4. Install all the dependencies
+	
 	bundle lock --update        
         bundle install
 
