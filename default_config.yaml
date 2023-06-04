@@ -1,7 +1,7 @@
 :taxon: Arthropoda
 :taxon_rank: phylum
 :markers: co1
-:fast_run: true
+:fast_run: false 
 :num_threads: 5
 :taxonomy:
   :ncbi: true

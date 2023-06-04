@@ -4,14 +4,14 @@ GEM
     RubyInline (3.13.0)
       ZenTest (~> 4.3)
     ZenTest (4.12.1)
-    activemodel (7.0.4.3)
-      activesupport (= 7.0.4.3)
-    activerecord (7.0.4.3)
-      activemodel (= 7.0.4.3)
-      activesupport (= 7.0.4.3)
+    activemodel (7.0.5)
+      activesupport (= 7.0.5)
+    activerecord (7.0.5)
+      activemodel (= 7.0.5)
+      activesupport (= 7.0.5)
     activerecord-import (1.4.1)
       activerecord (>= 4.2)
-    activesupport (7.0.4.3)
+    activesupport (7.0.5)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (>= 1.6, < 2)
       minitest (>= 5.1)
@@ -28,7 +28,7 @@ GEM
     fuzzy-string-match (1.0.1)
       RubyInline (>= 3.8.6)
     geokit (1.14.0)
-    i18n (1.13.0)
+    i18n (1.14.0)
       concurrent-ruby (~> 1.0)
     json (2.6.3)
     minitest (5.18.0)
@@ -47,7 +47,7 @@ GEM
     rubyzip (2.3.2)
     shp (0.1.0)
     sqlite3 (1.6.3-x86_64-linux)
-    test-unit (3.5.8)
+    test-unit (3.5.9)
       power_assert
     time (0.2.2)
       date
@@ -80,4 +80,4 @@ DEPENDENCIES
   test-unit
 
 BUNDLED WITH
-   2.4.8
+   2.4.10

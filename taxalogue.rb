@@ -71,7 +71,7 @@ global = OptionParser.new do |opts|
 		params[:marker_objects] = MiscHelper.create_marker_objects(query_marker_names: markers)
 	end
 
-    opts.on('-f FAST_RUN', TrueClass, '--fast_run', 'Accellerates Taxon comparison. Turn it off with --fast_run false. default: true') do |flag|
+    opts.on('-f FAST_RUN', FalseClass, '--fast_run', 'Accellerates Taxon comparison. Turn it on with --fast_run true. default: false') do |flag|
         params[:fast_run] = flag
         flag
     end

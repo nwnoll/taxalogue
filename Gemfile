@@ -41,7 +41,7 @@ else
     gem 'pastel', '~> 0.8.0'
     gem 'test-unit'
     gem 'rexml', '~> 3.2', '>= 3.2.4'
-    gem 'biodiversity', '~> 5.1', '>= 5.1.2'
+    gem 'biodiversity', '~5.1', '>= 5.1.2', '< 5.2'
     gem 'countries', '~> 1.2', '>= 1.2.5'
     gem 'geokit', '~> 1.13', '>= 1.13.1'
     gem 'shp'
