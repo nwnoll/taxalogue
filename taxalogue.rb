@@ -415,7 +415,7 @@ params[:download][:gbol]    = true if params[:download][:gbol_dir]
 params[:download][:genbank] = true if params[:download][:genbank_dir]
 
 if params[:version]
-    puts 'taxalogue v0.9.3.1'
+    puts 'taxalogue v0.9.3.2'
     
     exit
 end
@@ -579,6 +579,7 @@ if params[:classify].any?
     exit
 end
 
+
 if params[:merge].any?
     if params[:merge][:result_dir].nil?
         puts "Need a result directory:"
@@ -672,6 +673,7 @@ if params[:merge].any?
     exit
 end
 
+
 if params[:setup].any?
     params[:setup].each do |key, value|
         if key == :reset_taxonomies && params[:setup][key]
@@ -741,6 +743,7 @@ if params[:setup].any?
         end
     end
 end
+
 
 if params[:update].any?
     if params[:update][:all]
