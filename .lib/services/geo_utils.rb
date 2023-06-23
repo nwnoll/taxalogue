@@ -99,8 +99,9 @@ module GeoUtils
 
     def all_country_names_by_continent(continent)
         country_names = []
+        
+        
         ISO3166::Country.find_all_by(:continent, continent).each { |c| country_names.push(c[1]['name']) }
-
         return country_names.sort
     end
 

@@ -24,7 +24,7 @@ if major == 3 && minor >= 1
     gem 'test-unit'
     gem 'rexml'
     gem 'biodiversity'
-    gem 'countries'
+    gem 'countries', '~> 1.2', '>= 1.2.5'
     gem 'geokit'
     gem 'shp'
     gem 'net-ftp'
