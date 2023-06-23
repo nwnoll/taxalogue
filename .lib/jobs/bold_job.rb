@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class BoldJob
-    attr_reader :taxon, :markers, :taxon_name, :result_file_manager, :try_synonyms, :taxonomy_params, :params, :download_only, :classify_only, :classify_dir, :num_threads
+    attr_reader :taxon, :markers, :taxon_name, :result_file_manager, :try_synonyms, :taxonomy_params, :params, :download_only, :classify_only, :classify_dir, :num_threads, :bold_release
 
     HEADER_LENGTH = 1
     BOLD_DIR = Pathname.new('downloads/BOLD')
@@ -21,6 +21,7 @@ class BoldJob
         @classify_dir         = params[:classify][:bold_dir]
         @num_threads          = params[:num_threads] < 0 ? 5 : params[:num_threads]
         @root_download_dir    = nil
+        @bold_release         = params[:classify][:bold_release]
 
         @pending = Pastel.new.white.on_yellow('pending')
         @failure = Pastel.new.white.on_red('failure')
@@ -45,6 +46,9 @@ class BoldJob
                 ## TODO:
                 ## here i shoul call functions for user provided dirs that have not been
                 ## downloaded by taxalogue
+                
+                ## could call it release_file, or bold_file
+                ##  
             elsif params[:download][:bold_dir]
                 ## NEXT
                 ## now i need to download the failed files
@@ -52,6 +56,10 @@ class BoldJob
                 ## it should "just" add the downloads to the existing folder
                 puts "There were no downloads available, therefore also no failed downloads. Consider starting again: bundle exec ruby taxalogue.rb download --all"
                 exit
+            elsif bold_release
+                ## this should be the place to process the release file        
+                ## call a function to create download_file_manager
+                return [result_file_manager, :cant_classify] unless File.file?(bold_release)
             else
                 download_file_managers  = _download_files
             end
@@ -68,7 +76,7 @@ class BoldJob
 
 
         _classify_downloads(download_file_managers)     unless download_only
-        _write_marshal_files(download_file_managers)    unless did_use_marshal_file || classify_only || classify_dir
+        _write_marshal_files(download_file_managers)    unless did_use_marshal_file || classify_only || classify_dir || bold_release
 
 
         return [result_file_manager, download_file_managers]
@@ -658,6 +666,15 @@ class BoldJob
     
 
     def _classify_downloads(download_file_managers)
+
+        if bold_release
+            
+            bold_classifier   = BoldClassifier.new(params: params, file_name: bold_release, file_manager: result_file_manager)
+            bold_classifier.run ## result_file_manager creates new files and will push those into internal array
+        
+            return nil
+        end 
+
         download_file_managers.each do |download_file_manager|
             next unless download_file_manager.status == 'success'
             next unless File.file?(download_file_manager.file_path)

@@ -19,11 +19,14 @@ class MultipleJobs
         ncbi_dir = nil
 
         $seq_ids = Set.new # if params[:derep].any?
-        
+       
+        ## set download dirs
         jobs.each do |job|
             if job.class == BoldJob
                 if params[:download][:bold_dir]
                     bold_dir = Pathname.new(params[:download][:bold_dir])
+                elsif params[:classify][:bold_release]
+                    bold_dir = nil
                 else
                     bold_dir = BoldDownloadCheckHelper.ask_user_about_download_dirs(params, only_successful = false)
                 end
@@ -39,6 +42,8 @@ class MultipleJobs
             end
         end
 
+
+        ## run jobs
         used_source_db_ary = []
         jobs.each do |job|
             if job.class == BoldJob
@@ -52,6 +57,7 @@ class MultipleJobs
                 results_of[job.class] = job.run(ncbi_dir)
             end
         end
+
 
         ## dereplicate
         if params[:derep].any? { |opt| opt.last == true }

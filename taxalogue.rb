@@ -124,6 +124,7 @@ subcommands = {
 		opts.on('-g', '--gbol', 'Latest download of GBOL database will be classified')
 		opts.on('-b', '--bold', 'Latest download of BOLD database will be classified')
 		opts.on('-k', '--genbank', 'Latest download of NCBI GenBank database will be classified')
+        opts.on('-r BOLD_RELEASE', String, '--bold_release', 'Specify the .tsv from the BOLD release file.')
 		opts.on('-G GBOL_DIR', String, '--gbol_dir', 'Specify the GBOL directory that should be classified')
 		opts.on('-B BOLD_DIR', String, '--bold_dir', 'Specify the BOLD directory that should be classified')
 		opts.on('-K GENBANK_DIR', String, '--genbank_dir', 'Specify the NCBI GenBank directory that should be classified')
@@ -158,14 +159,14 @@ subcommands = {
 
     output: OptionParser.new do |opts|
         opts.banner = "Usage: output [options]"
-        opts.on('-t BOOLEAN', TrueClass, '--table', 'TSV Table. default: true')
-        opts.on('-f BOOLEAN', TrueClass, '--fasta', 'fasta file. default: true')
-        opts.on('-c BOOLEAN', TrueClass, '--comparison', 'Comparison TSV, shows initial Taxon information and normalization by Taxonomy. default: true')
-        opts.on('-q BOOLEAN', FalseClass, '--qiime2', 'QIIME2 Taxonomy files, includes a taxonomy text file and a fasta file.')
-        opts.on('-k BOOLEAN', FalseClass, '--kraken2', 'Kraken2 fasta file, works only with NCBI taxonomy.')
-        opts.on('-d BOOLEAN', FalseClass, '--dada2_taxonomy', 'Fasta output file for the dada2 assignTaxonomy function.')
-        opts.on('-s BOOLEAN', FalseClass, '--dada2_species', 'Fasta output file for the dada2 assignSpecies function')
-        opts.on('-x BOOLEAN', FalseClass, '--sintax', 'Fasta output file for the SINTAX program')
+        opts.on('-t', '--table',          'TSV Table. default: true')
+        opts.on('-f', '--fasta',          'fasta file. default: true')
+        opts.on('-c', '--comparison',     'Comparison TSV, shows initial Taxon information and normalization by Taxonomy. default: true')
+        opts.on('-q', '--qiime2',         'QIIME2 Taxonomy files, includes a taxonomy text file and a fasta file.')
+        opts.on('-k', '--kraken2',        'Kraken2 fasta file, works only with NCBI taxonomy.')
+        opts.on('-d', '--dada2_taxonomy', 'Fasta output file for the dada2 assignTaxonomy function.')
+        opts.on('-s', '--dada2_species',  'Fasta output file for the dada2 assignSpecies function')
+        opts.on('-x', '--sintax',         'Fasta output file for the SINTAX program')
     end,
 
 	filter: OptionParser.new do |opts|
@@ -186,25 +187,23 @@ subcommands = {
 
             opt
         end
-		# opts.on('-f FASTA_FILE', String, '--file', 'Filter a fasta file.')
-		# opts.on('-s', '--delete_space', 'Exchange spaces in the header with underscores.')
 	end,
 
     derep: OptionParser.new do |opts|
 		opts.banner = "Usage: derep [options]"
-        opts.on('-l BOOLEAN', TrueClass, '--last_common_ancestor', 'If some taxonomic assignments have for example the same number of associated specimens or ar e from the same taxonomic rank, the last common ancestor is chosen. default: true') do |opt|
+        opts.on('-l', '--last_common_ancestor', 'If some taxonomic assignments have for example the same number of associated specimens or ar e from the same taxonomic rank, the last common ancestor is chosen. default: true') do |opt|
             params[:derep][:random]     = false
             params[:derep][:discard]    = false
 
             opt
         end
-        opts.on('-r BOOLEAN', TrueClass, '--random', 'If some taxonomic assignments for a given sequence have the same precedence, the candidate is chosen in input order') do |opt|
+        opts.on('-r', '--random', 'If some taxonomic assignments for a given sequence have the same precedence, the candidate is chosen in input order') do |opt|
             params[:derep][:last_common_ancestor]   = false
             params[:derep][:discard]                = false
 
             opt
         end
-        opts.on('-d BOOLEAN', TrueClass, '--discard', 'If some taxonomic assignments for a given sequence have the same precedence, the sequence is discarded.') do |opt|
+        opts.on('-d', '--discard', 'If some taxonomic assignments for a given sequence have the same precedence, the sequence is discarded.') do |opt|
             params[:derep][:last_common_ancestor]   = false
             params[:derep][:random]                 = false
 
@@ -426,6 +425,10 @@ end
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 MiscHelper.print_params(params)
 
+## should really stop the passing of the params..
+## would be much less code if I just used this global
+$params = params
+
 
 if params[:create].any?
     jobs = []
@@ -534,7 +537,7 @@ if params[:classify].any?
             jobs.push(ncbi_genbank_job, gbol_job, bold_job)
         end
 
-        if (key == :bold || key == :bold_dir) && jobs.none? { |e| e.class == BoldJob }  && params[:classify][key]
+        if (key == :bold || key == :bold_dir || key == :bold_release) && jobs.none? { |e| e.class == BoldJob }  && params[:classify][key]
             bold_job = BoldJob.new(result_file_manager: file_manager, params: params)
             
             jobs.push(bold_job)
@@ -556,7 +559,7 @@ if params[:classify].any?
     file_manager.create_dir
 
     multiple_jobs = MultipleJobs.new(jobs: jobs, params: params)
-	jobs_state = multiple_jobs.run
+    jobs_state = multiple_jobs.run
     sleep 2
 
     ## TODO: why dont create marshal files etc if no_merge?
