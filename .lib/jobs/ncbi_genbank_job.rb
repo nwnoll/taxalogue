@@ -497,16 +497,101 @@ class NcbiGenbankJob
     end
 
 
+    def _get_markers_of_releases(genbank_marker_info_of)
+       
+        markers_of_releases = Hash.new
+        genbank_marker_info_of.keys.each do |k|
+         
+            k =~ /\/(release\d+)\//
+            release_str = $1
+            next unless release_str
+            
+            if markers_of_releases.key?(release_str)
+              
+                genbank_marker_info_of[k].keys.each do |marker_str|
+                    markers_of_releases[release_str] = genbank_marker_info_of[k].push(marker_str) unless markers_of_releases[release_str].include?(marker_str)
+                end
+            else
+                markers_of_releases[release_str] = genbank_marker_info_of[k].keys
+            end
+        end
+       
+
+        return markers_of_releases
+    end
+
+    def _get_markers_of_downloaded_release(download_file_manager:, markers_of_releases:, genbank_marker_info_of:)
+        return Hash.new if markers_of_releases.empty?
+        
+        markers_of_downloaded_release = Hash.new
+        download_file_manager.config.markers.each do |marker|
+            
+            release_str = download_file_manager.config.parent_dir.to_s
+            if markers_of_releases.key?(release_str)
+                
+                if markers_of_releases[release_str].include?(marker)
+                    markers_of_downloaded_release[release_str].push(marker.marker_tag.to_s) unless markers_of_downloaded_release[release_str].include?(marker)
+                else
+                    markers_of_downloaded_release[release_str] = [marker.marker_tag.to_s]
+                end
+            end
+        end
+    
+        return markers_of_downloaded_release  
+    end
+
     def _classify_downloads(download_file_managers:)
-        erroneous_files_of = Hash.new
+        
+        MiscHelper.OUT_header('Starting to classify NCBI GenBank downloads')
+
+
+        erroneous_files_of = Hash.new { |h,k| h[k] = [] }
         download_file_managers.each do |download_file_manager|
             division_codes_for_taxon = division_codes_for(division_ids)
             next unless division_codes_for_taxon.include?(download_file_manager.name)
             next unless download_file_manager.status == 'success'
-                    
+            
 
             genbank_marker_info_of = MiscHelper.get_genbank_marker_info
-            unless genbank_marker_info_of
+            if genbank_marker_info_of
+                
+                markers_of_releases           = _get_markers_of_releases(genbank_marker_info_of)
+                markers_of_downloaded_release = _get_markers_of_downloaded_release(download_file_manager: download_file_manager, markers_of_releases: markers_of_releases, genbank_marker_info_of: genbank_marker_info_of)
+                ## if the hash is empty than the release from the download_file_manager was not found
+                #  therefore we have to search for the markers in that release
+                if markers_of_downloaded_release.empty?
+                    MiscHelper.search_for_markers_in_genbank_files(marker_objects: @markers, dir_name: download_file_manager.dir_path)
+                    sleep 0.1
+                end
+
+                
+                ## get info for missing markers
+                markers_of_downloaded_release.keys.each do |release|
+                    
+                    ## should actually not happen but to be sure
+                    next unless markers_of_releases.key?(release)
+                    
+                    markers_to_download = []
+                    markers_of_downloaded_release[release].each do |marker_str|
+                        markers_to_download.push(marker_str) unless markers_of_releases[release].include?(marker_str)
+                    end
+                    next unless markers_to_download.any? # skip if all markers are present for release
+
+
+                    marker_objects = []
+                    markers_to_download.each do |marker_str|
+                        marker_objects.push(Marker.new(query_marker_name: marker_str))
+                    end
+                    
+                    MiscHelper.search_for_markers_in_genbank_files(marker_objects: marker_objects, dir_name: download_file_manager.dir_path)
+                    sleep 0.1
+                end
+
+                
+                MiscHelper.create_genbank_marker_info_file
+                sleep 0.1
+            else # no file in .config 
+
                 MiscHelper.search_for_markers_in_genbank_files(marker_objects: @markers, dir_name: download_file_manager.dir_path)
                 sleep 0.1
                 MiscHelper.create_genbank_marker_info_file
@@ -517,42 +602,54 @@ class NcbiGenbankJob
                 return :cant_classify unless genbank_marker_info_of
             end
 
-            
-            not_searched_marker_objects = MiscHelper.get_not_searched_markers(marker_objects: @markers, genbank_marker_info_of: genbank_marker_info_of, download_file_manager: download_file_manager)
-            if not_searched_marker_objects.any?
-                MiscHelper.search_for_markers_in_genbank_files(marker_objects: not_searched_marker_objects, dir_name: download_file_manager.dir_path)
-                MiscHelper.create_genbank_marker_info_file
-            end
-
 
             files = download_file_manager.files_with_name_of(dir: download_file_manager.dir_path)
-            # max_files = 0
-            files.each do |file|
-                next unless File.file?(file)
-                next unless genbank_marker_info_of[file.to_s]
+            #files = files.sample(30)# for quicker tests
+           
 
+            begin
+                erroneous_files_of = _parallel_classification(files: files, genbank_marker_info_of: genbank_marker_info_of, erroneous_files_of: erroneous_files_of, download_file_manager: download_file_manager)
+            rescue Errno::EMFILE 
 
-                # max_files += 1
-                # break if max_files == 10
-
-                
-                ## search for marker in file
-                found_marker = false
-                @markers.each do |marker|
-                    if genbank_marker_info_of[file.to_s][marker.marker_tag.to_s]
-                        found_marker =  true
-                        break 
-                    end
+                sleep 10
+                begin
+                    erroneous_files_of = _parallel_classification(files: files, genbank_marker_info_of: genbank_marker_info_of, erroneous_files_of: erroneous_files_of, download_file_manager: download_file_manager)
+                rescue Errno::EMFILE
+                    puts "Errno::EMFILE => Too many open files, please consider to increase the limit of open files."
+                    exit
                 end
-                next unless found_marker
-                
-                
-                classifier = NcbiGenbankClassifier.new(file_name: file, file_manager: result_file_manager, params: params)
-                erroneous_files = classifier.run ## result_file_manager creates new files and will push those into internal array
-                erroneous_files_of[download_file_manager] = erroneous_files if erroneous_files.any?
             end
         end
 
+
+        return erroneous_files_of
+    end
+
+    def _parallel_classification(files:, genbank_marker_info_of:, erroneous_files_of:, download_file_manager:)
+        
+        ## since the dereplication uses the sqlite database, we cant  parallelize it
+        num_processes = DerepHelper.do_derep ? 1 : params[:num_cores] 
+        Parallel.map(files, in_processes: num_processes) do |file|
+            next unless File.file?(file)
+            next unless genbank_marker_info_of[file.to_s]
+
+            
+            ## search for marker in file
+            found_marker = false
+            @markers.each do |marker|
+                if genbank_marker_info_of[file.to_s][marker.marker_tag.to_s]
+                    found_marker =  true
+                    break 
+                end
+            end
+            next unless found_marker
+            
+            
+            classifier = NcbiGenbankClassifier.new(file_name: file, file_manager: result_file_manager, params: params)
+            erroneous_files = classifier.run ## result_file_manager creates new files and will push those into internal array
+            erroneous_files_of[download_file_manager].push(erroneous_files).flatten! if erroneous_files.any?
+        end
+       
 
         return erroneous_files_of
     end
@@ -845,39 +942,6 @@ class NcbiGenbankJob
             end
         end
 
-        # erroneous_files_of.each do |download_file_manager, erroneous_files|
-        #     download_file_managers.reject! { |fm| fm == download_file_manager }
-
-
-        #     config                  = download_file_manager.config
-        #     downloader              = config.downloader.new(config: config)
-        #     not_downloaded_files    = []
-        #     download_did_fail       = false
-
-
-        #     begin
-        #         base_names = []
-        #         erroneous_files.each { |file| base_names.push(file.basename.to_s) }
-        #         not_downloaded_files = downloader.run(files_to_download: base_names)
-        #     rescue StandardError => err
-        #         download_did_fail = true
-        #     end
-        #     download_did_fail = true if not_downloaded_files.any?
-
-
-        #     files_per_division.each do |file_name, download_success|
-        #         unless download_success
-        #             if file_name.match?(config.name)
-        #                 download_did_fail = true
-        #                 break
-        #             end
-        #         end
-        #     end
-            # download_file_manager.status = download_did_fail ? 'failure' : 'success'
-
-
-            # download_file_managers.push(download_file_manager)
-        # end
 
 
         success = download_file_managers.all? { |fm| fm.status == 'success'}

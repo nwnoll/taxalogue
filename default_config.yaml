@@ -3,12 +3,14 @@
 :markers: co1
 :fast_run: false 
 :num_threads: 5
+:num_cores: 5
 :taxonomy:
   :ncbi: true
 :derep:
-  :last_common_ancestor: true
+  :last_common_ancestor: false
   :random: false
   :discard: false
+  :no_derep: true 
 :output:
   :table: true
   :fasta: true
@@ -17,4 +19,5 @@
   :kraken2: false
   :dada2_taxonomy: false
   :dada2_species: false
+  :sintax: false
   

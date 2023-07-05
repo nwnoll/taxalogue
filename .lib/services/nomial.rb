@@ -144,16 +144,7 @@ class Monomial
         records = _get_ncbi_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
         record  = _ncbi_taxonomy_object(records: records)
         return record unless record.nil?
-
-        parsed = Biodiversity::Parser.parse(name)
-        if parsed[:parsed]
-            name_stem = parsed[:canonical][:stemmed]
-            records = _get_ncbi_records(current_name: name_stem, importer: importer, first_specimen_info: first_specimen_info)
-            record  = _ncbi_taxonomy_object(records: records)
-
-            return record unless record.nil?
-        end
-
+        
         records = _get_ncbi_records(current_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
         record  = _ncbi_taxonomy_object(records: records)
         return record unless record.nil?
@@ -183,9 +174,10 @@ class Monomial
         return nil if obj.nil?
         
         parsed = Biodiversity::Parser.parse(obj.canonical_name)
-
         if parsed[:parsed]
             name_full = parsed[:canonical][:full]
+            
+
             if obj.taxon_rank.match?('species')
                 obj.canonical_name = name_full
                 obj.taxon_rank = 'genus' unless name_full.match?(' ')
@@ -494,15 +486,6 @@ class Polynomial < Monomial
         record  = _gbif_taxonomy_object(records: records)
         return record unless record.nil?
 
-        parsed = Biodiversity::Parser.parse(name)
-        if parsed[:parsed]
-            name_stem = parsed[:canonical][:stemmed]
-            records = _get_gbif_records(current_name: name_stem, importer: importer, first_specimen_info: first_specimen_info)
-            record  = _gbif_taxonomy_object(records: records)
-
-            return record unless record.nil?
-        end
-    
         records = _get_gbif_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info, gbif_api_exact: true)
         record  = _gbif_taxonomy_object(records: records)
         return record unless record.nil?
@@ -534,15 +517,6 @@ class Polynomial < Monomial
         records = _get_gbif_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
         record  = _gbif_taxonomy_object(records: records)
         return record unless record.nil?
-
-        parsed = Biodiversity::Parser.parse(name)
-        if parsed[:parsed]
-            name_stem = parsed[:canonical][:stemmed]
-            records = _get_gbif_records(current_name: name_stem, importer: importer, first_specimen_info: first_specimen_info)
-            record  = _gbif_taxonomy_object(records: records)
-
-            return record unless record.nil?
-        end
 
         records = _get_gbif_records(current_name: _ncbi_next_highest_taxa_name(name), importer: importer, first_specimen_info: first_specimen_info)
         record  = _gbif_taxonomy_object(records: records)

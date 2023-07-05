@@ -8,3 +8,4 @@
 /results*
 /.tool-versions
 /.genbank_files_with_markers
+**/.config/genbank_markers.json

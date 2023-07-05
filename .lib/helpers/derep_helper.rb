@@ -158,4 +158,10 @@ class DerepHelper
         SequenceTaxonObjectProxy.import seq_top_columns, seq_top_arys_to_import, validate: false, batch_size: BATCH_SIZE if seq_top_arys_to_import.any?
         sleep 1
     end
+
+    
+    def self.do_derep
+        return false if $params[:derep][:no_derep]
+        return $params[:derep].any? { |opt| opt.last == true }
+    end
 end

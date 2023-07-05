@@ -3,7 +3,7 @@
 class FtpDownloader
     attr_reader :config
 
-    RESTART_WAIT = 30
+    RESTART_WAIT            = 30
     @@count_restarts        = 0
     @@all_files_of_division = []
 
@@ -83,14 +83,9 @@ class FtpDownloader
 
         ## downloads all failed files
         if has_ftp_connection
+            ## TODO: Can i safely parallelize it?
             download_success_of_division_file.keys.each_with_index do |file, i|
                 next if download_success_of_division_file[file]
-
-                ## TODO:
-                ## REMOVE!
-                ## just for testing
-                # download_success_of_division_file[file] = true
-                # break if i == 1
 
 
                 local_path = File.join(config.file_manager.dir_path, file)
@@ -115,16 +110,16 @@ class FtpDownloader
                 
                 
                 ## download did succeed but downloaded file was malformed
-                is_gz_valid = MiscHelper.is_gz_valid?(local_path)
-                unless is_gz_valid
-                    @@count_restarts += 1
-                    
-                    
-                    text = "malformed file: #{file}\nrestart #{@@count_restarts} starts in #{RESTART_WAIT} seconds"
-                    _prepare_restart(text: text, ftp: ftp)
-                    needs_restart = true
-                    break
-                end
+                #is_gz_valid = MiscHelper.is_gz_valid?(local_path)
+                #unless is_gz_valid
+                #    @@count_restarts += 1
+                #    
+                #    
+                #    text = "malformed file: #{file}\nrestart #{@@count_restarts} starts in #{RESTART_WAIT} seconds"
+                #    _prepare_restart(text: text, ftp: ftp)
+                #    needs_restart = true
+                #    break
+                #end
 
 
                 ## too many failures, servers seem to be slow or unresponsive

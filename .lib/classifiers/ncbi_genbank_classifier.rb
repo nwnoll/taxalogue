@@ -28,9 +28,7 @@ class NcbiGenbankClassifier
     end
 
     def run
-        # MiscHelper.OUT_header('Starting to classify NCBI GenBank downloads')
-
-
+        
         file_names = []
         file_names.push(file_name)
         erroneous_files = []
@@ -38,13 +36,13 @@ class NcbiGenbankClassifier
 
         file_names.each do |file|
             file_name_match             = file.to_s.match(/gb\w+\d+/)
-            # next unless file.to_s.match?('gbinv194') ## to speed up tests
             base_name                   = file_name_match[0]
             specimens_of_taxon          = Hash.new { |hash, key| hash[key] = {} }
             specimens_of_sequence       = Hash.new
 
-            file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'ncbi') unless params[:derep].any? { |opt| opt.last == true }
-            
+
+            puts "Worker #{Parallel.worker_number} parsing:\t'#{file_name}'"
+            file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'ncbi') unless DerepHelper.do_derep
             begin
                 Zlib::GzipReader.open(file) do |gz_file|
                     ff = Bio::FlatFile.new(Bio::GenBank, gz_file)                    
@@ -74,12 +72,7 @@ class NcbiGenbankClassifier
                 p e
                 erroneous_files.push(file)
             end
-
-
-            puts "file '#{file_name}' was read"
-            puts 
-    
-            puts 'Starting taxa search'
+            puts "Worker #{Parallel.worker_number} classifying:\t'#{file_name}'"
 
 
             specimens_of_taxon.keys.each do |taxon_name|
@@ -98,28 +91,22 @@ class NcbiGenbankClassifier
                     next unless has_user_taxon_rank
                 end
     
-                if params[:derep].any? { |opt| opt.last == true }
+                if DerepHelper.do_derep
                     DerepHelper.fill_specimens_of_sequence(specimens: specimens_of_taxon[taxon_name][:data], specimens_of_sequence: specimens_of_sequence, taxonomic_info: taxonomic_info, taxon_name: taxon_name, first_specimen_info: first_specimen_info)
                 else
                     MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
                 end
             end
 
-            unless params[:derep].any? { |opt| opt.last == true }
-                ## TODO: Check if it should also be done for Comparison
-                OutputFormat::Tsv.rewind
-                file_of.each { |fc, fh| fh.close }
-            end
 
-
-            puts 'taxon search completed'
-            puts
-
-
-            if params[:derep].any? { |opt| opt.last == true }
+            if DerepHelper.do_derep
                 puts "Starting dereplication for file #{file_name}"
                 
                 DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name, 'ncbi')
+                
+                ## TODO: do I need this? Or do I close neded files?
+                # file_of.each { |fc, fh| fh.close }
+
                 
                 puts 'dereplication finished'
                 puts

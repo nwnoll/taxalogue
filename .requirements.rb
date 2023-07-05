@@ -11,7 +11,7 @@ require 'parallel'
 require 'pastel'
 require 'countries'
 require 'shp'
-require 'biodiversity'
+#require 'biodiversity'
 
 require "yaml"
 require 'optparse'

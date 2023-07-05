@@ -22,15 +22,15 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
 
 1. Get the latest [release](https://github.com/nwnoll/taxalogue/releases)
 
-        wget https://github.com/nwnoll/taxalogue/archive/refs/tags/v0.9.3.1.tar.gz
+        wget https://github.com/nwnoll/taxalogue/archive/refs/tags/v0.9.3.2.tar.gz
 
 2. Unzip the file to a location of your choice
 
-        tar xzf v0.9.3.1.tar.gz
+        tar xzf v0.9.3.2.tar.gz
 
 3. Change to the directory where you unzipped the source code
         
-        cd taxalogue-0.9.3.1
+        cd taxalogue-0.9.3.2
 
 4. Install all the dependencies
 	
@@ -45,34 +45,44 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
         # bundle lock --update
         # bundle install
 
-5. Create a co1 reference database for a taxon of your choice, e.g. Arthropoda:
 
-        bundle exec ruby taxalogue.rb --taxon Arthropoda download --all
+5. Download records from up to three different source databases
+	
+	## Since BOLD now offers to download a snapshot of the current database, it is recommended to use it
+	## The datapackages are listed at https://boldsystems.org/index.php/datapackages
+	## Choose the most current snapshot and download "Data package (tar.gz compressed)"
+	## For this step you need to be logged in, and therefore an account is needed.
+	## If you don't want to register at boldsystems you could use, for all source databases and Arthropoda, this command: bundle exec ruby taxalogue.rb --taxon Arthropoda download --all 
+	## But be warned this takes considerably longer than downloading the datapackage
+	## After you have downloaded the datapackage, extract the .tsv file
+	
+	## If you want to create a database for e.g., Artrhopoda from GBOL, GenBank and you already downloaded the aforementioned 
+	## BOLD datapackage, you can use the command below to download data from GenBank and GBOL
+	bundle exec ruby taxalogue.rb --taxon Arthropoda download --gbol --genbank
 
-If this is the first start of *taxalogue*, it starts by downloading taxonomies from NCBI and GBIF. After download, the taxonomies will be imported into a SQL database. The whole process might take a little less than 2 hours. If the setup for the taxonomies is complete, the download of the actual sequences begins. As mentioned earlier the duration of the download depends on the chosen taxon, but if you use the example command with Arthropoda then **at least one full day** must be expected.
+If this is the first start of *taxalogue*, it starts by downloading taxonomies from NCBI and GBIF. After download, the taxonomies will be imported into a SQL database. The whole process might take a little less than 2 hours. If the setup for the taxonomies is complete, the download of the actual sequences begins. As mentioned earlier the duration of the download depends on the chosen taxon.
+
 
 6. Check for download failures. Some downloads might fail due to download restrictions or connection losses. Check and automatically download the failed download with the following command examples. Change the directory pathes according to your own files.
 
-        bundle exec ruby taxalogue.rb --taxon Arthropoda download --bold_dir downloads/BOLD/Arthropoda-20220203T2218
-        bundle exec ruby taxalogue.rb --taxon Arthropoda download --genbank_dir downloads/NCBIGENBANK/release247
+        ## if you did not download the BOLD datapackage: bundle exec ruby taxalogue.rb --taxon Arthropoda download --bold_dir downloads/BOLD/Arthropoda-20220203T2218
+        bundle exec ruby taxalogue.rb --taxon Arthropoda download --genbank_dir downloads/NCBIGENBANK/release256
         bundle exec ruby taxalogue.rb --taxon Arthropoda download --gbol_dir downloads/GBOL/GBOL_Dataset_Release-20210128
 
-7. Classify the records
+
+7. Classify the records. Change the directory pathes according to your own BOLD release location (.tsv).
         
-        bundle exec ruby taxalogue.rb --taxon Arthropoda classify --all
-        
+        ## if you did not download the BOLD datapackage: bundle exec ruby taxalogue.rb --taxon Arthropoda classify --all
+        bundle exec ruby taxalogue.rb --taxon Arthropoda classify --genbank --gbol --bold_release /path/to/bold_release.tsv
+	       
+ 
 8. Have a look at the results:
 
         ├── results/
         │   ├── Arthropoda-20210317T1604/
-        │   │   ├── contaminants/
-        │   │   │   ├── Wolbachia_output.tsv
-        │   │   │   ├── Wolbachia_output.fas
-        │   │   │   ├── Homo_sapiens_output.tsv
-        │   │   │   ├── Homo_sapiens_output.tsv
-        │   │   ├── Arthropoda_derep_all_output.tsv
-        │   │   ├── Arthropoda_derep_all_output.fas
-        │   │   ├── Arthropoda_derep_all_comparison.tsv
+        │   │   ├── merged_output.tsv
+        │   │   ├── merged_output.fas
+        │   │   ├── merged_comparison.tsv
         │   │   ├── ncbi_genbank_download_info.txt
         │   │   ├── gbol_download_info.txt
         │   │   ├── bold_download_info.txt
@@ -88,7 +98,7 @@ The output files are stored in the results folder, depending on your taxon choic
 
 The `contaminants` folder contains sequences of frequent unwanted HTS generated by-products. These files can be used as separate reference databases to exclude these most probably unwanted reads from further analysis. Wolbachia is an endoparasite of many insects and could lead to misclassification if not excluded.
 
-The main output files are `Arthropoda_derep_all_output.tsv` and `Arthropoda_derep_all_output.fas`. These will represent the reference databases. The tsv has some additional metadata information, e.g. the location where the specimen has been found. Since the different source databases contain records that have misspelings and or are considered as synonyms, there might be changes to the taxonomi information compared to the original. These are shown in `Arthropoda_derep_all_comparison.tsv`. Go to the [taxonomy section](#taxonomy) for more information.
+The main output files are `merged_output.fas` and `merged_output.tsv` if dereplication is not activated;`Arthropoda_derep_all_output.tsv` and `Arthropoda_derep_all_output.fas` otherwise. These will represent the reference databases. The tsv has some additional metadata information, e.g. the location where the specimen has been found. Since the different source databases contain records that have misspelings and or are considered as synonyms, there might be changes to the taxonomic information compared to the original. These are shown in `merged_comparison.tsv` or `Arthropoda_derep_all_comparison.tsv`. Go to the [taxonomy section](#taxonomy) for more information.
 
 ***
 ## Additional filtering
@@ -253,6 +263,7 @@ classify --gbol_dir /home/user/taxalogue/downloads/GBOL/GBOL_Dataset_Release-202
         │   │   ├── Orthoptera_derep_all_kraken2.fas
         │   │   ├── Orthoptera_derep_all_dada2_taxonomy.fas
         │   │   ├── Orthoptera_derep_all_dada2_species.fas
+        │   │   ├── Orthoptera_derep_all_sintax.fas
        
 ***
 #### create
@@ -290,12 +301,14 @@ If *taxalogue* is called without any options it will only use the default values
 :markers: co1
 :fast_run: true
 :num_threads: 5
+:num_cores: 5
 :taxonomy:
   :ncbi: true
 :derep:
-  :last_common_ancestor: true
+  :last_common_ancestor: false
   :random: false
   :discard: false
+  :no_derep: true
 :output:
   :table: true
   :fasta: true
@@ -304,6 +317,7 @@ If *taxalogue* is called without any options it will only use the default values
   :kraken2: false
   :dada2_taxonomy: false
   :dada2_species: false
+  :sintax: false
 ```
 
 ***
@@ -322,6 +336,10 @@ Accellerates Taxon comparison. Turn it off with --fast_run false. default: true
 
 #### **--num_threads**
 Number of threads for downloads. default: 5
+
+
+#### **--num_cores**
+Number of cores for classification. default: 5
 
 
 #### **--version**

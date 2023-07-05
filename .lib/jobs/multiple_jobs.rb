@@ -18,7 +18,7 @@ class MultipleJobs
         gbol_dir = nil
         ncbi_dir = nil
 
-        $seq_ids = Set.new # if params[:derep].any?
+        $seq_ids = Set.new 
        
         ## set download dirs
         jobs.each do |job|
@@ -60,7 +60,7 @@ class MultipleJobs
 
 
         ## dereplicate
-        if params[:derep].any? { |opt| opt.last == true }
+        if DerepHelper.do_derep
             seqs            = Sequence.where(id: $seq_ids)
             file_manager    = jobs.last.result_file_manager
             source_db_string = used_source_db_ary.size == 3 ? 'all' : used_source_db_ary.join('_')
@@ -201,6 +201,8 @@ class MultipleJobs
                     next
                 end
             end
+        
+            file_of.each { |fc, fh| fh.close }
         end
 
         puts

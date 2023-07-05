@@ -124,6 +124,8 @@ class MiscHelper
         end
     end
 
+
+    ## UNUSED
     def self.merge_files_in_dir(dir_name)
         ## TODO: refactor and maybe implement into FileMerger?
         dir = Pathname.new(dir_name)
@@ -178,6 +180,7 @@ class MiscHelper
 
     def self.print_params(params, file=nil)
         file ? (file.puts "You used the following parameters:") : (puts "You used the following parameters:")
+        
         params.each do |key, value|
             next if key.to_s.match?("_object")
             # next if value.empty? || value.nil?
@@ -243,7 +246,8 @@ class MiscHelper
     end
 
     def self.run_file_merger(file_manager:, params:)
-        return nil if params[:derep].any? {|opt| opt.last == true } && !params[:merge].any? { |opt| opt.last == true}
+        return nil if DerepHelper.do_derep && !params[:merge].any? { |opt| opt.last == true}
+        
         ## TODO: add other output formats
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)                    if params[:output][:table]
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)                  if params[:output][:fasta]
@@ -257,50 +261,59 @@ class MiscHelper
     end
 
     def self.create_output_files(file_manager:, query_taxon_name:, file_name:, params:, source_db:)
-        
+
         file_of = Hash.new
+        
+        
+        if source_db == "ncbi"
+            file_base = "#{query_taxon_name}_#{file_name.basename('.*').sub_ext('')}_#{source_db}"
+        else
+            file_base = "#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}"
+        end
+
+
         if params[:output][:table]
-            tsv                         = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_output.tsv", OutputFormat::Tsv)
+            tsv                         = file_manager.create_file("#{file_base}_output.tsv", OutputFormat::Tsv)
             file_of[OutputFormat::Tsv]  = tsv
         end
 
         if params[:output][:fasta]
-            fasta                           = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_output.fas", OutputFormat::Fasta)
+            fasta                           = file_manager.create_file("#{file_base}_output.fas", OutputFormat::Fasta)
             file_of[OutputFormat::Fasta]    = fasta
         end
 
         if params[:output][:qiime2]
-            qiime2_taxonomy                         = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_qiime2_taxonomy.txt", OutputFormat::Qiime2Taxonomy)
+            qiime2_taxonomy                         = file_manager.create_file("#{file_base}_qiime2_taxonomy.txt", OutputFormat::Qiime2Taxonomy)
             file_of[OutputFormat::Qiime2Taxonomy]   = qiime2_taxonomy
         end
         
         if params[:output][:qiime2] 
-            qiime2_fasta                                = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_qiime2_taxonomy.fas", OutputFormat::Qiime2TaxonomyFasta)
+            qiime2_fasta                                = file_manager.create_file("#{file_base}_qiime2_taxonomy.fas", OutputFormat::Qiime2TaxonomyFasta)
             file_of[OutputFormat::Qiime2TaxonomyFasta]  = qiime2_fasta
         end
 
         if params[:output][:kraken2]
-            kraken2_fasta                       = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_kraken2.fas", OutputFormat::Kraken2Fasta)                  
+            kraken2_fasta                       = file_manager.create_file("#{file_base}_kraken2.fas", OutputFormat::Kraken2Fasta)                  
             file_of[OutputFormat::Kraken2Fasta] = kraken2_fasta
         end
         
         if params[:output][:comparison]
-            comparison_file                     = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_comparison.tsv",   OutputFormat::Comparison)
+            comparison_file                     = file_manager.create_file("#{file_base}_comparison.tsv",   OutputFormat::Comparison)
             file_of[OutputFormat::Comparison]   = comparison_file
         end
         
         if params[:output][:dada2_taxonomy]
-            dada2_taxonomy_fasta                        = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_dada2_taxonomy.fas",   OutputFormat::Dada2TaxonomyFasta)   
+            dada2_taxonomy_fasta                        = file_manager.create_file("#{file_base}_dada2_taxonomy.fas",   OutputFormat::Dada2TaxonomyFasta)   
             file_of[OutputFormat::Dada2TaxonomyFasta]   = dada2_taxonomy_fasta
         end
 
         if params[:output][:dada2_species]
-            dada2_species_fasta                         = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_dada2_species.fas",   OutputFormat::Dada2SpeciesFasta)
+            dada2_species_fasta                         = file_manager.create_file("#{file_base}_dada2_species.fas",   OutputFormat::Dada2SpeciesFasta)
             file_of[OutputFormat::Dada2SpeciesFasta]    = dada2_species_fasta
         end
 
         if params[:output][:sintax]
-            sintax                              = file_manager.create_file("#{query_taxon_name}_#{file_name.basename('.*')}_#{source_db}_sintax.fas",   OutputFormat::SintaxFasta)
+            sintax                              = file_manager.create_file("#{file_base}_sintax.fas",   OutputFormat::SintaxFasta)
             file_of[OutputFormat::SintaxFasta]  = sintax
         end
 
@@ -309,7 +322,6 @@ class MiscHelper
     end
 
     def self.write_to_files(file_of:, taxonomic_info:, nomial:, params:, data:)
-
         file_of.each do |output_file_class, file|
 
             if output_file_class == OutputFormat::Comparison
@@ -352,6 +364,7 @@ class MiscHelper
                 elsif output_file_class == OutputFormat::SintaxFasta
                     OutputFormat::SintaxFasta.write_to_file(fasta: file, data: datum, taxonomic_info: taxonomic_info)
                 end
+
             end
         end
     end
@@ -402,14 +415,11 @@ class MiscHelper
     end
 
 
-    ## 
     # goes through every file in the dir end checks if a file 
     # has a certain marker
     def self.search_for_markers_in_genbank_files(marker_objects:, dir_name:)
-        # dir = Pathname.new("downloads/NCBIGENBANK/release247/inv/")
         dir         = Pathname.new(dir_name)
         files       = dir.glob('*')
-        # files       = files.first(50)
 
             
         genbank_file_release = dir.ascend.to_a[1].basename
@@ -435,7 +445,7 @@ class MiscHelper
         regexes = Regexp.new(searchterms.join('|').prepend('(').concat(')'), Regexp::IGNORECASE)
 
         
-        Parallel.map(files, in_processes: 10) do |file|
+        Parallel.map(files, in_processes: $params[:num_cores]) do |file|
             Zlib::GzipReader.open(file) do |gz_file|
                 found_marker_tags = []
                 gz_file.each_line do |line|
@@ -470,8 +480,7 @@ class MiscHelper
     end
 
 
-    ##
-    # collects found markers in GenBank files into one file
+    ## collects found markers in GenBank files into one file
     def self.create_genbank_marker_info_file
         markers_of = Hash.new { |h1,k1| h1[k1] = Hash.new }
         
@@ -507,22 +516,5 @@ class MiscHelper
         else
             return nil
         end
-    end
-
-
-    ##
-    # Since I create the GenBank marker Info JSON only at classify
-    # I have to check if the release was already searched for this particular marker
-    def self.get_not_searched_markers(marker_objects:, genbank_marker_info_of:, download_file_manager:)
-        file_name = genbank_marker_info_of.keys.detect { |e| e.to_s.match?(download_file_manager.dir_path.to_s) }
-        
-        
-        not_searched_marker_objects = [] 
-        marker_objects.each do |marker_object|
-            not_searched_marker_objects.push(marker_object) unless genbank_marker_info_of[file_name][marker_object.marker_tag.to_s]
-        end
-
-        
-        return not_searched_marker_objects
     end
 end

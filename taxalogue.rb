@@ -4,38 +4,37 @@ require './.requirements'
 include GeoUtils
 
 params = {
-	create: Hash.new,
+    create: Hash.new,
     download: Hash.new,
-	classify: Hash.new,
+    classify: Hash.new,
     merge: Hash.new,
-	setup: Hash.new,
-	update: Hash.new,
-	filter: Hash.new,
-	derep: Hash.new,
-	taxonomy: Hash.new,
-	region: Hash.new,
+    setup: Hash.new,
+    update: Hash.new,
+    filter: Hash.new,
+    derep: Hash.new,
+    taxonomy: Hash.new,
+    region: Hash.new,
     output: Hash.new
 }
 
 $fada_regions_of    = Hash.new
-$eco_zones_of 		= Hash.new
-$continent_of 		= Hash.new
+$eco_zones_of       = Hash.new
+$continent_of       = Hash.new
 $custom_regions_of  = Hash.new
 
 CONFIG_FILE = 'default_config.yaml'
 
 if File.exist? CONFIG_FILE
-	config_options = YAML.load_file(CONFIG_FILE)
-	params.merge!(config_options)
+    config_options = YAML.load_file(CONFIG_FILE)
+    params.merge!(config_options)
+    
+    taxon_object = TaxonHelper.get_taxon_record(params)
+    if taxon_object.nil?
+        abort "Cannot find default Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species\nMaybe the Taxonomy Database is not properly setup, run the program with --setup_taxonomy to fix the issue."
+    end
 
-	taxon_object = TaxonHelper.get_taxon_record(params)
-	
-	if taxon_object.nil?
-		abort "Cannot find default Taxon, please only use Kingdom, Phylum, Class, Order, Family, Genus or Species\nMaybe the Taxonomy Database is not properly setup, run the program with --setup_taxonomy to fix the issue."
-	end
-
-	params[:taxon_object] 	= taxon_object
-	params[:marker_objects] = MiscHelper.create_marker_objects(query_marker_names: params[:markers])
+    params[:taxon_object]   = taxon_object
+    params[:marker_objects] = MiscHelper.create_marker_objects(query_marker_names: params[:markers])
 end
 
 ## modified after https://gist.github.com/rkumar/445735
@@ -57,19 +56,19 @@ See 'bundle exec ruby taxalogue.rb SUBCOMMAND --help' for more information on a 
 
 HELP
 
-global = OptionParser.new do |opts|
-	opts.banner = "\nUsage: bundle exec ruby taxalogue.rb [params] [subcommand [params]]"
-	opts.on('-t TAXON', String, '--taxon', 'Choose a taxon to build your database, if you want a database for a species, put "" around the option: e.g.: -t "Apis mellifera". default: Arthropoda') do |taxon_name|
-		abort 'Taxon is extinct, please choose another Taxon' if TaxonHelper.is_extinct?(taxon_name)
 
-		# params = TaxonHelper.assign_taxon_info_to_params(params, taxon_name)
-		params[:taxon] = taxon_name
-		taxon_name
-	end
+global = OptionParser.new do |opts|
+    #opts.banner = "\nUsage: bundle exec ruby taxalogue.rb [subcommand [params]]"
+    opts.banner = "\nUsage: bundle exec ruby taxalogue.rb [params] [subcommand [params]]"
+    opts.on('-t TAXON', String, '--taxon', 'Choose a taxon to build your database, if you want a database for a species, put "" around the option: e.g.: -t "Apis mellifera". default: Arthropoda') do |taxon_name|
+        abort 'Taxon is extinct, please choose another Taxon' if TaxonHelper.is_extinct?(taxon_name)
+        params[:taxon] = taxon_name
+        taxon_name
+    end
 	
-	opts.on('-m MARKERS', String, '--markers', 'Currently only co1 is available. default: co1') do |markers|
-		params[:marker_objects] = MiscHelper.create_marker_objects(query_marker_names: markers)
-	end
+    opts.on('-m MARKERS', String, '--markers', 'Currently only co1 is available. default: co1') do |markers|
+        params[:marker_objects] = MiscHelper.create_marker_objects(query_marker_names: markers)
+    end
 
     opts.on('-f FAST_RUN', FalseClass, '--fast_run', 'Accellerates Taxon comparison. Turn it on with --fast_run true. default: false') do |flag|
         params[:fast_run] = flag
@@ -81,55 +80,93 @@ global = OptionParser.new do |opts|
         num_threads
     end
 
+    opts.on('-c NUM_CORES', Integer, '--num_cores', 'Number of cores used. default: 5') do |num_cores|
+        params[:num_cores] = num_cores
+        num_cores
+    end
+
+
     opts.on('-v', '--version', 'Shows the used version of taxalogue') do |version|
         params[:version] = true
         version
     end
   
-  opts.separator ""
-  opts.separator subtext
+    opts.separator ""
+    opts.separator subtext
 end
 
-subcommands = { 
-	create: OptionParser.new do |opts|
-		opts.banner = "Usage: create [options]"
-		opts.on('-a', '--all', 'creates a reference database with sequences from BOLD, GenBank and GBOL')
-		opts.on('-g', '--gbol', 'creates a reference database with sequences from GBOL')
-		opts.on('-b', '--bold', 'creates a reference database with sequences from BOLD')
-		opts.on('-k', '--genbank', 'creates a reference database with sequences from Genbank')
-		opts.on('-C', '--no_contaminants', 'If set, then no possible contaminants are downloaded. Some sequences in the source databases have wrong labels and belong in fact to theses contaminants.')
-	end,
+
+subcommands = {
+    ## TODO: Implement
+    #general: OptionParser.new do |opts|
+    #    
+    #    opts.banner = "Usage: general [options]"
+    #    opts.on('-t TAXON', String, '--taxon', 'Choose a taxon to build your database, if you want a database for a species, put "" around the option: e.g.: -t "Apis mellifera". default: Arthropoda') do |taxon_name|
+    #        abort 'Taxon is extinct, please choose another Taxon' if TaxonHelper.is_extinct?(taxon_name)
+    #        params[:taxon] = taxon_name
+    #        taxon_name
+    #    end
+
+    #    opts.on('-m MARKERS', String, '--markers', 'Currently only co1 is available. default: co1') do |markers|
+    #        params[:marker_objects] = MiscHelper.create_marker_objects(query_marker_names: markers)
+    #    end
+
+    #    opts.on('-f FAST_RUN', FalseClass, '--fast_run', 'Accellerates Taxon comparison. Turn it on with --fast_run true. default: false') do |flag|
+    #        params[:fast_run] = flag
+    #        flag
+    #    end
+    #    
+    #    opts.on('-n NUM_THREADS', Integer, '--num_threads', 'Number of threads for downloads. default: 5') do |num_threads|
+    #        params[:num_threads] = num_threads
+    #        num_threads
+    #    end
+
+    #    opts.on('-v', '--version', 'Shows the used version of taxalogue') do |version|
+    #        params[:version] = true
+    #        version
+    #    end
+    #end,
+
+
+    create: OptionParser.new do |opts|
+        opts.banner = "Usage: create [options]"
+      	opts.on('-a', '--all', 'creates a reference database with sequences from BOLD, GenBank and GBOL')
+      	opts.on('-g', '--gbol', 'creates a reference database with sequences from GBOL')
+      	opts.on('-b', '--bold', 'creates a reference database with sequences from BOLD')
+      	opts.on('-k', '--genbank', 'creates a reference database with sequences from Genbank')
+        opts.on('-C', '--no_contaminants', 'If set, then no possible contaminants are downloaded. Some sequences in the source databases have wrong labels and belong in fact to theses contaminants.')
+    end,
 
     download: OptionParser.new do |opts|
-		opts.banner = "Usage: download [options]"
-		opts.on('-a', '--all', 'Download records from BOLD, GenBank and GBOL')
-		opts.on('-g', '--gbol', 'Download records from GBOL')
-		opts.on('-o', '--bold', 'Download records from BOLD')
-		opts.on('-k', '--genbank', 'Download records from GenBank')
-		opts.on('-G GBOL_DIR', String, '--gbol_dir', 'Path of GBOL directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
+        opts.banner = "Usage: download [options]"
+      	opts.on('-a', '--all', 'Download records from BOLD, GenBank and GBOL')
+      	opts.on('-g', '--gbol', 'Download records from GBOL')
+      	opts.on('-o', '--bold', 'Download records from BOLD')
+      	opts.on('-k', '--genbank', 'Download records from GenBank')
+      	opts.on('-G GBOL_DIR', String, '--gbol_dir', 'Path of GBOL directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
             Pathname.new(opt)
         end
-		opts.on('-B BOLD_DIR', String, '--bold_dir', 'Path of BOLD directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
+        opts.on('-B BOLD_DIR', String, '--bold_dir', 'Path of BOLD directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
             Pathname.new(opt)
         end
-		opts.on('-K GENBANK_DIR', String, '--genbank_dir', 'Path of GenBank directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
+      	opts.on('-K GENBANK_DIR', String, '--genbank_dir', 'Path of GenBank directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
             Pathname.new(opt)
         end
-		opts.on('-i', '--inv_contaminants', 'Download possible invertebrate contaminants')
-   	end,
+      	opts.on('-i', '--inv_contaminants', 'Download possible invertebrate contaminants')
+    end,
 
-	classify: OptionParser.new do |opts|
-		opts.banner = "Usage: classify [options]"
-		opts.on('-a', '--all', 'Latest downloads of all source databases will be classified')
-		opts.on('-g', '--gbol', 'Latest download of GBOL database will be classified')
-		opts.on('-b', '--bold', 'Latest download of BOLD database will be classified')
-		opts.on('-k', '--genbank', 'Latest download of NCBI GenBank database will be classified')
-        opts.on('-r BOLD_RELEASE', String, '--bold_release', 'Specify the .tsv from the BOLD release file.')
-		opts.on('-G GBOL_DIR', String, '--gbol_dir', 'Specify the GBOL directory that should be classified')
-		opts.on('-B BOLD_DIR', String, '--bold_dir', 'Specify the BOLD directory that should be classified')
-		opts.on('-K GENBANK_DIR', String, '--genbank_dir', 'Specify the NCBI GenBank directory that should be classified')
-		opts.on('-M', '--no_merge', 'results are not merged')
-	end,
+    classify: OptionParser.new do |opts|
+        opts.banner = "Usage: classify [options]"
+      	opts.on('-a', '--all', 'Latest downloads of all source databases will be classified')
+      	opts.on('-g', '--gbol', 'Latest download of GBOL database will be classified')
+      	opts.on('-b', '--bold', 'Latest download of BOLD database will be classified')
+      	opts.on('-k', '--genbank', 'Latest download of NCBI GenBank database will be classified')
+        opts.on('-r BOLD_RELEASE', String, '--bold_release', 'Specify the .tsv from the BOLD release file.') { |opt| Pathname.new(opt) }
+      	opts.on('-G GBOL_DIR', String, '--gbol_dir', 'Specify the GBOL directory that should be classified')
+      	opts.on('-B BOLD_DIR', String, '--bold_dir', 'Specify the BOLD directory that should be classified')
+      	opts.on('-K GENBANK_DIR', String, '--genbank_dir', 'Specify the NCBI GenBank directory that should be classified')
+      	opts.on('-M', '--no_merge', 'results are not merged')
+    end,
 
     merge: OptionParser.new do |opts|
         opts.banner = "Usage: merge [options]"
@@ -140,22 +177,22 @@ subcommands = {
         opts.on('-k', '--genbank', 'Merges output of NCBI GenBank source database')
     end,
 
-   	setup: OptionParser.new do |opts|
-		opts.banner = "Usage: setup [options]"
-		opts.on('-n', '--ncbi_taxonomy', 'Setup the NCBI Taxonomy database')
-		opts.on('-g', '--gbif_taxonomy', 'Setup the GBIF Taxonomy database')
-		opts.on('-h', '--gbif_homonyms', 'Add GBIF Homonyms to the database')
-		opts.on('-x', '--reset_taxonomies', 'Destroy the old taxonomy database and creates a complete new one. includes: [--ncbi_taxonomy, --gbif_taxonomy, --gbif_homonyms]')
-   	end,
+    setup: OptionParser.new do |opts|
+        opts.banner = "Usage: setup [options]"
+	opts.on('-n', '--ncbi_taxonomy', 'Setup the NCBI Taxonomy database')
+	opts.on('-g', '--gbif_taxonomy', 'Setup the GBIF Taxonomy database')
+	opts.on('-h', '--gbif_homonyms', 'Add GBIF Homonyms to the database')
+	opts.on('-x', '--reset_taxonomies', 'Destroy the old taxonomy database and creates a complete new one. includes: [--ncbi_taxonomy, --gbif_taxonomy, --gbif_homonyms]')
+    end,
 
-   	update: OptionParser.new do |opts|
-		opts.banner = "Usage: update [options]"
-		opts.on('-a', '--all')
-		opts.on('-b', '--gbif_taxonomy')
-		opts.on('-n', '--ncbi_taxonomy')
+    update: OptionParser.new do |opts|
+        opts.banner = "Usage: update [options]"
+        opts.on('-a', '--all')
+	opts.on('-b', '--gbif_taxonomy')
+        opts.on('-n', '--ncbi_taxonomy')
         opts.on('-B', '--check_gbif_taxonomy', 'Checks if a new GBIF Taxonomy backbone is available')
         opts.on('-N', '--check_ncbi_taxonomy', 'Checks if a new NCBI Taxonomy backbone is available')
-	end,
+    end,
 
     output: OptionParser.new do |opts|
         opts.banner = "Usage: output [options]"
@@ -169,13 +206,13 @@ subcommands = {
         opts.on('-x', '--sintax',         'Fasta output file for the SINTAX program')
     end,
 
-	filter: OptionParser.new do |opts|
-		opts.banner = "Usage: filter [options]"
-		opts.on('-N MAX_N', Integer, '--max_N')
-		opts.on('-G MAX_GAPS', Integer,'--max_G')
-		opts.on('-l MIN_LENGTH', Integer,'--min_length')
-		opts.on('-L MAX_LENGTH', Integer,'--max_length')
-		opts.on('-r TAXON_RANK', String,'--taxon_rank', 'Filter for minimal taxon rank. e.g --taxon_rank genus considers sequences with at least genus information, therefore only sequences with species or genus information are considered. Allowed values: species, genus, family, order, class, phylum, kingdom') do |opt|
+    filter: OptionParser.new do |opts|
+        opts.banner = "Usage: filter [options]"
+        opts.on('-N MAX_N', Integer, '--max_N')
+        opts.on('-G MAX_GAPS', Integer,'--max_G')
+        opts.on('-l MIN_LENGTH', Integer,'--min_length')
+        opts.on('-L MAX_LENGTH', Integer,'--max_length')
+        opts.on('-r TAXON_RANK', String,'--taxon_rank', 'Filter for minimal taxon rank. e.g --taxon_rank genus considers sequences with at least genus information, therefore only sequences with species or genus information are considered. Allowed values: species, genus, family, order, class, phylum, kingdom') do |opt|
             unless GbifTaxonomy.possible_ranks.include?(opt)
                 puts "#{opt} is not allowed for: filter --taxon_rank"
                 puts "Please use one of the following:"
@@ -187,59 +224,68 @@ subcommands = {
 
             opt
         end
-	end,
+    end,
 
     derep: OptionParser.new do |opts|
-		opts.banner = "Usage: derep [options]"
-        opts.on('-l', '--last_common_ancestor', 'If some taxonomic assignments have for example the same number of associated specimens or ar e from the same taxonomic rank, the last common ancestor is chosen. default: true') do |opt|
+        opts.banner = "Usage: derep [options]"
+        opts.on('-l', '--last_common_ancestor', 'If some taxonomic assignments have for example the same number of associated specimens or ar e from the same taxonomic rank, the last common ancestor is chosen.') do |opt|
             params[:derep][:random]     = false
             params[:derep][:discard]    = false
+            params[:derep][:no_derep]   = false
 
             opt
         end
+
         opts.on('-r', '--random', 'If some taxonomic assignments for a given sequence have the same precedence, the candidate is chosen in input order') do |opt|
             params[:derep][:last_common_ancestor]   = false
             params[:derep][:discard]                = false
+            params[:derep][:no_derep]               = false
 
             opt
         end
+
         opts.on('-d', '--discard', 'If some taxonomic assignments for a given sequence have the same precedence, the sequence is discarded.') do |opt|
             params[:derep][:last_common_ancestor]   = false
             params[:derep][:random]                 = false
+            params[:derep][:no_derep]               = false
+
+            opt
+        end
+
+        opts.on('-n', '--no_derep', 'Turn dereplication off; default: true') do |opt|
+            params[:derep][:last_common_ancestor]   = false
+            params[:derep][:random]                 = false
+            params[:derep][:discard]                = false
 
             opt
         end
     
     end,
 
-	taxonomy: OptionParser.new do |opts|
-		opts.banner = "Usage: taxonomy [options]"
-		opts.on('-b', '--gbif', 'Taxon information is mapped to GBIF Taxonomy backbone + additional available datasets from the GBIF API') do |opt|
-			params[:taxonomy][:gbif_backbone] = false
-			params[:taxonomy][:ncbi] = false
-			params[:taxonomy][:unmapped] = false
-
-			opt
-		end
-		opts.on('-B', '--gbif_backbone', 'Taxon information is mapped to GBIF Taxonomy backbone') do |opt|
-			params[:taxonomy][:gbif] = false
-			params[:taxonomy][:ncbi] = false
-			params[:taxonomy][:unmapped] = false
-
-			opt
-		end
-		opts.on('-n', '--ncbi', 'Taxon information is mapped to NCBI Taxonomy') do |opt|
-			params[:taxonomy][:gbif_backbone] = false
-			params[:taxonomy][:gbif] = false
-			params[:taxonomy][:unmapped] = false
-
-			opt
-		end
-		opts.on('-u', '--unmapped', 'No mapping takes place, original specimen information is used but only standard ranks are used (e.g. no subfamilies)') do |opt|
+    taxonomy: OptionParser.new do |opts|
+        opts.banner = "Usage: taxonomy [options]"
+        opts.on('-b', '--gbif', 'Taxon information is mapped to GBIF Taxonomy backbone + additional available datasets from the GBIF API') do |opt|
+            params[:taxonomy][:gbif_backbone] = false
+            params[:taxonomy][:ncbi] = false
+	    params[:taxonomy][:unmapped] = false
+  	    opt
+	end
+	opts.on('-B', '--gbif_backbone', 'Taxon information is mapped to GBIF Taxonomy backbone') do |opt|
+	    params[:taxonomy][:gbif] = false
+	    params[:taxonomy][:ncbi] = false
+	    params[:taxonomy][:unmapped] = false
+            opt
+	end
+        opts.on('-n', '--ncbi', 'Taxon information is mapped to NCBI Taxonomy; default: true') do |opt|
+	    params[:taxonomy][:gbif_backbone] = false
+	    params[:taxonomy][:gbif] = false
+	    params[:taxonomy][:unmapped] = false
+            opt
+	end
+	opts.on('-u', '--unmapped', 'No mapping takes place, original specimen information is used but only standard ranks are used (e.g. no subfamilies)') do |opt|
             params[:taxonomy][:gbif_backbone] = false
             params[:taxonomy][:gbif] = false
             params[:taxonomy][:ncbi] = false
-
             opt
         end
         opts.on('-s', '--synonyms_allowed', 'Allows Taxon information of synonyms to be set to sequences')
@@ -247,91 +293,79 @@ subcommands = {
 	end,
 
 	region: OptionParser.new do |opts|
-		opts.set_summary_width 50
-
-        $continent_of = get_continent_of_country_hash
-		
-		opts.banner = "Usage: region [options]"
-		opts.on('-c COUNTRY', String, '--country', 'create a database consisting of sequences only from this country or a set of countries: if you want to specifiy multiple countries please use semicolons without spaces and quotes e.g. "Germany;France;Belgium"') do |opt|
-			valid_names = all_country_names 
-			opt_ary = opt.split(';')
-			RegionHelper.check_valid_names(valid_names, opt_ary)
-			params[:region][:country_ary] = opt_ary
-			opt
+	    opts.set_summary_width 50
+            $continent_of = get_continent_of_country_hash
+	    opts.banner = "Usage: region [options]"
+	    opts.on('-c COUNTRY', String, '--country', 'create a database consisting of sequences only from this country or a set of countries: if you want to specifiy multiple countries please use semicolons without spaces and quotes e.g. "Germany;France;Belgium"') do |opt|
+	        valid_names = all_country_names 
+		opt_ary = opt.split(';')
+		RegionHelper.check_valid_names(valid_names, opt_ary)
+		params[:region][:country_ary] = opt_ary
+		opt
+	    end
+	    opts.on('-C', '--available_countries', 'lists all available countries') { RegionHelper.print_all_countries; exit }
+	    opts.on('-k CONTINENT', String,'--continent', 'create a database consisting of sequences only from this continent or a set of continents: if you want to specifiy a continent please use quotes e.g. "North America". For multiple continents please use semicolons without spaces e.g. "Europe;Asia"') do |opt|
+	        valid_names = all_continent_names
+	        opt_ary = opt.split(';')
+	        RegionHelper.check_valid_names(valid_names, opt_ary)
+	        params[:region][:continent_ary] = opt_ary
+	        opt
+	    end
+	    opts.on('-K', '--available_continents', 'lists all available continents') { RegionHelper.print_all_continents; exit }
+	    opts.on('-b BIOGEOGRAPHIC_REALM', String,'--biogeographic_realm', 'create a database consisting of sequences only from this biogegraphic realm or a set of realms: if you want to specifiy a realm please use quotes e.g. "Oriental (Indomalaya)". For multiple realms pleas use quotes and semicolons without spaces e.g."Oriental (Indomalaya);Afrotropical"') do |opt|
+	        params = RegionHelper.check_biogeo(params)
+	        if params[:region][:biogeo_ary] == :skip
+                    opt
+	        else
+                    valid_names = $fada_regions_of.keys.sort
+	            opt_ary = opt.split(';')
+	            RegionHelper.check_valid_names(valid_names, opt_ary)
+	            params[:region][:biogeo_ary] = opt_ary
+	            opt
+                end
+            end
+	    opts.on('-B', '--available_biogeographic_realms', 'lists all available biogeographic realms') do |opt|
+	        params = RegionHelper.check_biogeo(params)
+	        if params[:region][:biogeo_ary] == :skip
+		    exit
+		else
+		    RegionHelper.print_all_regions($fada_regions_of.keys.sort)
+		    exit
 		end
-		opts.on('-C', '--available_countries', 'lists all available countries') { RegionHelper.print_all_countries; exit }
-		opts.on('-k CONTINENT', String,'--continent', 'create a database consisting of sequences only from this continent or a set of continents: if you want to specifiy a continent please use quotes e.g. "North America". For multiple continents please use semicolons without spaces e.g. "Europe;Asia"') do |opt|
-			valid_names = all_continent_names
-			opt_ary = opt.split(';')
-			RegionHelper.check_valid_names(valid_names, opt_ary)
-			params[:region][:continent_ary] = opt_ary
-			opt
+	    end
+            opts.on('-e TERRESTRIAL_ECOREGION', String, '--terrestrial_ecoregion', 'create a database consisting of sequences only from this terrestrial ecoregion or a set of regions: if you want to specifiy a region please use quotes e.g. "North Atlantic moist mixed forests". For multiple realms pleas use quotes and semicolons without spaces e.g."North Atlantic moist mixed forests;Highveld grasslands"') do |opt|
+                params = RegionHelper.check_fada(params)
+		if params[:region][:terreco_ary] == :skip
+                    opt
+		else
+		    valid_names = $eco_zones_of.keys.sort
+		    opt_ary = opt.split(';')
+		    RegionHelper.check_valid_names(valid_names, opt_ary)
+		    params[:region][:terreco_ary] = opt_ary
+                    opt
 		end
-		opts.on('-K', '--available_continents', 'lists all available continents') { RegionHelper.print_all_continents; exit }
-		opts.on('-b BIOGEOGRAPHIC_REALM', String,'--biogeographic_realm', 'create a database consisting of sequences only from this biogegraphic realm or a set of realms: if you want to specifiy a realm please use quotes e.g. "Oriental (Indomalaya)". For multiple realms pleas use quotes and semicolons without spaces e.g."Oriental (Indomalaya);Afrotropical"') do |opt|
-			params = RegionHelper.check_biogeo(params)
-			
-			if params[:region][:biogeo_ary] == :skip
-
-				opt
-			else
-				valid_names = $fada_regions_of.keys.sort
-				opt_ary = opt.split(';')
-				RegionHelper.check_valid_names(valid_names, opt_ary)
-				params[:region][:biogeo_ary] = opt_ary
-
-				opt
-			end
-		end
-		opts.on('-B', '--available_biogeographic_realms', 'lists all available biogeographic realms') do |opt|
-			params = RegionHelper.check_biogeo(params)
-			
-			if params[:region][:biogeo_ary] == :skip
-				exit
-			else
-				RegionHelper.print_all_regions($fada_regions_of.keys.sort)
-				exit
-			end
-		end
-		opts.on('-e TERRESTRIAL_ECOREGION', String, '--terrestrial_ecoregion', 'create a database consisting of sequences only from this terrestrial ecoregion or a set of regions: if you want to specifiy a region please use quotes e.g. "North Atlantic moist mixed forests". For multiple realms pleas use quotes and semicolons without spaces e.g."North Atlantic moist mixed forests;Highveld grasslands"') do |opt|
-			
-			params = RegionHelper.check_fada(params)
-			
-			if params[:region][:terreco_ary] == :skip
-
-				opt
-			else
-				valid_names = $eco_zones_of.keys.sort
-				opt_ary = opt.split(';')
-				RegionHelper.check_valid_names(valid_names, opt_ary)
-				params[:region][:terreco_ary] = opt_ary
-
-				opt
-			end
-		end
-		opts.on('-E', '--available_terrestrial_ecoregion', 'lists all available terrestrial ecoregions') do |opt|
-			
-			params = RegionHelper.check_fada(params)
-			
-			if params[:region][:terreco_ary] == :skip
-				exit
-			else
-				RegionHelper.print_all_regions($eco_zones_of.keys.sort)
-				exit
-			end
-		end
-		opts.on('-s CUSTOM_SHAPEFILE', String, '--custom_shapefile', 'Provide the path of the custom shapefile (only the *.shp is needed here, .shx and .dbf are inferred, and need to be in the same folder), has to be used with the -S option to provide the attribute name that should be used')
+	    end
+            opts.on('-E', '--available_terrestrial_ecoregion', 'lists all available terrestrial ecoregions') do |opt|
+            params = RegionHelper.check_fada(params)
+	    if params[:region][:terreco_ary] == :skip
+                exit
+	    else
+                RegionHelper.print_all_regions($eco_zones_of.keys.sort)
+	        exit
+	    end
+        end
+        opts.on('-s CUSTOM_SHAPEFILE', String, '--custom_shapefile', 'Provide the path of the custom shapefile (only the *.shp is needed here, .shx and .dbf are inferred, and need to be in the same folder), has to be used with the -S option to provide the attribute name that should be used')
         opts.on('-S CUSTOM_SHAPEFILE_ATTRIBUTE', String, '--custom_shapefile_attribute', 'Provide the wanted attribute in shapefile, has to be used with the -s option to specify the according shape file')
         opts.on('-v CUSTOM_SHAPEFILE_VALUES', String, '--custom_shapefile_values', 'create a database consisting of sequences only from regions with the specified value: if you want to specifiy a region please use quotes e.g. "North Atlantic moist mixed forests". For multiple realms pleas use quotes and semicolons without spaces e.g."North Atlantic moist mixed forests;Highveld grasslands"')
-	end
+    end
 }
 global.order!
 
 loop do 
-	break if ARGV.empty?
+    break if ARGV.empty?
 
-	command = ARGV.shift.to_sym
-	subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
+    command = ARGV.shift.to_sym
+    subcommands[command].order!(into: params[command]) unless subcommands[command].nil?
 end
 
 if MiscHelper.multiple_actions?(params)
@@ -363,7 +397,7 @@ if params[:output][:kraken2] && !params[:taxonomy][:ncbi]
     puts "The Kraken2 Output requires the NCBI Taxonomy"
     puts "Any other Taxonomy is not allowed"
     puts
-
+    
     exit
 end
 
@@ -371,7 +405,7 @@ if params[:output][:dada2_species] && !(params[:filter][:taxon_rank] == 'species
     puts "The dada2 species output requires species information"
     puts "Therefore your filter --taxon_rank value is not allowed"
     puts
-
+    
     exit
 end
 
@@ -385,7 +419,7 @@ if set_custom_shapefile_params_count > 0 && set_custom_shapefile_params_count !=
     puts 'e.g.:'
     puts 'bundle exec ruby taxalogue.rb region --custom_shapefile downloads/SHAPEFILES/fada_regions/fadaregions.shp --custom_shapefile_attribute name --custom_shapefile_values "Nearctic;Palaearctic"'
     puts
-
+    
     exit
 elsif set_custom_shapefile_params_count == 3
     RegionHelper.use_custom_shapefile(params)
@@ -393,20 +427,20 @@ end
 # bundle exec ruby taxalogue.rb region -s downloads/SHAPEFILES/fada_regions/fadaregions.shp -S name -v "Nearctic;Palaearctic"
 
 if params[:derep].values.count(true) > 1
-    puts "Only one derep strategy is allowed"
-
+    puts "Only one dereplication strategy is allowed"
+    
     exit
 end
 
-if params[:merge].any? && params[:derep].any? { |opt| opt.last == true }
+if params[:merge].any? && DerepHelper.do_derep
     puts "Merging while dereplicating is not possible at the moment"
     puts "Only merging will be executed"
-
-    params[:derep].keys.each { |key| params[:derep][key] = false }
+    
+    params[:derep].keys.each { |key| params[:derep][key] = false unless key == :no_derep }
 end
 
-if params[:download].any? && params[:derep].any? { |opt| opt.last == true }
-    params[:derep].keys.each { |key| params[:derep][key] = false }
+if params[:download].any? && DerepHelper.do_derep 
+    params[:derep].keys.each { |key| params[:derep][key] = false unless key == :no_derep }
 end
 
 ## TODO: maybe I have to prevent create, classify, etc if this is done...
@@ -424,6 +458,7 @@ end
 ## object is also not set in opts.on
 params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 MiscHelper.print_params(params)
+
 
 ## should really stop the passing of the params..
 ## would be much less code if I just used this global
@@ -469,7 +504,7 @@ if params[:create].any?
     multiple_jobs = MultipleJobs.new(jobs: jobs, params: params)
     MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects]) unless params[:create][:no_contaminants]
 
-	jobs_state = multiple_jobs.run
+    jobs_state = multiple_jobs.run
     sleep 2
 
     if jobs_state == :success

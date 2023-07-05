@@ -188,7 +188,7 @@ class BoldClassifier
         
         specimens_of_taxon = Hash.new { |hash, key| hash[key] = {} }
         specimens_of_sequence = Hash.new
-        file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'bold') unless params[:derep].any? { |opt| opt.last == true }
+        file_of = MiscHelper.create_output_files(file_manager: file_manager, query_taxon_name: query_taxon_name, file_name: file_name, params: params, source_db: 'bold') unless DerepHelper.do_derep 
 
         file = File.file?(file_name) ? File.open(file_name, 'r') : nil
         return nil if file.nil?
@@ -226,7 +226,7 @@ class BoldClassifier
                 next unless has_user_taxon_rank
             end
 
-            if params[:derep].any? { |opt| opt.last == true }
+            if DerepHelper.do_derep
                 DerepHelper.fill_specimens_of_sequence(specimens: specimens_of_taxon[taxon_name][:data], specimens_of_sequence: specimens_of_sequence, taxonomic_info: taxonomic_info, taxon_name: taxon_name, first_specimen_info: first_specimen_info)
             else
                 MiscHelper.write_to_files(file_of: file_of, taxonomic_info: taxonomic_info, nomial: nomial, params: params, data: specimens_of_taxon[taxon_name][:data])
@@ -235,7 +235,7 @@ class BoldClassifier
         puts 'taxon search completed'
         puts
 
-        if params[:derep].any? { |opt| opt.last == true }
+        if DerepHelper.do_derep
             puts "Starting dereplication for file #{file_name}"
 
             DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params, query_taxon_name, 'bold')
@@ -259,7 +259,6 @@ class BoldClassifier
 
             taxon_rank      = first_specimen[@@index_by_column_name["identification_rank"]]
             taxon_rank      = BoldClassifier.get_taxon_rank_field(first_specimen)
-            byebug if taxon_rank.nil?
 
             phylum          = first_specimen[@@index_by_column_name["phylum"]]
             regnum          = KINGDOM_BY_PHYLUM[phylum]

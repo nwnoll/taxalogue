@@ -17,8 +17,6 @@ GEM
       minitest (>= 5.1)
       tzinfo (~> 2.0)
     bio (2.0.4)
-    biodiversity (5.7.2)
-      ffi (~> 1.15)
     byebug (11.1.3)
     concurrent-ruby (1.2.2)
     countries (1.2.5)
@@ -26,7 +24,6 @@ GEM
       i18n_data (~> 0.7.0)
     currencies (0.4.2)
     date (3.3.3)
-    ffi (1.15.5)
     fuzzy-string-match (1.0.1)
       RubyInline (>= 3.8.6)
     geokit (1.14.0)
@@ -66,7 +63,6 @@ DEPENDENCIES
   activerecord
   activerecord-import
   bio
-  biodiversity
   byebug
   countries (~> 1.2, >= 1.2.5)
   fuzzy-string-match
