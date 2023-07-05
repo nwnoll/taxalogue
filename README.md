@@ -48,17 +48,17 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
 
 5. Download records from up to three different source databases
 	
-	## Since BOLD now offers to download a snapshot of the current database, it is recommended to use it
-	## The datapackages are listed at https://boldsystems.org/index.php/datapackages
-	## Choose the most current snapshot and download "Data package (tar.gz compressed)"
-	## For this step you need to be logged in, and therefore an account is needed.
-	## If you don't want to register at boldsystems you could use, for all source databases and Arthropoda, this command: bundle exec ruby taxalogue.rb --taxon Arthropoda download --all 
-	## But be warned this takes considerably longer than downloading the datapackage
-	## After you have downloaded the datapackage, extract the .tsv file
-	
-	## If you want to create a database for e.g., Artrhopoda from GBOL, GenBank and you already downloaded the aforementioned 
-	## BOLD datapackage, you can use the command below to download data from GenBank and GBOL
-	bundle exec ruby taxalogue.rb --taxon Arthropoda download --gbol --genbank
+        # Since BOLD now offers to download a snapshot of the current database, it is recommended to use it
+        # The datapackages are listed at https://boldsystems.org/index.php/datapackages
+        # Choose the most current snapshot and download "Data package (tar.gz compressed)"
+        # For this step you need to be logged in, and therefore an account is needed.
+        # If you don't want to register at boldsystems you could use, for all source databases and Arthropoda, this command: bundle exec ruby taxalogue.rb --taxon Arthropoda download --all 
+        # But be warned this takes considerably longer than downloading the datapackage
+        # After you have downloaded the datapackage, extract the .tsv file
+        
+        # If you want to create a database for e.g., Artrhopoda from GBOL, GenBank and you already downloaded the aforementioned 
+        # BOLD datapackage, you can use the command below to download data from GenBank and GBOL
+        bundle exec ruby taxalogue.rb --taxon Arthropoda download --gbol --genbank
 
 If this is the first start of *taxalogue*, it starts by downloading taxonomies from NCBI and GBIF. After download, the taxonomies will be imported into a SQL database. The whole process might take a little less than 2 hours. If the setup for the taxonomies is complete, the download of the actual sequences begins. As mentioned earlier the duration of the download depends on the chosen taxon.
 
