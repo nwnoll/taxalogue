@@ -46,7 +46,7 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
         # bundle install
 
 
-5. Download records from up to three different source databases
+5. Download records from up to three different source databases, for BOLD manually download the [datapackages](https://boldsystems.org/index.php/datapackages)
 	
         # Since BOLD now offers to download a snapshot of the current database, it is recommended to use it
         # The datapackages are listed at https://boldsystems.org/index.php/datapackages
