@@ -2,7 +2,9 @@
 
 class MultipleJobs
     attr_reader :jobs, :download_only, :params, :result_file_manager
-
+    
+    BATCH_SIZE = 100_000
+    
     def initialize(jobs:, params:)
         @jobs           = jobs
         @params         = params
@@ -61,7 +63,7 @@ class MultipleJobs
 
         ## dereplicate
         if DerepHelper.do_derep
-            seqs            = Sequence.where(id: $seq_ids)
+            
             file_manager    = jobs.last.result_file_manager
             source_db_string = used_source_db_ary.size == 3 ? 'all' : used_source_db_ary.join('_')
 
@@ -73,69 +75,75 @@ class MultipleJobs
                 source_db: source_db_string
             )
 
+            count                             = 0
+            data_for_batch_writing            = []
+            taxonomic_info_for_batch_writing  = []
+            nomial_for_batch_writing          = []
+            
+            puts "Reconnecting to database" 
+            $db_connection.connection.reconnect! 
+            sleep 1
+            
+            puts "Processing records" 
             Sequence.where(id: $seq_ids).find_each do |seq|
-            # Sequence.find_each do |seq|
-                # p seq
-                if seq.taxon_object_proxies.size < 2
-                    specimen_data = _create_specimen_data(seq, seq.sequence_taxon_object_proxies.first)
+                
+                puts "Processed 10_000 records" if (count % 10_000) == 0
+                ## write to file if BATCH_SIZE of seqs has been dereplicated 
+                if count == BATCH_SIZE
+
+                    puts "Writing #{BATCH_SIZE} dereplicated records."
                     MiscHelper.write_to_files(
                         file_of: file_of,
-                        taxonomic_info: seq.taxon_object_proxies.first,
-                        nomial: seq.taxon_object_proxies.first.source_taxon_name,
+                        taxonomic_info: taxonomic_info_for_batch_writing,
+                        nomial: nomial_for_batch_writing,
                         params: params,
-                        data: [specimen_data]
+                        data: data_for_batch_writing,
+                        batch: true
                     )
-
+            
+                    taxonomic_info_for_batch_writing  = []
+                    nomial_for_batch_writing          = []
+                    data_for_batch_writing            = []
+                    count                             = 0
+                end  
+                count += 1
+                
+                ## if there is only one taxon_object_proxy, we dont hav any name conflicts between records
+                if seq.taxon_object_proxies.size < 2
+                    data_for_batch_writing.push(_create_specimen_data(seq, seq.sequence_taxon_object_proxies.first))
+                    taxonomic_info_for_batch_writing.push(seq.taxon_object_proxies.first)
+                    nomial_for_batch_writing.push(seq.taxon_object_proxies.first.source_taxon_name)
+            
                     next
                 end
+
+                ## compare and sort taxon names
                 comparison_results_for = Hash.new
-
-                sorted = seq.taxon_object_proxies.to_a.sort_by do |taxon_object_proxy|
-                    specimens_num = -(taxon_object_proxy.sequence_taxon_object_proxies.find_by(sequence_id: seq.id).specimens_num)
-                    rank = GbifTaxonomy.possible_ranks.index(taxon_object_proxy.taxon_rank)
-
-                    if rank.nil?
-                        deduced_rank = TaxonHelper.deduce_rank(taxon_object_proxy)
-                        rank = deduced_rank.nil? ? (GbifTaxonomy.possible_ranks.size -1) : GbifTaxonomy.possible_ranks.index(deduced_rank)
-                    end
-
-                    rank_hit_index = 9 ## this value is only for sorting purposes, a higher value means higherrank hit
-                    seq.taxon_object_proxies.map do |other_taxon_object_proxy|
-                        next if taxon_object_proxy.id == other_taxon_object_proxy.id
-
-                        lowest_rank_hit_index = (GbifTaxonomy.possible_ranks.size - 1)
-                        GbifTaxonomy.rank_mappings.values.each_with_index do |latinized_possible_rank, index|
-                            if (!taxon_object_proxy.public_send(latinized_possible_rank).blank? && !other_taxon_object_proxy.public_send(latinized_possible_rank).blank?) && (taxon_object_proxy.public_send(latinized_possible_rank) == other_taxon_object_proxy.public_send(latinized_possible_rank))
-                                lowest_rank_hit_index = index
-
-                                break
-                            end
-                        end
-
-                        rank_hit_index = lowest_rank_hit_index if lowest_rank_hit_index < rank_hit_index## this value is only for sorting purposes, a higher value means higher rank hit
-                    end
-
-                    comparison_results_for[taxon_object_proxy] = [rank, rank_hit_index, specimens_num]
-                    
-                    [rank, rank_hit_index, specimens_num]
-                end
-
+                sorted = _sort_taxon_names(seq: seq, comparison_results_for: comparison_results_for) 
+              
                 same_comparison_results = []
                 comparison_results_for.each do |taxon_object_proxy, comparison_result|
                     next if sorted.first == taxon_object_proxy
-
+            
                     if comparison_results_for[sorted.first] == comparison_result
                         same_comparison_results.any? ? same_comparison_results.push(taxon_object_proxy) : same_comparison_results.push(sorted.first, taxon_object_proxy)
                     end
                 end
-
+           
+                ## if the taxon_name differs and both have the same sorting place, wee need to decide what to do
+                ## last_common_ancestor chooses the lca between the taxon names
+                ## random just picks one
+                ## discard removes the seq, due to name conflicts
+                ## last_common_ancestor is the default 
                 if same_comparison_results.any?
+            
                     if params[:derep][:last_common_ancestor]
+            
                         comparison_result   = comparison_results_for[sorted.first]
                         lca_rank_index      = comparison_result[1]
                         lca_rank            = GbifTaxonomy.rank_mappings.values[lca_rank_index]
                         taxon_name          = sorted.first.public_send(lca_rank)
-
+            
                         if params[:taxonomy][:unmapped]
                             taxon_record = sorted.first
                             taxon_record.canonical_name = taxon_name
@@ -148,60 +156,52 @@ class MultipleJobs
                         else
                             taxon_record = TaxonHelper.get_taxon_record(params, taxon_name, automatic: true)
                         end
-                        
                         next if taxon_record.nil?
-                        # pp sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)
-                        # p taxon_record
-                        # p seq.nucleotides
-                        # puts
-
-                        specimen_data = _create_specimen_data(seq, sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id))
                         
-                        MiscHelper.write_to_files(
-                            file_of: file_of,
-                            taxonomic_info: taxon_record,
-                            nomial: sorted.first.source_taxon_name,
-                            params: params,
-                            data: [specimen_data]
-                        )
-
+            
+                        data_for_batch_writing.push(_create_specimen_data(seq, sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)))
+                        taxonomic_info_for_batch_writing.push(taxon_record)
+                        nomial_for_batch_writing.push(sorted.first.source_taxon_name)
+            
                         next
                     elsif params[:derep][:random]
-                        # pp sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)
-                        # p sorted.first
-                        # p seq.nucleotides
-                        # puts
-
-                        specimen_data = _create_specimen_data(seq, sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id))
-                        MiscHelper.write_to_files(
-                            file_of: file_of,
-                            taxonomic_info: sorted.first,
-                            nomial: sorted.first.source_taxon_name,
-                            params: params,
-                            data: [specimen_data]
-                        )
-
+                        
+                        data_for_batch_writing.push(_create_specimen_data(seq, sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)))
+                        taxonomic_info_for_batch_writing.push(sorted.first)
+                        nomial_for_batch_writing.push(sorted.first.source_taxon_name)
+            
                         next
                     elsif params[:derep][:discard]
+            
                         # maybe write it to extra file
-
+            
                         next
                     end
                 else
                     ## sorted.first is the best hit
-                    specimen_data = _create_specimen_data(seq, sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id))
-                    MiscHelper.write_to_files(
-                        file_of: file_of,
-                        taxonomic_info: sorted.first,
-                        nomial: sorted.first.source_taxon_name,
-                        params: params,
-                        data: [specimen_data]
-                    )
-
+                    
+                    data_for_batch_writing.push(_create_specimen_data(seq, sorted.first.sequence_taxon_object_proxies.find_by(sequence_id: seq.id)))
+                    taxonomic_info_for_batch_writing.push(sorted.first)
+                    nomial_for_batch_writing.push(sorted.first.source_taxon_name)
+            
                     next
                 end
             end
-        
+            
+            ## write the results for the remaining records
+            if data_for_batch_writing.any?
+
+                puts "Writing #{count} dereplicated records."
+                MiscHelper.write_to_files(
+                    file_of: file_of,
+                    taxonomic_info: taxonomic_info_for_batch_writing,
+                    nomial: nomial_for_batch_writing,
+                    params: params,
+                    data: data_for_batch_writing,
+                    batch: true
+                )
+            end
+            
             file_of.each { |fc, fh| fh.close }
         end
 
@@ -267,6 +267,41 @@ class MultipleJobs
 
             return :success
         end
+    end
+
+    def _sort_taxon_names(seq:, comparison_results_for:)
+        sorted = seq.taxon_object_proxies.to_a.sort_by do |taxon_object_proxy|
+            specimens_num = -(taxon_object_proxy.sequence_taxon_object_proxies.find_by(sequence_id: seq.id).specimens_num)
+            rank = GbifTaxonomy.possible_ranks.index(taxon_object_proxy.taxon_rank)
+    
+            if rank.nil?
+                deduced_rank = TaxonHelper.deduce_rank(taxon_object_proxy)
+                rank = deduced_rank.nil? ? (GbifTaxonomy.possible_ranks.size -1) : GbifTaxonomy.possible_ranks.index(deduced_rank)
+            end
+    
+            rank_hit_index = 9 ## this value is only for sorting purposes, a higher value means higherrank hit
+            seq.taxon_object_proxies.map do |other_taxon_object_proxy|
+                next if taxon_object_proxy.id == other_taxon_object_proxy.id
+    
+                lowest_rank_hit_index = (GbifTaxonomy.possible_ranks.size - 1)
+                GbifTaxonomy.rank_mappings.values.each_with_index do |latinized_possible_rank, index|
+                    if (!taxon_object_proxy.public_send(latinized_possible_rank).blank? && !other_taxon_object_proxy.public_send(latinized_possible_rank).blank?) && (taxon_object_proxy.public_send(latinized_possible_rank) == other_taxon_object_proxy.public_send(latinized_possible_rank))
+                        lowest_rank_hit_index = index
+    
+                        break
+                    end
+                end
+    
+                rank_hit_index = lowest_rank_hit_index if lowest_rank_hit_index < rank_hit_index## this value is only for sorting purposes, a higher value means higher rank hit
+            end
+    
+            comparison_results_for[taxon_object_proxy] = [rank, rank_hit_index, specimens_num]
+            
+            [rank, rank_hit_index, specimens_num]
+        end
+    
+    
+        return sorted
     end
 
     def _create_specimen_data(seq, seq_top)

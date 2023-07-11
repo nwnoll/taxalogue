@@ -196,6 +196,7 @@ class BoldClassifier
         @@index_by_column_name = MiscHelper.generate_index_by_column_name(file: file, separator: "\t")
         
         file.each do |row|
+        #file.each_line do |row|
             _matches_query_taxon(row.scrub!) ? nil : next if fast_run
 
             scrubbed_row = row.scrub!.chomp.split("\t")
@@ -205,7 +206,7 @@ class BoldClassifier
             
             SpecimensOfTaxon.fill_hash(specimens_of_taxon: specimens_of_taxon, specimen_object: specimen)
         end
-        
+        file.close
         
         puts "file '#{file_name}' was read"
         puts 

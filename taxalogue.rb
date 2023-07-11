@@ -196,14 +196,14 @@ subcommands = {
 
     output: OptionParser.new do |opts|
         opts.banner = "Usage: output [options]"
-        opts.on('-t', '--table',          'TSV Table. default: true')
-        opts.on('-f', '--fasta',          'fasta file. default: true')
-        opts.on('-c', '--comparison',     'Comparison TSV, shows initial Taxon information and normalization by Taxonomy. default: true')
-        opts.on('-q', '--qiime2',         'QIIME2 Taxonomy files, includes a taxonomy text file and a fasta file.')
-        opts.on('-k', '--kraken2',        'Kraken2 fasta file, works only with NCBI taxonomy.')
-        opts.on('-d', '--dada2_taxonomy', 'Fasta output file for the dada2 assignTaxonomy function.')
-        opts.on('-s', '--dada2_species',  'Fasta output file for the dada2 assignSpecies function')
-        opts.on('-x', '--sintax',         'Fasta output file for the SINTAX program')
+        opts.on('-t BOOLEAN', TrueClass, '--table',          'TSV Table. default: true') {}
+        opts.on('-f BOOLEAN', TrueClass, '--fasta',          'fasta file. default: true')
+        opts.on('-c BOOLEAN', TrueClass, '--comparison',     'Comparison TSV, shows initial Taxon information and harmonization by Taxonomy. default: true')
+        opts.on('-q BOOLEAN', FalseClass, '--qiime2',         'QIIME2 Taxonomy files, includes a taxonomy text file and a fasta file.')
+        opts.on('-k BOOLEAN', FalseClass, '--kraken2',        'Kraken2 fasta file, works only with NCBI taxonomy.')
+        opts.on('-d BOOLEAN', FalseClass, '--dada2_taxonomy', 'Fasta output file for the dada2 assignTaxonomy function.')
+        opts.on('-s BOOLEAN', FalseClass, '--dada2_species',  'Fasta output file for the dada2 assignSpecies function')
+        opts.on('-x BOOLEAN', FalseClass, '--sintax',         'Fasta output file for the SINTAX program')
     end,
 
     filter: OptionParser.new do |opts|
@@ -463,7 +463,6 @@ MiscHelper.print_params(params)
 ## should really stop the passing of the params..
 ## would be much less code if I just used this global
 $params = params
-
 
 if params[:create].any?
     jobs = []

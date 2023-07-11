@@ -321,8 +321,28 @@ class MiscHelper
         return file_of
     end
 
-    def self.write_to_files(file_of:, taxonomic_info:, nomial:, params:, data:)
+    def self.write_to_files(file_of:, taxonomic_info:, nomial:, params:, data:, batch: false)
         file_of.each do |output_file_class, file|
+
+            if batch
+                source_db = TaxonomyHelper.get_source_db(params[:taxonomy])
+                data.each_with_index do |datum, i|
+                    if output_file_class == OutputFormat::Tsv
+                        OutputFormat::Tsv.write_to_file(tsv: file, data: datum, taxonomic_info: taxonomic_info[i])
+
+                    elsif output_file_class == OutputFormat::Fasta
+                        OutputFormat::Fasta.write_to_file(fasta: file, data: datum, taxonomic_info: taxonomic_info[i])
+                    
+                    elsif output_file_class == OutputFormat::Comparison
+                      syn = Synonym.new(accepted_taxon: taxonomic_info[i], sources: [source_db])
+                      OutputFormat::Comparison.write_to_file(file: file, nomial: nomial[i], accepted_taxon: taxonomic_info[i], synonyms_of_taxonomy: syn.synonyms_of_taxonomy, used_taxonomy: source_db)
+                    end
+                end
+
+                next
+            end
+
+
 
             if output_file_class == OutputFormat::Comparison
                 if params[:taxonomy][:unmapped]

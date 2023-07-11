@@ -11,11 +11,15 @@ gemfile do
   source 'https://rubygems.org'
   
   gem 'bio'
-  gem 'fuzzy-string-match', '~> 0.9.7'
+  #gem 'fuzzy-string-match', '~> 0.9.7'
+  gem 'jaro_winkler'
+  gem 'parallel'
 end
 
 require 'bio'
-require 'fuzzystringmatch'
+#require 'fuzzystringmatch'
+require 'jaro_winkler'
+require 'parallel'
 
 ## ARTRHOPODA_CONSENSUS_SEQ is a sequence from Aeshna specimen 
 ARTHROPODA_CONSENSUS_SEQ    = "TLYFLFGAWSGMVGTALSVLIRIELGQPGSLIGDDQIYNVIVTAHAFVMIFFMVMPIMIGGFGNWLVPLMLGAPDMAFPRLNNMSFWLLPPSLTLLLAGSMVESGAGTGWTVYPPLAGAIAHAGASVDLTIFSLHLAGVSSILGAINFITTTINMKSPGMKMDQMPLFVWAVVITAVLLLLSLPVLAGAITMLLTDRNINTSFFDPAGGGDPILYQHLF"
@@ -24,13 +28,14 @@ DISTANCE_TOLERANCE          = 0.05
 
 params = {}
 OptionParser.new do |opts|
-	opts.set_summary_width 80
+    opts.set_summary_width 80
 
-	opts.on('-i FASTA_INPUT', '--input')
-	opts.on('-o FASTA_OUTPUT', '--output')
-    opts.on('-c GENETIC_CODE', '--genetic_code')
-    opts.on('-f FILTER_INFO', '--filter_info')
-    opts.on('-C CONSENSUS_PROTEIN_SEQ', '--consensus_seq')
+    opts.on('-i FASTA_INPUT', String, '--input')
+    opts.on('-o FASTA_OUTPUT', String, '--output')
+    opts.on('-c GENETIC_CODE', Integer, '--genetic_code')
+    opts.on('-f FILTER_INFO', String,  '--filter_info')
+    opts.on('-C CONSENSUS_PROTEIN_SEQ', String, '--consensus_seq')
+    opts.on('-n NUM_CORES', Integer, '--num_cores')
 end.parse!(into: params)
 
 if params[:input].nil?
@@ -40,6 +45,9 @@ end
 if params[:output].nil?
     abort("Need Output file, please specify --output")
 end
+
+params[:num_cores] = params[:num_cores] ? params[:num_cores] : 10
+pp params
 
 $consensus_seq  = params[:consensus_seq].nil? ? ARTHROPODA_CONSENSUS_SEQ : params[:consensus_seq]
 $genetic_code   = params[:genetic_code].nil? ? ARTHROPODA_GENETIC_CODE : params[:genetic_code]
@@ -89,24 +97,22 @@ end
 
 def nuc_to_aa(seq)
     nuc_seq = Bio::Sequence::NA.new(seq)
-	return nil if nuc_seq.nil?
+    return nil if nuc_seq.nil?
 
 	prot_info = []
-    (1..3).each do |frame|
-		begin
-	        prot_seq = nuc_seq.translate(frame, $genetic_code)
-		rescue StandardError => e
-			break
-		end
+        (1..3).each do |frame|
+	    begin
+	      prot_seq = nuc_seq.translate(frame, $genetic_code)
+	    rescue StandardError => e
+	      break
+	    end
 
-        sc_indices = stop_codon_positions(prot_seq)
-        sc_indices.delete(0)                            # stop codon at the beginning
-        sc_indices.delete( (prot_seq.size - 1) )        # stop codon at the end
+            sc_indices = stop_codon_positions(prot_seq)
+            sc_indices.delete(0)                            # stop codon at the beginning
+            sc_indices.delete( (prot_seq.size - 1) )        # stop codon at the end
 
-	    jarow = FuzzyStringMatch::JaroWinkler.create(:native)
-	    distance_to_consensus = jarow.getDistance(prot_seq, $consensus_seq)
-
-	    prot_info = [prot_seq, distance_to_consensus, frame, sc_indices.size] if prot_info.length == 0 || distance_to_consensus > prot_info[1]
+            distance_to_consensus = JaroWinkler.distance prot_seq, $consensus_seq
+            prot_info = [prot_seq, distance_to_consensus, frame, sc_indices.size] if prot_info.length == 0 || distance_to_consensus > prot_info[1]
 	end
 
     return prot_info
@@ -115,7 +121,6 @@ end
 def get_prot_info(seq)
     fwd_prot_info = nuc_to_aa(seq)
     fwd_prot_info.push(nil)
-
     reverse = get_reverse_complement(seq)
     rev_prot_info = nuc_to_aa(reverse)
     rev_prot_info.push(reverse)
@@ -137,8 +142,8 @@ if params[:filter_info]
     filter_info_out.puts "header\tdiscared\treversed\tnuc_seq\tprot_seq\tdistance_to_consensus\tstop_codon_count\tframe\tnuc_reverse_complement_seq\tused_consensus_seq" if params[:filter_info]
 end
 
-seq_of.each do |key, value|
-	prot_info               = get_prot_info(value)
+Parallel.map(seq_of.keys, in_processes: params[:num_cores] ) do |key|
+    prot_info               = get_prot_info(seq_of[key])
 
     prot_seq                = prot_info.shift
     distance_to_consensus   = prot_info.shift
@@ -150,14 +155,14 @@ seq_of.each do |key, value|
     reversed    = reverse_seq.nil?  ? false : true
     
     if params[:filter_info]
-        filter_info_out.puts [key, discarded, reversed, value, prot_seq, distance_to_consensus, sc_count, frame, reverse_seq, $consensus_seq].join("\t")
+        filter_info_out.puts [key, discarded, reversed, seq_of[key], prot_seq, distance_to_consensus, sc_count, frame, reverse_seq, $consensus_seq].join("\t")
     end
 
     next if discarded
 
     if params[:output]
         fasta_out.puts key
-        fasta_out.puts value
+        fasta_out.puts seq_of[key]
     end
 end
 
