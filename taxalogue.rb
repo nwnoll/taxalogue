@@ -449,7 +449,7 @@ params[:download][:gbol]    = true if params[:download][:gbol_dir]
 params[:download][:genbank] = true if params[:download][:genbank_dir]
 
 if params[:version]
-    puts 'taxalogue v0.9.3.2'
+    puts 'taxalogue v0.9.3.3'
     
     exit
 end
