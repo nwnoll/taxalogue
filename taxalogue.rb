@@ -431,6 +431,7 @@ if params[:derep].values.count(true) > 1
     
     exit
 end
+$params = params # Need to initialize it already here since I use the global in the next statement 
 
 if params[:merge].any? && DerepHelper.do_derep
     puts "Merging while dereplicating is not possible at the moment"
@@ -438,15 +439,18 @@ if params[:merge].any? && DerepHelper.do_derep
     
     params[:derep].keys.each { |key| params[:derep][key] = false unless key == :no_derep }
 end
+$params = params # Needs to be updated after every change
 
 if params[:download].any? && DerepHelper.do_derep 
     params[:derep].keys.each { |key| params[:derep][key] = false unless key == :no_derep }
 end
+$params = params # Needs to be updated after every change
 
 ## TODO: maybe I have to prevent create, classify, etc if this is done...
 params[:download][:bold]    = true if params[:download][:bold_dir]
 params[:download][:gbol]    = true if params[:download][:gbol_dir]
 params[:download][:genbank] = true if params[:download][:genbank_dir]
+$params = params # Needs to be updated after every change
 
 if params[:version]
     puts 'taxalogue v0.9.3.3'
