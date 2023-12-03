@@ -6,25 +6,27 @@ class NcbiApi
 
     SearchResult = Struct.new(:web, :key, :count)
 
-    def initialize(markers:, taxon_name:, max_seq: nil, file_name:)
+    def initialize(markers:, taxon_name:, max_seq: 1, file_name:)
         @markers    = markers
         @taxon_name = taxon_name
         @max_seq    = max_seq
         @file_name   = file_name
     end
 
-    def efetch
+    def efetch(retstart: 0, retmax: -1)
         # out_file_name = taxon_name.gsub(' ', '_')
         # file = File.open("contaminants_#{out_file_name}.gb", 'w')
         file = File.open(file_name, 'w')
-        retmax            = max_seq < 500 ? max_seq : 500
-        retstart          = 0
+        retmax            = max_seq == -1 ? 500 : max_seq < 500 ? max_seq : 500
+        retstart          = retstart
         esearch_result    = _run_esearch
 
-        stop_at = max_seq ? max_seq : esearch_result.count
+        stop_at = max_seq == -1 ? esearch_result.count : max_seq
+
             
         until retstart >= stop_at
                 url         = "#{_base}efetch.fcgi?db=nucleotide&WebEnv=#{esearch_result.web}&query_key=#{esearch_result.key}&retstart=#{retstart}&retmax=#{retmax}&rettype=gb&retmode=text"
+                puts url
                 uri         = URI(url)
                 # use HTTP downloader
                 response    = Net::HTTP.get_response(uri)
@@ -39,7 +41,13 @@ class NcbiApi
         query       = CGI::escape(MiscHelper.normalize("#{_taxon_query}#{_marker_query}#{_exclusion_query}"))
         url         = "#{_base}esearch.fcgi?db=nucleotide&term=#{query}&usehistory=y"
         uri         = URI(url)
-        response    = Net::HTTP.get_response(uri)
+        http = Net::HTTP.new(uri.host, uri.port)
+
+        http.use_ssl = true
+        request = Net::HTTP::Get.new(uri.request_uri)
+        response = http.request(request)
+        
+        #response    = Net::HTTP.get_response(uri)
 
         web         = $1        if response.body =~ /<WebEnv>(\S+)<\/WebEnv>/
         key         = $1        if response.body =~ /<QueryKey>(\d+)<\/QueryKey>/
@@ -65,8 +73,9 @@ class NcbiApi
         marker_tags.each do |tag|
                 searchterms = Marker.searchterms_of[tag][:ncbi]
         end
-
-        searchterms.map!{ |term| term.dup.concat('[gene]')}
+        
+        ## TODO uncomment
+        #searchterms.map!{ |term| term.dup.concat('[gene]')}
         marker_query = searchterms.join(' OR ')
 
         marker_query.insert(0, '(')

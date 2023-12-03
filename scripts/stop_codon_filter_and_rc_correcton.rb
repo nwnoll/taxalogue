@@ -46,7 +46,7 @@ if params[:output].nil?
     abort("Need Output file, please specify --output")
 end
 
-params[:num_cores] = params[:num_cores] ? params[:num_cores] : 10
+params[:num_cores] = params[:num_cores] ? params[:num_cores] : 1
 pp params
 
 $consensus_seq  = params[:consensus_seq].nil? ? ARTHROPODA_CONSENSUS_SEQ : params[:consensus_seq]
@@ -137,10 +137,27 @@ end
 
 fasta_out   = File.open(params[:output], 'w') if params[:output]
 
-if params[:filter_info]
-    filter_info_out = File.open(params[:filter_info], 'w') 
-    filter_info_out.puts "header\tdiscared\treversed\tnuc_seq\tprot_seq\tdistance_to_consensus\tstop_codon_count\tframe\tnuc_reverse_complement_seq\tused_consensus_seq" if params[:filter_info]
+output_files = []
+filter_info_files = [] if params[:filter_info]
+
+if params[:num_cores] == 1
+
+    output_files.push(fasta_out)
+else 
+    params[:num_cores].times do |i|
+
+        pno = Pathname.new(params[:output]).sub_ext("__o#{i}.tmp")
+        fo = File.open(pno, 'w')
+        output_files.push(fo)
+
+        if params[:filter_info]
+            pnf = Pathname.new(params[:filter_info]).sub_ext("__f#{i}.tmp")
+            ff = File.open(pnf, 'w')
+            filter_info_files.push(ff)
+        end
+    end
 end
+
 
 Parallel.map(seq_of.keys, in_processes: params[:num_cores] ) do |key|
     prot_info               = get_prot_info(seq_of[key])
@@ -155,14 +172,46 @@ Parallel.map(seq_of.keys, in_processes: params[:num_cores] ) do |key|
     reversed    = reverse_seq.nil?  ? false : true
     
     if params[:filter_info]
-        filter_info_out.puts [key, discarded, reversed, seq_of[key], prot_seq, distance_to_consensus, sc_count, frame, reverse_seq, $consensus_seq].join("\t")
+        
+        filter_info_files[Parallel.worker_number].puts [key, discarded, reversed, seq_of[key], prot_seq, distance_to_consensus, sc_count, frame, reverse_seq, $consensus_seq].join("\t")
     end
 
     next if discarded
 
     if params[:output]
-        fasta_out.puts key
-        fasta_out.puts seq_of[key]
+        output_files[Parallel.worker_number].puts key
+        output_files[Parallel.worker_number].puts seq_of[key]
     end
 end
+
+
+if params[:filter_info]
+    filter_info_out = File.open(params[:filter_info], 'w') 
+    filter_info_out.puts "header\tdiscarded\treversed\tnuc_seq\tprot_seq\tdistance_to_consensus\tstop_codon_count\tframe\tnuc_reverse_complement_seq\tused_consensus_seq"
+    filter_info_files.push(filter_info_out) if params[:num_cores] == 1
+end
+
+if params[:num_cores] != 1
+    params[:num_cores].times do |i|
+
+        if params[:filter_info]
+            filter_info_files[i].close
+            fn = filter_info_files[i].path
+            content = File.open(fn, 'r').read
+            filter_info_out.puts content
+            FileUtils.rm(filter_info_files[i].path)
+        end
+
+        output_files[i].close
+        fn = output_files[i].path
+        content = File.open(fn, 'r').read
+        fasta_out.puts content
+        FileUtils.rm(output_files[i].path)
+    end
+end
+        
+    
+    
+
+
 
