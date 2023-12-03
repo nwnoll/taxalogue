@@ -11,7 +11,8 @@ class GbifTaxonomyImporter
     end
 
     def run
-        MiscHelper.extract_zip(name: file_manager.file_path, destination: file_manager.dir_path, files_to_extract: ["backbone/#{file_name}", 'backbone/eml.xml'])
+        # MiscHelper.extract_zip(name: file_manager.file_path, destination: file_manager.dir_path, files_to_extract: ["backbone/#{file_name}", 'backbone/eml.xml'])
+        MiscHelper.extract_zip(name: file_manager.file_path, destination: file_manager.dir_path, files_to_extract: [file_name, 'eml.xml'])
         
         file_path = file_manager.dir_path + file_name
         file      = File.open(file_path, 'r')

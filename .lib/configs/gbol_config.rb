@@ -18,7 +18,8 @@ class GbolConfig
   
     def address
         ## does not work anymore :(
-        'https://www.bolgermany.de/gbol1/release/GBOL_Dataset_Release-20210128.zip'
+        # 'https://www.bolgermany.de/gbol1/release/GBOL_Dataset_Release-20210128.zip'
+        'https://data.bolgermany.de/release/GBOL_Dataset_Release-20210128.zip'
 
         ## other possible slution is to build a crawler and cut out sequence data :
         # https://collections.zfmk.de/specimendetail/656103
