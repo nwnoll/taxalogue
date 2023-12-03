@@ -74,8 +74,7 @@ class NcbiApi
                 searchterms = Marker.searchterms_of[tag][:ncbi]
         end
         
-        ## TODO uncomment
-        #searchterms.map!{ |term| term.dup.concat('[gene]')}
+        searchterms.map!{ |term| term.dup.concat('[gene]')}
         marker_query = searchterms.join(' OR ')
 
         marker_query.insert(0, '(')
