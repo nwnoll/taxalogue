@@ -30,7 +30,7 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
 
 3. Change to the directory where you unzipped the source code
         
-        cd taxalogue-v1.0.0
+        cd taxalogue-1.0.0
 
 4. Install all the dependencies
 	
