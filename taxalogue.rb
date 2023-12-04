@@ -453,7 +453,7 @@ params[:download][:genbank] = true if params[:download][:genbank_dir]
 $params = params # Needs to be updated after every change
 
 if params[:version]
-    puts 'taxalogue v0.9.3.3'
+    puts 'taxalogue v1.0.0'
     
     exit
 end
