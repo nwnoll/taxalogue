@@ -46,7 +46,7 @@ At last, *taxalogue* needs time. Especially the sequence download of species-ric
         # bundle install
 
 
-5. Download records from up to three different source databases, for BOLD manually download the [datapackages](https://boldsystems.org/index.php/datapackages)
+5. Download records from up to three different source databases, for BOLD manually download the [datapackages](https://boldsystems.org/index.php/datapackages). Since taxalogue downloads the GenBank Release files for the specified taxon, it might require a lot of disk space. If you do not have sufficient disk space, consider using only BOLD (by downloading the datapackage) and GBOL with `bundle exec ruby taxalogue.rb --taxon Arthropoda download --gbol`
 	
         # Since BOLD now offers to download a snapshot of the current database, it is recommended to use it
         # The datapackages are listed at https://boldsystems.org/index.php/datapackages
