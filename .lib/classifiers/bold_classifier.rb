@@ -343,12 +343,13 @@ class BoldClassifier
         
             identifier        = row[@@index_by_column_name["processid"]]
             source_taxon_name = row[@@index_by_column_name["identification"]]
-            sequence          = row[@@index_by_column_name["nucraw"]]
+            sequence          = @@index_by_column_name["nucraw"] ? row[@@index_by_column_name["nucraw"]] : row[@@index_by_column_name["nuc"]]
             return nil if sequence.nil? || sequence.blank?
 
             sequence  = FilterHelper.filter_seq(sequence, filter_params)
             marker    = row[@@index_by_column_name["marker_code"]]
-            location = row[@@index_by_column_name["country"]]
+            location  = @@index_by_column_name["country"] ? row[@@index_by_column_name["country"]] : row[@@index_by_column_name["country/ocean"]]
+            
             if row[@@index_by_column_name["coord"]]
                 lat, long = row[@@index_by_column_name["coord"]].gsub(/[\(\)]/, "").split(",")
             else
