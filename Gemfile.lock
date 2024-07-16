@@ -41,12 +41,14 @@ GEM
     pastel (0.8.0)
       tty-color (~> 0.5)
     power_assert (2.0.3)
-    rexml (3.2.5)
+    rexml (3.3.2)
+      strscan
     rubytree (2.0.1)
       json (~> 2.0, > 2.3.1)
     rubyzip (2.3.2)
     shp (0.1.0)
     sqlite3 (1.6.3-x86_64-linux)
+    strscan (3.1.0)
     test-unit (3.6.0)
       power_assert
     time (0.2.2)
