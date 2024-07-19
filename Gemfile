@@ -23,7 +23,7 @@ if major == 3 && minor >= 1
     gem 'pastel'
     gem 'test-unit'
     gem 'rexml'
-    #gem 'biodiversity', '~> 5.1', '>= 5.1.2', '< 5.2'
+    gem 'biodiversity', '~> 5.1', '>= 5.1.2', '< 5.2'
     gem 'countries', '~> 1.2', '>= 1.2.5'
     gem 'geokit'
     gem 'shp'

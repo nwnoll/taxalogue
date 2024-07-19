@@ -122,6 +122,7 @@ class Monomial
     end
 
     def gbif_taxonomy_backbone(first_specimen_info:, importer:)
+
         records = _get_gbif_records(current_name: name, importer: importer, first_specimen_info: first_specimen_info)
         record  = _gbif_taxonomy_object(records: records)
         return record unless record.nil?
@@ -132,6 +133,8 @@ class Monomial
 
         source_lineage = importer.get_source_lineage(first_specimen_info)
         source_lineage.combined.reverse.each do |source_lineage_taxon_name|
+
+
             records = _get_gbif_records(current_name: source_lineage_taxon_name, importer: importer, first_specimen_info: first_specimen_info)
             record  = _gbif_taxonomy_object(records: records)
             return record unless record.nil?
@@ -510,6 +513,8 @@ class Polynomial < Monomial
             record  = _gbif_taxonomy_object(records: records)
             return record unless record.nil?
         end
+        
+        return nil
     end
 
 
@@ -528,6 +533,7 @@ class Polynomial < Monomial
         nomial = Nomial.generate(name: cutted_name, query_taxon_object: query_taxon_object, query_taxon_rank: query_taxon_rank, taxonomy_params: taxonomy_params)
         nomial.gbif_taxonomy_backbone(first_specimen_info: first_specimen_info, importer: importer)
 
+        
         source_lineage = importer.get_source_lineage(first_specimen_info)
         source_lineage.combined.reverse.each do |source_lineage_taxon_name|
             records = _get_gbif_records(current_name: source_lineage_taxon_name, importer: importer, first_specimen_info: first_specimen_info)
@@ -535,6 +541,8 @@ class Polynomial < Monomial
             
             return record unless record.nil?
         end
+
+        return nil
     end
 
     private

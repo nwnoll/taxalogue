@@ -191,14 +191,12 @@ class MiscHelper
     end
 
     def self.multiple_actions?(params)
-        has_create_action   = params[:create].any?      ? 1 : 0
         has_download_action = params[:download].any?    ? 1 : 0
         has_classify_action = params[:classify].any?    ? 1 : 0
-        has_merge_action    = params[:merge].any?       ? 1 : 0
         has_setup_action    = params[:setup].any?       ? 1 : 0
         has_update_action   = params[:update].any?      ? 1 : 0
 
-        if (has_create_action + has_download_action + has_classify_action + has_merge_action + has_setup_action + has_update_action) > 1
+        if (has_download_action + has_classify_action + has_setup_action + has_update_action) > 1
             return true
         else
             return false
@@ -245,9 +243,6 @@ class MiscHelper
     end
 
     def self.run_file_merger(file_manager:, params:)
-        return nil if DerepHelper.do_derep && !params[:merge].any? { |opt| opt.last == true}
-        
-        ## TODO: add other output formats
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Tsv)                    if params[:output][:table]
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Fasta)                  if params[:output][:fasta]
         FileMerger.run(file_manager: file_manager, file_type: OutputFormat::Comparison)             if params[:output][:comparison]

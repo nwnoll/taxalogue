@@ -60,16 +60,6 @@ if File.exist?(db_config[mode]['database'])
 else
     $db_connection = ActiveRecord::Base.establish_connection(db_config[mode])
     DatabaseSchema.create_db
-
-    ## Find a way to download from google drive or find another repo
-    # state = TaxonomyHelper.download_predefined_database
-    
-    # if state == :success
-    #     ActiveRecord::Base.establish_connection(db_config[mode])
-    # else
-    #     ActiveRecord::Base.establish_connection(db_config[mode])
-	#     DatabaseSchema.create_db
-    # end
 end
 
 database_tables = [

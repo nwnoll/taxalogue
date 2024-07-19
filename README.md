@@ -65,7 +65,7 @@ If this is the first start of *taxalogue*, it starts by downloading taxonomies f
 
 6. Check for download failures. Some downloads might fail due to download restrictions or connection losses. Check and automatically download the failed download with the following command examples. Change the directory pathes according to your own files.
 
-        ## if you did not download the BOLD datapackage: bundle exec ruby taxalogue.rb --taxon Arthropoda download --bold_dir downloads/BOLD/Arthropoda-20220203T2218
+        ## if you did not download the BOLD datapackage: bundle exec ruby taxalogue.rb --taxon Arthropoda download --bold_dir downloads/BOLD/your_result_folder
         bundle exec ruby taxalogue.rb --taxon Arthropoda download --genbank_dir downloads/NCBIGENBANK/release256
         bundle exec ruby taxalogue.rb --taxon Arthropoda download --gbol_dir downloads/GBOL/GBOL_Dataset_Release-20210128
 
@@ -136,7 +136,6 @@ This section explains the basic functionalities of *taxalogue*. Additionally, su
   - [download](#download)
   - [classify](#classify)
   - [output](#output)
-  - [create](#create)
   - [Modifying the default config](#modifying-the-default-config)
 - [General options](#general-options)
   - [--taxon](#--taxon)
@@ -174,15 +173,15 @@ bundle exec ruby taxalogue.rb --taxon Orthoptera
 
 All the subcommands and the subcommand options will then come right after it:
 ```console
-bundle exec ruby taxalogue.rb --taxon Orthoptera create --gbol --bold
+bundle exec ruby taxalogue.rb --taxon Orthoptera download --gbol
 ```
 
 
 The subcommands associated subcommand options should be listed right after the subcommand:
 ```console
-bundle exec ruby taxalogue.rb --taxon Orthoptera create --gbol --bold filter --taxon_rank species --max_N 2 region -country "Germany"
+bundle exec ruby taxalogue.rb --taxon Orthoptera classify --gbol filter --taxon_rank species --max_N 2 region --country "Germany"
 ```
-The last command would generate a reference database for the taxon Orthoptera with sequences from BOLD and GBOL. It would only contain sequences with at least species information, that have a maximum of 2 Ns and belong to specimens collected in Germany.
+The last command would classify downloaded sequences from GBOL for the taxon Orthoptera with sequences from GBOL. It would only contain sequences with at least species information, that have a maximum of 2 Ns and belong to specimens collected in Germany.
   
 ***
 #### **download**
@@ -202,16 +201,13 @@ The results will be written into the `downloads` folder:
 
 Examples:
 ```console   
-## download co1 sequences for Orthoptera with sequences from BOLD, GBOL and GenBank
-bundle exec ruby taxalogue.rb -t Orthoptera download --all
-
-## download co1 sequences for Orthoptera with sequences from only BOLD and GBOL
-bundle exec ruby taxalogue.rb -t Orthoptera download --bold --gbol
+## download co1 sequences for Orthoptera with sequences from GBOL
+bundle exec ruby taxalogue.rb -t Orthoptera download --gbol
 ``` 
 
 ***
 #### **classify**
-If you already downloaded sequences with the `create` or `download` subcommand, you could classify these downloads without downloading it again. This is useful if you for example want another version of the database that only allow sequences that are determined until species level. Or you don't want to allow any Ns in the sequences. You could also try a different taxonomy.
+If you already downloaded sequences `download` subcommand, you could classify these downloads without downloading it again. This is useful if you for example want another version of the database that only allow sequences that are determined until species level. Or you don't want to allow any Ns in the sequences. You could also try a different taxonomy.
 
 If you already downloaded sequences for Arthropoda, you could also generate a subset of only Hymenoptera without having to download Hymenoptera again, since they are already available through the older download. This of course does only work if you already have downloades sequences for your specified taxon or for a higher taxon.
 
@@ -222,17 +218,14 @@ The results will be written into the `results` folder:
 
 Examples:
 ```console   
-## classify co1 sequences for Hymenoptera with the latest downloads from BOLD, GBOL and GenBank
-bundle exec ruby taxalogue.rb -t Orthoptera download --all
+## classify co1 sequences for Hymenoptera with the latest downloads from GBOL
+bundle exec ruby taxalogue.rb -t Orthoptera classify --gbol
 
-## classify co1 sequences for Hymenoptera with the latest downloads from BOLD, GBOL and GenBank and which are determined until the species rank
-bundle exec ruby taxalogue.rb -t Hymenoptera download --all filter --taxon_rank species
+## classify co1 sequences for Hymenoptera with the latest downloads from GBOL and which are determined until the species rank
+bundle exec ruby taxalogue.rb -t Hymenoptera classify --gbol filter --taxon_rank species
 
-## classify co1 sequences for Hymenoptera with the latest downloads from BOLD, GBOL and GenBank that do not have Ns
-bundle exec ruby taxalogue.rb -t Hymenoptera download --all filter --max_N 0
-
-## classify co1 sequences for Arthropoda with the latest downloads from only BOLD and use the GBIF Bacbkbone Taxonomy to get accepted taxon names
-bundle exec ruby taxalogue.rb -t Hymenoptera download --bold taxonomy --gbif_backbone
+## classify co1 sequences for Arthropoda with the latest downloads from only GBOL and use the GBIF Bacbkbone Taxonomy to get accepted taxon names
+bundle exec ruby taxalogue.rb -t Hymenoptera download --gbol taxonomy --gbif_backbone
 
 ## classify co1 sequences for Arthropoda with the download folder you specified
 bundle exec ruby taxalogue.rb -t Arthropoda \
@@ -266,32 +259,7 @@ classify --gbol_dir /home/user/taxalogue/downloads/GBOL/GBOL_Dataset_Release-202
         │   │   ├── Orthoptera_derep_all_sintax.fas
        
 ***
-#### create
-**Should only be used for small taxa with few records, since a download failure for millions of records is especially likely for BOLD**
 
-This command creates a barcode database. It will download all sequences belonging to the specified taxon, after that all downloaded files will be parsed and it is checked if a taxon name is present in the chosen taxonomy (default is the NCBI taxonomy). Depending on your used options it might allow the usage of synonyms, or otherwise the accepted name from the NCBI taxonomy will be used. After that the default option is to dereplicate all the sequences and resolve conflicts.
-
-The results will be written into the `results` folder:
-
-        ├── results/
-        │   ├── Arthropoda-20210317T1604/
-
-
-Examples:
-```console   
-## creates a co1 database for Orthoptera with sequences from BOLD, GBOL and GenBank
-bundle exec ruby taxalogue.rb -t Orthoptera create --all
-
-## creates a co1 database for Orthoptera with sequences that have to be at least determined
-## to the genus level from BOLD, GBOL and GenBank
-bundle exec ruby taxalogue.rb -t Orthoptera create --all filter --taxon_rank genus
-
-## creates a co1 database for Arthropoda with sequences that have to be at least determined
-## to the species level and were collected in Germany, Belgium or France from BOLD, GBOL and GenBank
-bundle exec ruby taxalogue.rb -t Arthropoda create --all filter --taxon_rank species region --country "Germany;France;Belgium"
-```  
-
-***
 #### **Modifying the default config**
 If *taxalogue* is called without any options it will only use the default values and those that have been specified in the `default_config.yaml` file. The config file can be adopted to your preferences. 
 
@@ -299,7 +267,7 @@ If *taxalogue* is called without any options it will only use the default values
 :taxon: Arthropoda
 :taxon_rank: phylum
 :markers: co1
-:fast_run: true
+:fast_run: false
 :num_threads: 5
 :num_cores: 5
 :taxonomy:
@@ -331,7 +299,7 @@ Currently only co1. default: co1
 
 
 #### **--fast_run**
-Accellerates Taxon comparison. Turn it off with --fast_run false. default: true
+Accellerates Taxon comparison. Turn it on with --fast_run true. default: false
 
 
 #### **--num_threads**
@@ -352,14 +320,6 @@ Lists all general options and shows available subcommands. If  `--help` is used 
 ***
  ## More examples
  
- ### Combinations
- ```console
- ## get all Insecta sequences from Europe with a minimum length of 500 nucleotides and at maximum 2 Ns
- bundle exec ruby taxalogue.rb --taxon Insecta region -k Europe filter --min_length 500 --max_N 2
- 
- ## get all Arthropoda sequences from palearctic regions wit a size between 600 and 700 nucleotides and no Ns 
- bundle exec ruby taxalogue.rb --taxon Arthropoda region -biogeographic_realm Palearctic filter --min_length 600 --max_length 700 --max_N 0
- ```
  
  ### Choose a taxon
  ```console
@@ -379,19 +339,19 @@ Lists all general options and shows available subcommands. If  `--help` is used 
 bundle exec ruby taxalogue.rb taxonomy -h
  
  ## use GBIF backbone + additional datasets provided by GBIF for taxonomic mapping
- bundle exec ruby taxalogue.rb -t Arthropoda taxonomy --gbif
+ bundle exec ruby taxalogue.rb -t Arthropoda classify --gbol taxonomy --gbif
  
  ## use only the GBIF Backbone taxonomy
- bundle exec ruby taxalogue.rb -t Arthropoda taxonomy --gbif_backbone
+ bundle exec ruby taxalogue.rb -t Arthropoda classify --gbol taxonomy --gbif_backbone
  
  ## use NCBI Taxonomy, default
- bundle exec ruby taxalogue.rb -t Arthropoda taxonomy --ncbi
+ bundle exec ruby taxalogue.rb -t Arthropoda classify --gbol taxonomy --ncbi
  
  ## use GBIF Backbone and allow synonyms
- bundle exec ruby taxalogue.rb -t Arthropoda taxonomy --gbif_backbone --allow_syonyms
+ bundle exec ruby taxalogue.rb -t Arthropoda classify --gbol taxonomy --gbif_backbone --allow_syonyms
 
  ## Disable taxonomic harmonization
- bundle exec ruby taxalogue.rb -t Arthropoda taxonomy --unmapped
+ bundle exec ruby taxalogue.rb -t Arthropoda classify --gbol taxonomy --unmapped
 ```
 
 ### Filter sequences

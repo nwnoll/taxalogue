@@ -4,10 +4,8 @@ require './.requirements'
 include GeoUtils
 
 params = {
-    create: Hash.new,
     download: Hash.new,
     classify: Hash.new,
-    merge: Hash.new,
     setup: Hash.new,
     update: Hash.new,
     filter: Hash.new,
@@ -40,10 +38,8 @@ end
 ## modified after https://gist.github.com/rkumar/445735
 subtext = <<HELP
 Commonly used subcommands are:
-   create   :  creates a barcode database
    download :  downloads sequence and specimen data
    classify :  normalizes the taxon names based on used taxonomy
-   merge    :  combines results from different source databases
    setup    :  setup taxonomies
    update   :  update taxonomies 
    filter   :  set filter options
@@ -97,45 +93,6 @@ end
 
 
 subcommands = {
-    ## TODO: Implement
-    #general: OptionParser.new do |opts|
-    #    
-    #    opts.banner = "Usage: general [options]"
-    #    opts.on('-t TAXON', String, '--taxon', 'Choose a taxon to build your database, if you want a database for a species, put "" around the option: e.g.: -t "Apis mellifera". default: Arthropoda') do |taxon_name|
-    #        abort 'Taxon is extinct, please choose another Taxon' if TaxonHelper.is_extinct?(taxon_name)
-    #        params[:taxon] = taxon_name
-    #        taxon_name
-    #    end
-
-    #    opts.on('-m MARKERS', String, '--markers', 'Currently only co1 is available. default: co1') do |markers|
-    #        params[:marker_objects] = MiscHelper.create_marker_objects(query_marker_names: markers)
-    #    end
-
-    #    opts.on('-f FAST_RUN', FalseClass, '--fast_run', 'Accellerates Taxon comparison. Turn it on with --fast_run true. default: false') do |flag|
-    #        params[:fast_run] = flag
-    #        flag
-    #    end
-    #    
-    #    opts.on('-n NUM_THREADS', Integer, '--num_threads', 'Number of threads for downloads. default: 5') do |num_threads|
-    #        params[:num_threads] = num_threads
-    #        num_threads
-    #    end
-
-    #    opts.on('-v', '--version', 'Shows the used version of taxalogue') do |version|
-    #        params[:version] = true
-    #        version
-    #    end
-    #end,
-
-
-    create: OptionParser.new do |opts|
-        opts.banner = "Usage: create [options]"
-      	opts.on('-a', '--all', 'creates a reference database with sequences from BOLD, GenBank and GBOL')
-      	opts.on('-g', '--gbol', 'creates a reference database with sequences from GBOL')
-      	opts.on('-b', '--bold', 'creates a reference database with sequences from BOLD')
-      	opts.on('-k', '--genbank', 'creates a reference database with sequences from Genbank')
-        opts.on('-C', '--no_contaminants', 'If set, then no possible contaminants are downloaded. Some sequences in the source databases have wrong labels and belong in fact to theses contaminants.')
-    end,
 
     download: OptionParser.new do |opts|
         opts.banner = "Usage: download [options]"
@@ -166,15 +123,6 @@ subcommands = {
       	opts.on('-B BOLD_DIR', String, '--bold_dir', 'Specify the BOLD directory that should be classified')
       	opts.on('-K GENBANK_DIR', String, '--genbank_dir', 'Specify the NCBI GenBank directory that should be classified')
       	opts.on('-M', '--no_merge', 'results are not merged')
-    end,
-
-    merge: OptionParser.new do |opts|
-        opts.banner = "Usage: merge [options]"
-        opts.on('-d RESULT_DIR', String, '--result_dir', 'Result directory that should be merged')
-        opts.on('-a', '--all', 'Merges output of all source databases')
-        opts.on('-g', '--gbol', 'Merges output of GBOL source database')
-        opts.on('-b', '--bold', 'Merges output of BOLD source database')
-        opts.on('-k', '--genbank', 'Merges output of NCBI GenBank source database')
     end,
 
     setup: OptionParser.new do |opts|
@@ -370,19 +318,13 @@ end
 
 if MiscHelper.multiple_actions?(params)
     puts "You specified more than one action"
-    puts "Never use create, download, classify, merge or setup simultaneously"
-    puts
-    puts "create is used to download and classify at the same time"
-    puts "e.g: bundle exec ruby taxalogue.rb -t Trichoptera create --all filter -N 5"
+    puts "Never use download, classify or setup simultaneously"
     puts
     puts "download is used to only download sequences without classifying"
     puts "e.g: bundle exec ruby taxalogue.rb -t Trichoptera download --all"
     puts
     puts "classify is used to only classify already downloaded sequences"
     puts "e.g: bundle exec ruby taxalogue.rb -t Trichoptera download --all filter -N 5 taxonomy --gbif_backbone"
-    puts
-    puts "merge is used to combine results from different source databases"
-    puts "e.g: bundle exec ruby taxalogue.rb merge --result_dir results/Coleoptera-20210908T1531 --all"
     puts
     puts "setup is used to setup the taxonomy database"
     puts "e.g: bundle exec ruby taxalogue.rb setup --ncbi_taxonomy"
@@ -433,20 +375,13 @@ if params[:derep].values.count(true) > 1
 end
 $params = params # Need to initialize it already here since I use the global in the next statement 
 
-if params[:merge].any? && DerepHelper.do_derep
-    puts "Merging while dereplicating is not possible at the moment"
-    puts "Only merging will be executed"
-    
-    params[:derep].keys.each { |key| params[:derep][key] = false unless key == :no_derep }
-end
-$params = params # Needs to be updated after every change
 
 if params[:download].any? && DerepHelper.do_derep 
     params[:derep].keys.each { |key| params[:derep][key] = false unless key == :no_derep }
 end
 $params = params # Needs to be updated after every change
 
-## TODO: maybe I have to prevent create, classify, etc if this is done...
+## TODO: maybe I have to prevent classify, etc if this is done...
 params[:download][:bold]    = true if params[:download][:bold_dir]
 params[:download][:gbol]    = true if params[:download][:gbol_dir]
 params[:download][:genbank] = true if params[:download][:genbank_dir]
@@ -464,63 +399,7 @@ params = TaxonHelper.assign_taxon_info_to_params(params, params[:taxon])
 MiscHelper.print_params(params)
 
 
-## should really stop the passing of the params..
-## would be much less code if I just used this global
 $params = params
-
-
-if params[:create].any?
-    jobs = []
-    file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-
-    params[:create].each do |key, value|
-        if key == :all && params[:create][key]
-            ncbi_genbank_job = NcbiGenbankJob.new(params: params, result_file_manager: file_manager)
-            gbol_job = GbolJob.new(result_file_manager: file_manager, params: params)
-            bold_job = BoldJob.new(result_file_manager: file_manager, params: params)
-            
-            jobs.push(ncbi_genbank_job, gbol_job, bold_job)
-        end
-
-        if key == :bold && jobs.none? { |e| e.class == BoldJob } && params[:create][key]
-            bold_job = BoldJob.new(result_file_manager: file_manager, params: params)
-            
-            jobs.push(bold_job)
-        end
-
-        if key == :gbol && jobs.none? { |e| e.class == GbolJob } && params[:create][key]
-            gbol_job = GbolJob.new(result_file_manager: file_manager, params: params)
-            
-            jobs.push(gbol_job)
-        end
-
-        if key == :genbank && jobs.none? { |e| e.class == NcbiGenbankJob } && params[:create][key]
-            ncbi_genbank_job = NcbiGenbankJob.new(params: params, result_file_manager: file_manager)
-            
-            jobs.push(ncbi_genbank_job)
-        end
-    end
-
-    abort MiscHelper.OUT_error "Need at least one parameter for the databases: e.g: create --all" if jobs.empty?
-
-    file_manager.create_dir
-	
-    multiple_jobs = MultipleJobs.new(jobs: jobs, params: params)
-    MiscHelper.get_inv_contaminants(file_manager, params[:marker_objects]) unless params[:create][:no_contaminants]
-
-    jobs_state = multiple_jobs.run
-    sleep 2
-
-    if jobs_state == :success
-        MiscHelper.run_file_merger(file_manager: file_manager, params: params)
-        MiscHelper.write_marshal_file(dir: file_manager.dir_path, file_name: '.params.dump', data: params)
-    
-        file = File.open(file_manager.dir_path + 'taxalogue.txt', 'w')
-        MiscHelper.print_params(params, file)
-    end
-
-    exit
-end
 
 
 if params[:download].any?
@@ -563,6 +442,7 @@ if params[:download].any?
 end
 
 
+## TODO rename classify
 if params[:classify].any?
     jobs = []
     file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
@@ -614,100 +494,6 @@ if params[:classify].any?
             puts 'finished'
         end
     end
-
-    exit
-end
-
-
-if params[:merge].any?
-    if params[:merge][:result_dir].nil?
-        puts "Need a result directory:"
-        puts "please specify it with merge --result_dir DIRECTORY_PATH"
-        puts
-
-        exit
-    end
-
-    result_file_manager_from_dir_path = Pathname.new(params[:merge][:result_dir]) + '.result_file_manager.dump'
-    
-    begin
-        result_file_manager_from_dir = DownloadCheckHelper.get_object_from_marshal_file(result_file_manager_from_dir_path)
-    rescue StandardError => e
-        puts "Result directory can't be used, please specify another one"
-        puts
-
-        exit
-    end
-
-    file_manager = FileManager.new(name: params[:taxon_object].canonical_name, versioning: true, base_dir: 'results', force: true, multiple_files_per_dir: true)
-
-    source_db_keywords = []
-    params[:merge].each do |key, value|
-        source_db_keywords.push('ncbi_', 'gbol_', 'bold_') if key == :all
-        source_db_keywords.push('bold_') if key == :bold && source_db_keywords.none? { |e| e == '_bold_' }
-        source_db_keywords.push('gbol_') if key == :gbol && source_db_keywords.none? { |e| e == '_gbol_' }
-        source_db_keywords.push('ncbi_') if key == :genbank && source_db_keywords.none? { |e| e == '_ncbi_' }
-    end
-
-    selected_source_db_files = result_file_manager_from_dir.created_files.select do |e|
-        is_match = false
-        source_db_keywords.each do |keyword|
-            
-            if e.path.basename.to_s.match?(keyword)
-                is_match = true
-                break
-            end
-        end
-        
-        is_match
-    end
-
-    file_manager.created_files = selected_source_db_files
-    file_manager.create_dir
-
-    MiscHelper.run_file_merger(file_manager: file_manager, params: params)
-    
-    all_files_from_old_dir = result_file_manager_from_dir.all_and_hidden_dir_path_files
-
-    download_info_files = all_files_from_old_dir.select do |e|
-        is_match = false
-        source_db_keywords.each do |keyword|
-            if e.basename.to_s.match?(/^\.?#{keyword}/)
-                is_match = true
-
-                break
-            end
-        end
-        
-        is_match
-    end
-
-    download_info_files.each do |download_info_file|
-        next unless download_info_file.basename.to_s.start_with?('.')
-        
-        file = File.read(download_info_file)
-        file =~ /^\s{6}(.*?);/
-        dir = $1
-        dir_path = Pathname.new(dir)
-        
-        if download_info_file.basename.to_s.start_with?('.bold_')
-            DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: dir_path, result_file_manager: file_manager, source: BoldJob)
-        elsif download_info_file.basename.to_s.start_with?('.gbol_')
-            DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: dir_path, result_file_manager: file_manager, source: GbolJob)
-        elsif download_info_file.basename.to_s.start_with?('.ncbi_')
-            DownloadCheckHelper.update_already_downloaded_dir_on_new_result_dir(already_downloaded_dir: dir_path, result_file_manager: file_manager, source: NcbiGenbankJob)
-        end
-    end
-
-    file_manager.copy_files(download_info_files)
-    MiscHelper.write_marshal_file(dir: file_manager.dir_path, file_name: '.params.dump', data: params)
-    
-    file = File.open(file_manager.dir_path + 'taxalogue.txt', 'w')
-    MiscHelper.print_params(params, file)
-
-    MiscHelper.OUT_header "Output locations:"
-    puts
-    MiscHelper.OUT_success file_manager.dir_path
 
     exit
 end
