@@ -14,8 +14,6 @@ class NcbiApi
     end
 
     def efetch(retstart: 0, retmax: -1)
-        # out_file_name = taxon_name.gsub(' ', '_')
-        # file = File.open("contaminants_#{out_file_name}.gb", 'w')
         file = File.open(file_name, 'w')
         retmax            = max_seq == -1 ? 500 : max_seq < 500 ? max_seq : 500
         retstart          = retstart
