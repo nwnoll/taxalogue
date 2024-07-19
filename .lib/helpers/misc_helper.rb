@@ -29,7 +29,6 @@ class MiscHelper
     end
 
     def self.extract_zip(name:, destination:, files_to_extract:, retain_hierarchy: false)
-        # does not extract csv file..
         FileUtils.mkdir_p(destination)
         Zip::File.open(name) do |zip_file|
             zip_file.each do |f|

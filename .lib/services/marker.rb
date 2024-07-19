@@ -28,6 +28,9 @@ class Marker
         searchterms_of[:co1][:gbol]   = ['.*']
         searchterms_of[:co1][:bold]   = ['COI-5P']
 
+        ## terms from AnnotiationBustR https://github.com/sborstein/AnnotationBustR/
+        # searchterms_of['12S'][:ncbi] = ['^12S ribosomal RNA$', '^s-rRNA$', '^small subunit ribosomal RNA$', '^12S$', '^12S rrn$', '^12SrRNA$', '^MTRNR1$', '^mt-Rnr1$', '^mt-rnr1$', '^mtrnr1$', '^MT-RNR1$', '^SSU$', '^ssu$', '^rrn12$', '^ssu rRNA$']
+        
         return searchterms_of
     end
 
@@ -41,6 +44,8 @@ class Marker
         searchterms_of = self.class.searchterms_of
         if _to_regex(searchterms_of[:co1][:all]) === query_marker_name
             return :co1
+        # elsif _to_regex(searchterms_of['12S'][:ncbi]) === query_marker_name
+        #     return '12S'
         else
             abort "Marker: marker is not available please use #{_available_markers}.\nUse a comma separated list without any spaces like: coi,rBcl "
         end

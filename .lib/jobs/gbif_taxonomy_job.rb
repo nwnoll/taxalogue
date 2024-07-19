@@ -55,3 +55,4 @@ class GbifTaxonomyJob
         file.close
     end
 end
+

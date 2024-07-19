@@ -74,6 +74,10 @@ class NcbiApi
                 searchterms = Marker.searchterms_of[tag][:ncbi]
         end
         
+        ## TODO
+        # when other tha CO1 will be integrated, this has to change
+        # best: find each Marker the proper term
+        
         searchterms.map!{ |term| term.dup.concat('[gene]')}
         marker_query = searchterms.join(' OR ')
 

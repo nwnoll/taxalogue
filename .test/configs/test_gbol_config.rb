@@ -20,7 +20,7 @@ class TestGbolConfig < Test::Unit::TestCase
     end
 
     def test_address
-        assert_equal 'https://www.bolgermany.de/gbol1/release/GBOL_Dataset_Release-20210128.zip', @gbol_config.address
+        assert_equal 'https://data.bolgermany.de/release/GBOL_Dataset_Release-20210128.zip', @gbol_config.address
     end
 
     def test_file_type
