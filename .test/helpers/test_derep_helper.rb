@@ -67,36 +67,19 @@ class TestDerepHelper < Test::Unit::TestCase
 
     def test_dereplicate
         specimens_of_sequence = Hash.new
-        taxonomy_params_gbif_backbone = Hash.new
-        taxonomy_params_gbif_backbone[:ncbi] = false
-        taxonomy_params_gbif_backbone[:gbif] = false
-        taxonomy_params_gbif_backbone[:gbif_backbone] = true
-
-
         taxonomy_params_gbif = Hash.new
         taxonomy_params_gbif[:ncbi] = false
         taxonomy_params_gbif[:gbif] = true
-        taxonomy_params_gbif[:gbif_backbone] = false
 
 
         taxonomy_params_ncbi = Hash.new
         taxonomy_params_ncbi[:ncbi] = true
         taxonomy_params_ncbi[:gbif] = false
-        taxonomy_params_ncbi[:gbif_backbone] = false
 
 
         DerepHelper.fill_specimens_of_sequence(specimens: @specimens, specimens_of_sequence: specimens_of_sequence, taxonomic_info: @gbif_taxonomic_info, taxon_name: @taxon_name, first_specimen_info: @first_specimen_info)
 
 
-        DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params_gbif_backbone, @taxon_name, 'source_db')
-        assert_true SequenceTaxonObjectProxy.all.size == 2
-        assert_true Sequence.all.size == 2
-        assert_true TaxonObjectProxy.all.size == 1
-        assert_true $seq_ids.size == 2
-        reset
-
-
-        DerepHelper.fill_specimens_of_sequence(specimens: @specimens, specimens_of_sequence: specimens_of_sequence, taxonomic_info: @gbif_taxonomic_info, taxon_name: @taxon_name, first_specimen_info: @first_specimen_info)
         DerepHelper.dereplicate(specimens_of_sequence, taxonomy_params_gbif, @taxon_name, 'source_db')
         assert_true SequenceTaxonObjectProxy.all.size == 2
         assert_true Sequence.all.size == 2

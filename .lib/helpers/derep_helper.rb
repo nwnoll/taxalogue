@@ -86,8 +86,6 @@ class DerepHelper
             seq_meta_of.each do |canonical_name, seq_meta|
                 if taxonomy_params[:ncbi]
                     used_taxonomy_string = 'ncbi'
-                elsif taxonomy_params[:gbif_backbone]
-                    used_taxonomy_string = 'gbif_backbone'
                 elsif taxonomy_params[:gbif]
                     used_taxonomy_string = 'gbif'
                 elsif taxonomy_params[:unmapped]

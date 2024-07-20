@@ -212,26 +212,17 @@ subcommands = {
 
     taxonomy: OptionParser.new do |opts|
         opts.banner = "Usage: taxonomy [options]"
-        opts.on('-b', '--gbif', 'Taxon information is mapped to GBIF Taxonomy backbone + additional available datasets from the GBIF API') do |opt|
-            params[:taxonomy][:gbif_backbone] = false
-            params[:taxonomy][:ncbi] = false
-	    params[:taxonomy][:unmapped] = false
-  	    opt
-	end
-	opts.on('-B', '--gbif_backbone', 'Taxon information is mapped to GBIF Taxonomy backbone') do |opt|
-	    params[:taxonomy][:gbif] = false
+	opts.on('-B', '--gbif', 'Taxon information is mapped to GBIF Taxonomy backbone') do |opt|
 	    params[:taxonomy][:ncbi] = false
 	    params[:taxonomy][:unmapped] = false
             opt
 	end
         opts.on('-n', '--ncbi', 'Taxon information is mapped to NCBI Taxonomy; default: true') do |opt|
-	    params[:taxonomy][:gbif_backbone] = false
 	    params[:taxonomy][:gbif] = false
 	    params[:taxonomy][:unmapped] = false
             opt
 	end
 	opts.on('-u', '--unmapped', 'No mapping takes place, original specimen information is used but only standard ranks are used (e.g. no subfamilies)') do |opt|
-            params[:taxonomy][:gbif_backbone] = false
             params[:taxonomy][:gbif] = false
             params[:taxonomy][:ncbi] = false
             opt
@@ -324,7 +315,7 @@ if MiscHelper.multiple_actions?(params)
     puts "e.g: bundle exec ruby taxalogue.rb -t Trichoptera download --all"
     puts
     puts "classify is used to only classify already downloaded sequences"
-    puts "e.g: bundle exec ruby taxalogue.rb -t Trichoptera download --all filter -N 5 taxonomy --gbif_backbone"
+    puts "e.g: bundle exec ruby taxalogue.rb -t Trichoptera download --all filter -N 5 taxonomy --gbif"
     puts
     puts "setup is used to setup the taxonomy database"
     puts "e.g: bundle exec ruby taxalogue.rb setup --ncbi_taxonomy"

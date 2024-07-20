@@ -87,7 +87,6 @@ class MultipleJobs
             puts "Processing records" 
             Sequence.where(id: $seq_ids).find_each do |seq|
                 
-                puts "Processed 10_000 records" if (count % 10_000) == 0
                 ## write to file if BATCH_SIZE of seqs has been dereplicated 
                 if count == BATCH_SIZE
 
@@ -107,6 +106,7 @@ class MultipleJobs
                     count                             = 0
                 end  
                 count += 1
+                puts "Processed #{count} records" if (count % 10_000) == 0
                 
                 ## if there is only one taxon_object_proxy, we dont hav any name conflicts between records
                 if seq.taxon_object_proxies.size < 2

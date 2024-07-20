@@ -153,7 +153,6 @@ class TestTaxonHelper < Test::Unit::TestCase
         params[:taxon] = 'Lentulidae'
         params[:taxonomy][:ncbi] = true
         params[:taxonomy][:gbif] = false
-        params[:taxonomy][:gbif_backbone] = false
 
 
         assert_equal OpenStruct, TaxonHelper.get_taxon_record(params, automatic: true).class      
@@ -165,7 +164,6 @@ class TestTaxonHelper < Test::Unit::TestCase
         
         params[:taxonomy][:ncbi] = false
         params[:taxonomy][:gbif] = true
-        params[:taxonomy][:gbif_backbone] = false
         assert_equal nil, TaxonHelper.get_taxon_record(params, automatic: true)          
 
         params[:taxon] = 'Lentulidae'
@@ -175,8 +173,7 @@ class TestTaxonHelper < Test::Unit::TestCase
         assert_equal obj, TaxonHelper.get_taxon_record(params, automatic: true)
         
         params[:taxonomy][:ncbi] = false
-        params[:taxonomy][:gbif] = false
-        params[:taxonomy][:gbif_backbone] = true
+        params[:taxonomy][:gbif] = true
         params[:taxon] = 'xxxxccccccxxxxxx'
         assert_equal nil, TaxonHelper.get_taxon_record(params, automatic: true)          
         
@@ -191,7 +188,6 @@ class TestTaxonHelper < Test::Unit::TestCase
         params[:taxon] = 'Lentulidae'
         params[:taxonomy][:ncbi] = true
         params[:taxonomy][:gbif] = false
-        params[:taxonomy][:gbif_backbone] = false
         obj = GbifTaxonomy.find_by(canonical_name: 'Lentulidae')
 
         params[:taxon_object] = nil
@@ -205,7 +201,6 @@ class TestTaxonHelper < Test::Unit::TestCase
 
         params[:taxonomy][:ncbi] = false
         params[:taxonomy][:gbif] = true
-        params[:taxonomy][:gbif_backbone] = false
         params[:taxon_object] = nil
         params[:taxon_rank] = nil
         assert_not_equal params, TaxonHelper.assign_taxon_info_to_params(params.dup, 'Lentulidae')
@@ -216,8 +211,7 @@ class TestTaxonHelper < Test::Unit::TestCase
         assert_equal params, TaxonHelper.assign_taxon_info_to_params(params.dup, 'Lentulidae')
         
         params[:taxonomy][:ncbi] = false
-        params[:taxonomy][:gbif] = false
-        params[:taxonomy][:gbif_backbone] = true
+        params[:taxonomy][:gbif] = true
         params[:taxon_object] = nil
         params[:taxon_rank] = nil
         assert_not_equal params, TaxonHelper.assign_taxon_info_to_params(params.dup, 'Lentulidae')
@@ -229,7 +223,6 @@ class TestTaxonHelper < Test::Unit::TestCase
 
         params[:taxonomy][:ncbi] = false
         params[:taxonomy][:gbif] = false
-        params[:taxonomy][:gbif_backbone] = false
         params[:taxon_object] = nil
         params[:taxon_rank] = nil
         assert_not_equal params, TaxonHelper.assign_taxon_info_to_params(params.dup, 'Lentulidae')
@@ -241,7 +234,6 @@ class TestTaxonHelper < Test::Unit::TestCase
 
         params[:taxonomy][:ncbi] = true
         params[:taxonomy][:gbif] = false
-        params[:taxonomy][:gbif_backbone] = false
         params[:taxon_object] = nil
         params[:taxon_rank] = nil
         assert_raise (SystemExit) { TaxonHelper.assign_taxon_info_to_params(params.dup, 'xxxxccccxxxxx') }

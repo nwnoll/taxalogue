@@ -225,7 +225,7 @@ bundle exec ruby taxalogue.rb -t Orthoptera classify --gbol
 bundle exec ruby taxalogue.rb -t Hymenoptera classify --gbol filter --taxon_rank species
 
 ## classify co1 sequences for Arthropoda with the latest downloads from only GBOL and use the GBIF Bacbkbone Taxonomy to get accepted taxon names
-bundle exec ruby taxalogue.rb -t Hymenoptera download --gbol taxonomy --gbif_backbone
+bundle exec ruby taxalogue.rb -t Hymenoptera download --gbol taxonomy --gbif
 
 ## classify co1 sequences for Arthropoda with the download folder you specified
 bundle exec ruby taxalogue.rb -t Arthropoda \
@@ -342,13 +342,13 @@ bundle exec ruby taxalogue.rb taxonomy -h
  bundle exec ruby taxalogue.rb -t Arthropoda classify --gbol taxonomy --gbif
  
  ## use only the GBIF Backbone taxonomy
- bundle exec ruby taxalogue.rb -t Arthropoda classify --gbol taxonomy --gbif_backbone
+ bundle exec ruby taxalogue.rb -t Arthropoda classify --gbol taxonomy --gbif
  
  ## use NCBI Taxonomy, default
  bundle exec ruby taxalogue.rb -t Arthropoda classify --gbol taxonomy --ncbi
  
  ## use GBIF Backbone and allow synonyms
- bundle exec ruby taxalogue.rb -t Arthropoda classify --gbol taxonomy --gbif_backbone --allow_syonyms
+ bundle exec ruby taxalogue.rb -t Arthropoda classify --gbol taxonomy --gbif --allow_syonyms
 
  ## Disable taxonomic harmonization
  bundle exec ruby taxalogue.rb -t Arthropoda classify --gbol taxonomy --unmapped

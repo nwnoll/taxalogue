@@ -279,16 +279,6 @@ class TaxonHelper
             taxon_object = record
       
         elsif params[:taxonomy][:gbif]
-            # taxon_object = GbifTaxonomy.find_by_canonical_name(taxon_name)
-            ## TODO: change?
-            taxon_objects = GbifTaxonomy.where(canonical_name: taxon_name)
-            taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'accepted' }
-            taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'doubtful' } if taxon_object.nil?
-            taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'synonym' } if taxon_object.nil?
-            taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'misapplied' } if taxon_object.nil?
-        
-        elsif params[:taxonomy][:gbif_backbone]
-            ## TODO: change?
             taxon_objects = GbifTaxonomy.where(canonical_name: taxon_name)
             taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'accepted' }
             taxon_object = taxon_objects.detect { |t| t.taxonomic_status == 'doubtful' } if taxon_object.nil?

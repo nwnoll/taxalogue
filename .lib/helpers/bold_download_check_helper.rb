@@ -75,17 +75,6 @@ class BoldDownloadCheckHelper
         record_for_dir_name = nil
         taxon_object_from_marshal_dump = DownloadCheckHelper.get_taxon_record_from_marshal_dump(dir)
         if taxon_object_from_marshal_dump
-            ## since there are some differences between the taxonomies the taxon_object should only
-            ## come from the same taxonomy as ther user specified taxonomy
-            ## !this is now obsolete!
-            # if taxon_object_from_marshal_dump.is_a?(GbifTaxonomy) && (params[:taxonomy][:gbif] || params[:taxonomy][:gbif_backbone])
-            #     record_for_dir_name = taxon_object_from_marshal_dump
-            # elsif taxon_object_from_marshal_dump.is_a?(OpenStruct) && (params[:taxonomy][:ncbi] || params[:taxonomy][:unmapped])
-            #     record_for_dir_name = taxon_object_from_marshal_dump
-            # else
-            #     record_for_dir_name = nil
-            # end
-
             record_for_dir_name = taxon_object_from_marshal_dump
         else
             dir_name = FileManager.dir_name_of(dir: dir)

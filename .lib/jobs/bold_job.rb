@@ -234,7 +234,7 @@ class BoldJob
                 taxon_rank_to_try               = GbifTaxonomy.possible_ranks[index_of_lower_rank]
                 
                 taxa_records_and_names_to_try = nil
-                if taxonomy_params[:gbif] || taxonomy_params[:gbif_backbone]
+                if taxonomy_params[:gbif]
                     taxa_records_and_names_to_try   = GbifTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
         
                 elsif taxonomy_params[:ncbi]
@@ -405,7 +405,7 @@ class BoldJob
                 
                 
                 taxa_records_and_names_to_try = nil
-                if taxonomy_params[:gbif] || taxonomy_params[:gbif_backbone]
+                if taxonomy_params[:gbif]
                     taxa_records_and_names_to_try   = GbifTaxonomy.taxa_names_for_rank(taxon: node_record, rank: taxon_rank_to_try)
         
                 elsif taxonomy_params[:ncbi]
