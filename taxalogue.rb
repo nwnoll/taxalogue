@@ -81,12 +81,17 @@ global = OptionParser.new do |opts|
         num_cores
     end
 
-
     opts.on('-v', '--version', 'Shows the used version of taxalogue') do |version|
         params[:version] = true
         version
     end
-  
+
+    opts.on('-r', '--citation', 'How to cite taxalogue') do |version|
+        params[:citation] = true
+        citation
+    end
+
+
     opts.separator ""
     opts.separator subtext
 end
@@ -380,6 +385,12 @@ $params = params # Needs to be updated after every change
 
 if params[:version]
     puts 'taxalogue v1.1.0'
+    
+    exit
+end
+
+if params[:citation]
+    puts 'Noll NW, Scherber C, Schäffler L. 2023. taxalogue: a toolkit to create comprehensive CO1 reference databases. PeerJ 11:e16253 https://doi.org/10.7717/peerj.16253' 
     
     exit
 end
