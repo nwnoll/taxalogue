@@ -86,7 +86,7 @@ global = OptionParser.new do |opts|
         version
     end
 
-    opts.on('-r', '--citation', 'How to cite taxalogue') do |version|
+    opts.on('-r', '--citation', 'How to cite taxalogue') do |citation|
         params[:citation] = true
         citation
     end
