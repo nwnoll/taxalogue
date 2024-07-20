@@ -4,7 +4,6 @@ require "bundler"
 require "active_record"
 require "sqlite3"
 require 'bio'
-require 'fuzzystringmatch'
 require 'zip'
 require 'tree'
 require 'parallel'
@@ -42,10 +41,19 @@ sections.each do |section|
 	end
 end
 
-Bundler.require
 
 mode = ENV['TAXALOGUE_MODE']
 mode = 'production' if mode.nil?
+
+if mode == "dev"
+    Bundler.require(:default, :dev)
+    mode = "production" 
+elsif mode == "test"
+    Bundler.require(:default, :dev)
+else
+    Bundler.require(:default)
+end
+
 
 db_config_file 	= File.open(".db/database.yaml")
 db_config 		= YAML::load(db_config_file)

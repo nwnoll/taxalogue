@@ -5,37 +5,32 @@ class DerepHelper
     BATCH_SIZE = 35_000
 
     def self.fill_specimens_of_sequence(specimens:, specimens_of_sequence:, taxonomic_info:, taxon_name:, first_specimen_info:)
-        seq_meta = Struct.new(:taxonomic_infos, :first_specimen_infos, :source_taxon_name, :specimens)
         canonical_name = taxonomic_info.canonical_name
-        # specimens_of_taxon[taxon_name][:data].each do |specimen|
-        # specimens.each do |specimen|
         specimens.delete_if do |specimen|
             seq = specimen[:sequence]
             if specimens_of_sequence.key?(seq)
                 if specimens_of_sequence[seq].key?(canonical_name)
                     specimens_of_sequence[seq][canonical_name].specimens.push(specimen)
                 else
-                    #seq_meta = OpenStruct.new(
-                    specimens_of_sequence[seq][canonical_name] = seq_meta.new(
+                    seq_meta = OpenStruct.new(
                         taxonomic_infos: taxonomic_info,
                         first_specimen_infos: first_specimen_info,
                         source_taxon_name: taxon_name,
                         specimens: []
                     )
-                    #specimens_of_sequence[seq][canonical_name] = seq_meta
+                    specimens_of_sequence[seq][canonical_name] = seq_meta
 
                     specimens_of_sequence[seq][canonical_name].specimens.push(specimen)
                 end
             else
                 info_per_canonical_name = Hash.new
-                #seq_meta = OpenStruct.new(
-                info_per_canonical_name[canonical_name] = seq_meta.new(
+                seq_meta = OpenStruct.new(
                     taxonomic_infos: taxonomic_info,
                     first_specimen_infos: first_specimen_info,
                     source_taxon_name: taxon_name,
                     specimens: []
                 )
-                #info_per_canonical_name[canonical_name] = seq_meta
+                info_per_canonical_name[canonical_name] = seq_meta
 
                 info_per_canonical_name[canonical_name].specimens.push(specimen)
                 specimens_of_sequence[seq] = info_per_canonical_name 
@@ -52,15 +47,6 @@ class DerepHelper
         related_seqs_and_taxon_infos    = Hash.new
         already_pushed_tops             = Set.new
 
-        stop_struct = Struct.new(
-           :taxon_object_proxy_sha_or_ids,
-           :specimens_nums,
-           :first_specimen_identifiers,
-           :first_specimen_locations,
-           :first_specimen_latitudes,
-           :first_specimen_longitudes
-        ) 
-
         #specimens_of_sequence.each do |seq, seq_meta_of|
         specimens_of_sequence.delete_if do |seq, seq_meta_of|
             seq_sha256_bubblebabble = Digest::SHA256.bubblebabble(seq)
@@ -74,7 +60,7 @@ class DerepHelper
 
             seq_sha_or_id =  sequence_ary_or_id.kind_of?(Array) ? seq_sha256_bubblebabble : sequence_ary_or_id
             
-            related_seqs_and_taxon_infos[seq_sha_or_id] = stop_struct.new(
+            related_seqs_and_taxon_infos[seq_sha_or_id] = OpenStruct.new(
                 taxon_object_proxy_sha_or_ids: [],
                 specimens_nums: [],
                 first_specimen_identifiers: [],
