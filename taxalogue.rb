@@ -105,6 +105,7 @@ subcommands = {
       	opts.on('-g', '--gbol', 'Download records from GBOL')
       	opts.on('-o', '--bold', 'Download records from BOLD')
       	opts.on('-k', '--genbank', 'Download records from GenBank')
+      	opts.on('-m', '--midori', 'Download records from MIDORI')
       	opts.on('-G GBOL_DIR', String, '--gbol_dir', 'Path of GBOL directory that should be checked for failures. The failed downloads will be downloaded again.') do |opt|
             Pathname.new(opt)
         end
@@ -123,11 +124,13 @@ subcommands = {
       	opts.on('-g', '--gbol', 'Latest download of GBOL database will be classified')
       	opts.on('-b', '--bold', 'Latest download of BOLD database will be classified')
       	opts.on('-k', '--genbank', 'Latest download of NCBI GenBank database will be classified')
+        opts.on('-m', '--midori', 'Latest download MIDORI  will be classified')
         opts.on('-r BOLD_RELEASE', String, '--bold_release', 'Specify the .tsv from the BOLD release file.') { |opt| Pathname.new(opt) }
       	opts.on('-G GBOL_DIR', String, '--gbol_dir', 'Specify the GBOL directory that should be classified')
       	opts.on('-B BOLD_DIR', String, '--bold_dir', 'Specify the BOLD directory that should be classified')
       	opts.on('-K GENBANK_DIR', String, '--genbank_dir', 'Specify the NCBI GenBank directory that should be classified')
-      	opts.on('-M', '--no_merge', 'results are not merged')
+        opts.on('-M MIDORI', String, '--midori_dir', 'Specify the .gz file from the downloads/MIDORI folder') { |opt| Pathname.new(opt) }
+      	opts.on('-n', '--no_merge', 'results are not merged')
     end,
 
     setup: OptionParser.new do |opts|
@@ -403,6 +406,14 @@ MiscHelper.print_params(params)
 
 $params = params
 
+## TODO
+# change name classify to ?
+# create other alternatives for midori/gbol lineages?
+# write out discarded seqs/lineages with cause
+# make NCBI download via API possible
+# include other markers
+# get rid of services? or helpers? what is the difference?
+#
 
 if params[:download].any?
     jobs = []
@@ -433,6 +444,12 @@ if params[:download].any?
             ncbi_genbank_job = NcbiGenbankJob.new(params: params, result_file_manager: file_manager)
             
             jobs.push(ncbi_genbank_job)
+        end
+
+        if key == :midori && jobs.none? { |e| e.class == MidoriJob } && params[:download][key]
+            midori_job = MidoriJob.new(params: params, result_file_manager: file_manager)
+            
+            jobs.push(midori_job)
         end
     end
 
@@ -474,6 +491,12 @@ if params[:classify].any?
             ncbi_genbank_job = NcbiGenbankJob.new(params: params, result_file_manager: file_manager)
             
             jobs.push(ncbi_genbank_job)
+        end
+
+        if (key == :midori || key == :midori_dir) && jobs.none? { |e| e.class == MidoriJob } && params[:classify][key]
+            midori_job = MidoriJob.new(result_file_manager: file_manager, params: params)
+            
+            jobs.push(midori_job)
         end
     end
 

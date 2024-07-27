@@ -19,6 +19,7 @@ class MultipleJobs
         bold_dir = nil
         gbol_dir = nil
         ncbi_dir = nil
+        midori_dir = nil
 
         $seq_ids = Set.new 
        
@@ -34,12 +35,20 @@ class MultipleJobs
                 end
             elsif job.class == GbolJob
                 ## TODO: implement user provided gbol_dir for failure check and download
-                gbol_dir = GbolDownloadCheckHelper.ask_user_about_gbol_download_dirs(params)
+                gbol_dir = GbolDownloadCheckHelper.ask_user_about_download_dirs(params)
             elsif job.class == NcbiGenbankJob
                 if params[:download][:genbank_dir]
                     ncbi_dir = NcbiDownloadCheckHelper.create_release_info_struct(params[:download][:genbank_dir], params)
                 else
                     ncbi_dir = NcbiDownloadCheckHelper.ask_user_about_download_dirs(params, only_successful = true)
+                end
+            elsif job.class == MidoriJob
+                ## TODO: implement user provided midori_dir for failure check and download
+                if params[:classify][:midori_dir]
+                    ##  TODO: problem is there are nor download file managers etc..
+                    midori_dir = Pathname.new(params[:classify][:midori_dir])
+                else
+                    midori_dir = MidoriDownloadCheckHelper.ask_user_about_download_dirs(params)
                 end
             end
         end
@@ -57,6 +66,9 @@ class MultipleJobs
             elsif job.class == NcbiGenbankJob
                 used_source_db_ary.push('ncbi')
                 results_of[job.class] = job.run(ncbi_dir)
+            elsif job.class == MidoriJob
+                used_source_db_ary.push('midori')
+                results_of[job.class] = job.run(midori_dir)
             end
         end
 
@@ -204,7 +216,7 @@ class MultipleJobs
             
             file_of.each { |fc, fh| fh.close }
         end
-
+        
         puts
         MiscHelper.OUT_header "Output locations:"
         result_file_manager = nil
@@ -323,6 +335,8 @@ class MultipleJobs
             return "GenBank"
         elsif klass == GbolJob
             return "GBOL"
+        elsif klass == MidoriJob
+            return "MIDORI"
         end
     end
 end

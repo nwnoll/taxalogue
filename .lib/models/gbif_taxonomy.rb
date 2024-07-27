@@ -2,6 +2,13 @@
 
 class GbifTaxonomy < ActiveRecord::Base
     self.table_name = 'gbif_taxonomy'
+    SPECIES   = 0
+    GENUS     = 1
+    FAMILIA    = 2
+    ORDO      = 3
+    CLASSIS   = 4
+    PHYLUM    = 5
+    REGNUM    = 6
 
     def self.possible_ranks
         ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']

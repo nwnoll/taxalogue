@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class GbolDownloadCheckHelper
-    def self.ask_user_about_gbol_download_dirs(params)
+    def self.ask_user_about_download_dirs(params)
         MiscHelper.OUT_header "Looking for GBOL database downloads"
         puts
 

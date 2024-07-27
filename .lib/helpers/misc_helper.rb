@@ -6,11 +6,63 @@ class MiscHelper
     GENBANK_MARKER_FILES_DIR_PATH   = Pathname.new(GENBANK_MARKER_FILES_DIR)
     GENBANK_MARKER_INFO_FILE        = ".config/genbank_markers.json"
 
+    def self.get_lineage_from_midori_header(header)
+        lineage = []
+        GbifTaxonomy.possible_ranks.each_with_index do |r, i|
+            header =~ /;#{r}_(.*?)_/    
+            lineage[i] = $1
+        end
+            
+        return lineage        
+    end
+
     def self.json_file_to_hash(file_name)
         file = File.read(file_name)
         hash = JSON.parse(file)
     
         return hash
+    end
+
+    def self.fasta_gzip_to_hash(fasta_gzip)
+        seq_of = Hash.new("")
+        header = nil
+        found = false
+        fasta_gzip.each do |line|
+            line.chomp!
+
+            if line =~ /^>/
+                header = line
+            else
+                seq_of[header] += line
+            end
+            # if line =~ /^>KF848213.1./
+            #     header = line
+            #     found = true 
+            # else
+            #     if found
+            #         seq_of[header] += line
+            #         break
+            #     end
+            # end
+        end
+
+        return seq_of
+    end
+
+    def self.fasta_to_hash(file_name)
+        file = File.open(file_name, 'r')
+        seq_of = Hash.new("")
+        header = nil
+        file.each do |line|
+            line.chomp!
+            if line =~ "^>"
+                header = line
+            else
+                seq_of[header] += line
+            end
+        end
+
+        return seq_of
     end
 
     def self.constantize(s)

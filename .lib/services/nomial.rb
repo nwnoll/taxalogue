@@ -57,8 +57,6 @@ end
 
 class Monomial
     require_relative 'string_formatting'
-    require_relative 'taxon_search'
-    include TaxonSearch
     include StringFormatting
 
     attr_reader :name, :query_taxon_object, :query_taxon_rank, :query_taxon_name, :taxonomy_params, :are_synonyms_allowed
@@ -287,10 +285,13 @@ class Monomial
 
             ncbi_taxonomy_objects.push(obj)
         end
-
-        records = _is_homonym?(current_name) ? _records_with_matching_lineage(current_name: current_name, lineage: importer.get_source_lineage(first_specimen_info), all_records: ncbi_taxonomy_objects) : ncbi_taxonomy_objects
-
-        return records
+        
+        if ncbi_taxonomy_objects.any?
+            records = _records_with_matching_lineage(current_name: current_name, lineage: importer.get_source_lineage(first_specimen_info), all_records: ncbi_taxonomy_objects)
+            return records
+        else
+            return []
+        end
     end
 
     def _is_accepted?(record)
@@ -358,14 +359,11 @@ class Monomial
     end
 
     def _records_with_matching_lineage(current_name:, lineage:, all_records:)
-        gbif_homonym              = GbifHomonym.find_by(canonical_name: current_name)
-        gbif_homonym_rank         = gbif_homonym.rank
         species_ranks             = ["subspecies", "variety", "form", "subvariety", "species"]
         genus_ranks               = ["genus"]
-        family_ranks              = ["infrafamily", "family", "superfamily"]
+        family_ranks              = ["infrafamily", "family", "superfamily", "subfamily"]
         order_ranks               = ["infraorder", "order", "superorder"]
         class_ranks               = ["infraclass", "class", "superclass"]
-
         potential_correct_records = []
         all_records.each do |taxon_object|
             lineage.combined.reverse.each do |taxon|
@@ -373,11 +371,23 @@ class Monomial
                     potential_correct_records.push(taxon_object) and break if taxon_object.public_send('genus')   == taxon
                     potential_correct_records.push(taxon_object) and break if taxon_object.public_send('familia') == taxon
                     potential_correct_records.push(taxon_object) and break if taxon_object.public_send('ordo')    == taxon
+
+                    if GbolClassifier::INCLUDED_TAXA['Hemiptera'].include?(taxon)
+                        potential_correct_records.push(taxon_object) and break if taxon_object.public_send('ordo') == 'Hemiptera'
+                    end
                 elsif genus_ranks.include? taxon_object.taxon_rank
                     potential_correct_records.push(taxon_object) and break if taxon_object.public_send('familia') == taxon
                     potential_correct_records.push(taxon_object) and break if taxon_object.public_send('ordo')    == taxon
+
+                    if GbolClassifier::INCLUDED_TAXA['Hemiptera'].include?(taxon)
+                        potential_correct_records.push(taxon_object) and break if taxon_object.public_send('ordo') == 'Hemiptera'
+                    end
                 elsif family_ranks.include? taxon_object.taxon_rank
                     potential_correct_records.push(taxon_object) and break if taxon_object.public_send('ordo')    == taxon
+
+                    if GbolClassifier::INCLUDED_TAXA['Hemiptera'].include?(taxon)
+                        potential_correct_records.push(taxon_object) and break if taxon_object.public_send('ordo') == 'Hemiptera'
+                    end
                 elsif order_ranks.include? taxon_object.taxon_rank
                     potential_correct_records.push(taxon_object) and break if taxon_object.public_send('classis') == taxon
                 elsif class_ranks.include? taxon_object.taxon_rank
@@ -385,21 +395,21 @@ class Monomial
                 end
             end
         end
-
+    
         return potential_correct_records
     end
 
-    def _get_combined(record, rank_of_record)
-        combined = []
-        possible_ranks = NcbiTaxonomy.ranks_for_combined
+   def _get_combined(record, rank_of_record)
+       combined = []
+       possible_ranks = NcbiTaxonomy.ranks_for_combined
 
-        possible_ranks.reverse.each do |rank|
-            rank_info = rank_of_record == rank ? record.name : record.public_send(TaxonomyHelper.latinize_rank(rank))
-            combined.push(rank_info) unless rank_info.blank?
-        end
+       possible_ranks.reverse.each do |rank|
+           rank_info = rank_of_record == rank ? record.name : record.public_send(TaxonomyHelper.latinize_rank(rank))
+           combined.push(rank_info) unless rank_info.blank?
+       end
 
-        return combined
-    end
+       return combined
+   end
 
     def _taxonomic_status(record)
         return if record.nil?
@@ -414,6 +424,32 @@ class Monomial
             return 'synonym'
         end
     end
+
+   def _ncbi_next_highest_taxa_name(taxon_name)
+       ncbi_ranked_lineage_object = NcbiRankedLineage.find_by_name(taxon_name)
+       return unless ncbi_ranked_lineage_object
+
+       ncbi_node_with_possible_rank = _go_through_ranks(ncbi_ranked_lineage_object.tax_id)
+       return unless ncbi_node_with_possible_rank
+
+       ncbi_ranked_lineage_object = NcbiRankedLineage.find_by_tax_id(ncbi_node_with_possible_rank.tax_id)
+       return unless ncbi_ranked_lineage_object
+
+       return ncbi_ranked_lineage_object.name
+   end
+
+   def _go_through_ranks(tax_id)
+       ncbi_node_object = NcbiNode.find_by_tax_id(tax_id)
+       return unless ncbi_node_object
+
+       loop do
+           return ncbi_node_object if GbifTaxonomy.possible_ranks.include?(ncbi_node_object.rank)
+
+           ncbi_node_object = NcbiNode.find_by_tax_id(ncbi_node_object.parent_tax_id)
+           return nil unless ncbi_node_object
+           return nil if ncbi_node_object.parent_tax_id == ncbi_node_object.tax_id
+       end
+   end
 end
 
 class Polynomial < Monomial
