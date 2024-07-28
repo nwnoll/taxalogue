@@ -14,7 +14,6 @@ class NcbiTaxonomyJob
         file_manager.create_dir
 
         downloader = config.downloader.new(config: config)
-        # downloader.extend(MiscHelper.constantize("Printing::#{downloader.class}"))
         downloader.run
 
         _create_version_file

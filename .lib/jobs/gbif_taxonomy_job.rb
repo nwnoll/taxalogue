@@ -14,7 +14,6 @@ class GbifTaxonomyJob
         file_manager.create_dir
 
         downloader = config.downloader.new(config: config)
-        # downloader.extend(MiscHelper.constantize("Printing::#{downloader.class}"))
         downloader.run
 
         _create_version_file
@@ -22,7 +21,6 @@ class GbifTaxonomyJob
         config.importers.each do |importer_name, import_file|
             importer_class  = MiscHelper.constantize(importer_name)
             importer        = importer_class.new(file_manager: config.file_manager, file_name: import_file)
-            # importer.extend(MiscHelper.constantize("Printing::#{importer_name}"))
             importer.run
         end
     end

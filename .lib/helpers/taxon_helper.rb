@@ -305,25 +305,6 @@ class TaxonHelper
         return params
     end
     
-    ## UNUSED
-    def self.lowest_matching_taxon(obj1:, obj2:, params:, importer:)
-        ranks = GbifTaxonomy.rank_mappings.values
-
-        ranks.each do |rank|
-            puts rank
-            p obj1.taxonomic_infos.public_send(rank)
-            p obj2.taxonomic_infos.public_send(rank)
-            if obj1.taxonomic_infos.public_send(rank) == obj2.taxonomic_infos.public_send(rank)
-                puts "----> #{rank}"
-                nomial = Nomial.generate(name: obj1.taxonomic_infos.public_send(rank), query_taxon_object: params[:taxon_object], query_taxon_rank: params[:taxon_rank], taxonomy_params: params[:taxonomy])
-                
-                return nomial.taxonomy(first_specimen_info: obj1.first_specimen_infos, importer: importer)
-            end
-        end
-
-        return nil
-    end
-
     def self.deduce_rank(obj)
         return nil if obj.nil?
 

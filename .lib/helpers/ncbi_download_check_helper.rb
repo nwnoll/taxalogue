@@ -137,22 +137,4 @@ class NcbiDownloadCheckHelper
         
         str[-3..-1].to_i
     end
-
-
-    ## UNUSED
-    def self.genbank_files_with_cox1(release: nil, divisions: [])
-        file = File.open(COX1_RELEASE247_GBINV, 'r')
-
-        cox1_files = []
-        file.each do |line|
-            line.chomp!
-            line        =~ /(.*?)\:(\d{1})/
-            file_name   = $1
-            has_cox1    = $2
-            
-            cox1_files.push(Pathname.new(file_name).basename.to_s) if has_cox1 == '1'
-        end
-
-        return cox1_files
-    end
 end

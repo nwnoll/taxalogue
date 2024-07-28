@@ -967,26 +967,4 @@ class NcbiGenbankJob
         MiscHelper.write_marshal_file(dir: NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir, data: download_file_managers, file_name: '.download_file_managers.dump')
         MiscHelper.write_marshal_file(dir: NcbiGenbankConfig::DOWNLOAD_DIR + @root_download_dir, data: taxon, file_name: '.taxon_object.dump') 
     end
-
-
-    ## UNUSED ATM
-    def _write_result_files(fmanagers:)
-        fmanagers.each do |root_dir|
-            merged_download_file_name  = root_dir.dir_path + "merged.gz"
-            download_info_file    = File.open(root_dir.dir_path + "download_info.tsv", 'w') 
-            download_successes    = fmanagers.select { |m| m.status == 'success' }
-
-
-            OutputFormat::MergedGenbankDownload.write_to_file(file_name: merged_download_file_name, data: download_successes, header_length: FILE_DESCRIPTION_PART, include_header: false)
-            OutputFormat::DownloadInfo.write_to_file(file: download_info_file, fmanagers: fmanagers)
-        end
-    end
-    
-
-    ## UNUSED ATM
-    def _merge_results
-        FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Tsv)
-        FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Fasta)
-        FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Comparison)
-    end
 end

@@ -413,7 +413,6 @@ $params = params
 # make NCBI download via API possible
 # include other markers
 # get rid of services? or helpers? what is the difference?
-#
 
 if params[:download].any?
     jobs = []

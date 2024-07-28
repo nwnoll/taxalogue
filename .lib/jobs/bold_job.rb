@@ -501,44 +501,6 @@ class BoldJob
         node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' 
     end
 
-    ## UNUSED
-    def _needs_rest_download(node_content)
-        node_content == 'server_offline' || node_content == 'read_timeout' || node_content == 'open_timeout' || node_content == 'socket_error' || node_content == 'other_error' || node_content == 'too_many_records' || node_content == 'failing_taxon'
-    end
-
-    ## UNUSED
-    def _rest_query(failed_taxon, taxa_to_exclude)
-
-        base = 'http://www.boldsystems.org/index.php/API_Public/combined?'
-        
-
-        max_query_size = 8190 ## apache default
-        max_query_size -= 120 ## minus base + additional query
-        taxa = []
-        taxa_to_exclude.each_with_index do |taxon, i|
-            taxon_name = taxon.last
-            excluded_taxon_name = taxon_name.split.unshift('-').join('')
-            taxa.push(excluded_taxon_name)
-            char_count = taxa.join.size + (i+1) ## add # | delimiter
-            if char_count >= max_query_size
-                taxa.pop
-                break
-            end
-        end
-
-        excluded_taxa_string = taxa.join('|')
-        query = excluded_taxa_string.dup.prepend("taxon=")
-        query = query.concat("|#{failed_taxon}")
-        query = query.concat('&format=tsv')
-        
-        if query.size >= max_query_size
-        ## TODO:
-        end
-        query = base.dup.concat(query)
-
-        return query
-    end
-
     def _print_download_progress_report(root_node:, rank_level:)
         root_copy = root_node.detached_subtree_copy
 
@@ -615,45 +577,6 @@ class BoldJob
         end
     end
 
-
-    ## TODO: same for NcbiTaxonomy
-    ## UNUSED
-    def _download_synonym(node:)
-        syn = Synonym.new(accepted_taxon: node.content.first, sources: [GbifTaxonomy])
-        file_manager = nil
-
-        syn.synonyms_of_taxonomy.each do |taxonomy, synonyms|
-            synonyms.each do |synonym|
-                parent_dir      = _get_parentage_as_dir_structure(node)
-                synonym_config  = BoldConfig.new(name: synonym.canonical_name, markers: markers, parent_dir: parent_dir)
-                
-                file_manager    = synonym_config.file_manager
-                file_manager.create_dir
-                
-                synonym_downloader  = synonym_config.downloader.new(config: synonym_config)
-                
-                begin
-                    synonym_downloader.run
-                    if File.empty?(file_manager.file_path)
-                        file_manager.status = 'failure'
-                    else
-                        file_manager.status = 'success'
-                        break
-                    end
-                rescue Net::ReadTimeout
-                    file_manager.status = 'failure'
-                end
-            end
-        end
-
-        if file_manager && file_manager.status == 'success'
-            return file_manager
-        else  
-            return nil
-        end
-    end
-
-
     def _write_result_files(root_node:, download_file_managers:)
         root_dir              = download_file_managers.select { |m| m.name == root_node.name }.first
         # merged_download_file  = File.open(root_dir.dir_path + "#{root_dir.name}_merged.tsv", 'w') 
@@ -692,13 +615,6 @@ class BoldJob
         puts "Download failed taxa with:"
         puts "bundle exec ruby taxalogue.rb -t #{taxon_name} download --bold_dir #{BoldConfig::DOWNLOAD_DIR + @root_download_dir}"
         puts
-    end
-
-    ## UNUSED
-    def _merge_results
-        FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Tsv)
-        FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Fasta)
-        FileMerger.run(file_manager: result_file_manager, file_type: OutputFormat::Comparison)
     end
 
     def _server_is_offline(file_path)

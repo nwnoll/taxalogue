@@ -9,7 +9,6 @@ class TestMiscHelper < Test::Unit::TestCase
         assert_same GbolConfig,                   MiscHelper.constantize('GbolConfig')
         assert_same NcbiGenbankConfig,            MiscHelper.constantize('NcbiGenbankConfig')
         assert_same NcbiTaxonomyConfig,           MiscHelper.constantize('NcbiTaxonomyConfig')
-        assert_same Printing,                     MiscHelper.constantize('Printing')
         assert_same FtpDownloader,                MiscHelper.constantize('FtpDownloader')
         assert_same HttpDownloader,               MiscHelper.constantize('HttpDownloader')
         assert_same MiscHelper,                       MiscHelper.constantize('MiscHelper')

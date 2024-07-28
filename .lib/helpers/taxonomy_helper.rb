@@ -7,7 +7,7 @@ class TaxonomyHelper
         ncbi_taxonomy_update_config_name = '.lib/configs/ncbi_taxonomy_update_config.json' 
         params = MiscHelper.json_file_to_hash(ncbi_taxonomy_update_config_name)
         config = Config.new(params)
-        
+
         downloader = HttpDownloader2.new(address: config.address, destination: config.file_manager.file_path)
         downloader.run
     
@@ -84,82 +84,5 @@ class TaxonomyHelper
         else
             return NcbiTaxonomy
         end
-    end
-
-    ## UNUSED since the download from google drive does not work
-    def self.download_predefined_database
-        if File.file?('.db/database.db')
-
-            MiscHelper.OUT_question("A database file already exists. Do you really want to overwrite it? [Y/n]")
-            user_input = gets.chomp
-            overwrite_db = (user_input =~ /y|yes/i) ? true : false
-            
-            return :database_already_exists unless overwrite_db
-        end
-        
-        MiscHelper.OUT_header('Downloading Taxonomy databases')
-        puts
-
-        downloader = HttpDownloader2.new(address: 'https://drive.google.com/file/d/1L-9TqV9KGMQMLrNXSC7oy9z9FxrCOU6X/view?usp=sharing', destination: '.db/database.db.gz' )
-        downloader.run
-
-        downloader2 = HttpDownloader2.new(address: 'https://drive.google.com/file/d/10lRl82GdVtHGRNhDCryzIJ50KS4J5HM8/view?usp=sharing', destination: '.db/md5sum.txt' )
-        downloader2.run
-        sleep 2
-        puts 'Download finished'
-        puts
-
-        unless File.file?('.db/database.db.gz') && File.file?('.db/md5sum.txt')
-            MiscHelper.OUT_error('Cant find downloaded files, please download again')
-            puts
-            
-            return :no_download_files 
-        end
-
-        MiscHelper.OUT_header('Extracting the database')
-        puts
-
-        begin
-            Zlib::GzipReader.open('.db/database.db.gz') do | input_stream |
-                File.open('.db/database.db', 'w') do |output_stream|
-                    IO.copy_stream(input_stream, output_stream)
-                end
-            end
-        rescue => e
-            p e
-            MiscHelper.OUT_error("Could not extract the database, please download again")
-            puts
-            
-            return :cant_extract
-        end
-        puts 'Extraction finished'
-        puts
-
-        unless File.file?('.db/database.db') && File.file?('.db/md5sum.txt')
-            MiscHelper.OUT_error('Cant find extracted files, please download again')
-            
-            return :no_extracted_files 
-        end
-
-        MiscHelper.OUT_header('Checking the integrity of the database')
-        puts
-
-        md5_sum_download    = Digest::MD5.hexdigest(File.read('.db/database.db'))
-        check_file          = File.read('.db/md5sum.txt')
-        check_file          =~ /^(.*?)\s/
-        md5_sum_check_file  = $1
-    
-        unless md5_sum_download == md5_sum_check_file
-            MiscHelper.OUT_error('Database file is corrupted, please download again.')
-            puts
-            return :different_md5_sum
-        end
-        puts 'Database file is OK'
-        puts
-
-        MiscHelper.OUT_success('Successfully downloaded the predefined taxonomy database')
-        puts
-        
-        return :success
     end
 end

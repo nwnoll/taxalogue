@@ -175,60 +175,6 @@ class MiscHelper
         end
     end
 
-
-    ## UNUSED
-    def self.merge_files_in_dir(dir_name)
-        ## TODO: refactor and maybe implement into FileMerger?
-        dir = Pathname.new(dir_name)
-    
-        tsv_files = dir.glob("*_output.tsv")
-        fas_files = dir.glob("*_output.fas")
-        cmp_files = dir.glob("*_comparison.tsv")
-    
-    
-        merged_tsv_file_name  = dir + "merged_output.tsv"
-        merged_fas_file_name  = dir + "merged_output.fas"
-        merged_cmp_file_name  = dir + "merged_comparison.tsv"
-    
-        merged_tsv_file = File.open(merged_tsv_file_name, 'w')
-        merged_fas_file = File.open(merged_fas_file_name, 'w')
-        merged_cmp_file = File.open(merged_cmp_file_name, 'w')
-        
-        tsv_files.each_with_index do |file, i|
-                next unless File.file?(file)
-                file_in = File.open(file, 'r')
-                file_in.each_line do |line|
-                    next if file_in.lineno == 1 && i != 0 ## header only once
-                    merged_tsv_file.write line
-                end
-                file_in.close
-        end
-        merged_tsv_file.close
-    
-        fas_files.each_with_index do |file, i|
-            next unless File.file?(file)
-            file_in = File.open(file, 'r')
-            file_in.each_line do |line|
-                merged_fas_file.write line
-            end
-            file_in.close
-        end
-        merged_fas_file.close
-    
-        cmp_files.each_with_index do |file, i|
-            next unless File.file?(file)
-            file_in = File.open(file, 'r')
-            file_in.each_line do |line|
-                next if file_in.lineno == 1 && i != 0 ## header only once
-                merged_cmp_file.write line
-            end
-            file_in.close
-        end
-        merged_cmp_file.close
-
-        return nil
-    end
-
     def self.print_params(params, file=nil)
         file ? (file.puts "You used the following parameters:") : (puts "You used the following parameters:")
         

@@ -290,12 +290,4 @@ class NcbiGenbankClassifier
     def _matches_query_taxon(gb)
         /#{query_taxon_name}/.match?(gb.taxonomy) || /#{query_taxon_name}/.match?(gb.organism)
     end
-
-  ## UNUSED
-    def _lowest_rank(row, element_of)
-        _possible_taxa.each do |t|
-            return row[element_of[t]] unless row[element_of[t]].blank?
-            return nil if row[element_of[t]] == _possible_taxa.last
-        end
-    end
 end
