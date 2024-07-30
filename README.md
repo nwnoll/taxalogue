@@ -119,6 +119,17 @@ ruby scripts/remove_lower_than_missing_taxon_info.rb Arthropoda_derep_all_output
 ```
 
 ***
+## Citation
+Noll NW, Scherber C, Schäffler L. 2023. taxalogue: a toolkit to create comprehensive CO1 reference databases. PeerJ 11:e16253 https://doi.org/10.7717/peerj.16253
+
+If you used the --midori option, please also cite:
+Leray, M., Knowlton, N., & Machida, R. J. (2022). MIDORI2: A collection of quality controlled, preformatted, and regularly updated reference databases for taxonomic assignment of eukaryotic mitochondrial sequences. Environmental DNA, 4, 894–907. https://doi.org/10.1002/edn3.303
+
+If you used VSEARCH for additional filtering, please also cite:
+Rognes T, Flouri T, Nichols B, Quince C, Mahé F. 2016. VSEARCH: a versatile open source tool for metagenomics. PeerJ 4:e2584 https://doi.org/10.7717/peerj.2584
+
+
+***
 ## Basics
 This section explains the basic functionalities of *taxalogue*. Additionally, suggested pipelines and useful tips will be shown.
 
