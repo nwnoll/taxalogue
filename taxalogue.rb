@@ -148,6 +148,8 @@ subcommands = {
         opts.on('-n', '--ncbi_taxonomy')
         opts.on('-B', '--check_gbif_taxonomy', 'Checks if a new GBIF Taxonomy backbone is available')
         opts.on('-N', '--check_ncbi_taxonomy', 'Checks if a new NCBI Taxonomy backbone is available')
+        opts.on('-m', '--midori_config', 'Updates taxalogue, so that it is able to download the newest MIDORI release')
+        opts.on('-g', '--gbol_config', 'Updates taxalogue, so that it is able to download the newest GBOL release')
     end,
 
     output: OptionParser.new do |opts|
@@ -637,5 +639,18 @@ if params[:update].any?
                 puts
             end
         end
+
+        if key == :midori_config && params[:update][key]
+            MiscHelper.OUT_header("Updating MIDORI Config")
+            HttpDownloader2.new(address: 'https://raw.githubusercontent.com/nwnoll/taxalogue/master/.lib/configs/midori_config.rb', destination: '.lib/configs/midori_config.rb').run
+            puts 'finished'
+        end
+
+        if key == :gbol_config && params[:update][key]
+            MiscHelper.OUT_header("Updating GBOL Config")
+            HttpDownloader2.new(address: 'https://raw.githubusercontent.com/nwnoll/taxalogue/master/.lib/configs/gbol_config.rb', destination: '.lib/configs/gbol_config.rb').run
+            puts 'finished'
+        end
     end
+
 end
