@@ -406,13 +406,6 @@ MiscHelper.print_params(params)
 
 $params = params
 
-## TODO
-# change name classify to ?
-# create other alternatives for midori/gbol lineages?
-# write out discarded seqs/lineages with cause
-# make NCBI download via API possible
-# include other markers
-# get rid of services? or helpers? what is the difference?
 
 if params[:download].any?
     jobs = []
