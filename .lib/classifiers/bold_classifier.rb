@@ -342,7 +342,7 @@ class BoldClassifier
         if $params[:classify][:bold_release]
         
             identifier        = row[@@index_by_column_name["processid"]]
-            source_taxon_name = row[@@index_by_column_name["identification"]]
+            source_taxon_name = @@index_by_column_name["taxon_name"] ? row[@@index_by_column_name["taxon_name"]] : row[@@index_by_column_name["identification"]]
             sequence          = @@index_by_column_name["nucraw"] ? row[@@index_by_column_name["nucraw"]] : row[@@index_by_column_name["nuc"]]
             return nil if sequence.nil? || sequence.blank?
 
