@@ -11,7 +11,7 @@ patch = patch.to_i
 
 
 if major == 3 && minor >= 1   
-    gem 'activerecord', '~> 6.0', '>= 6.0.3.3'
+    gem 'activerecord', '~> 7.1'
     gem 'sqlite3', '~> 1.4'                                             
     gem 'activerecord-import', '~> 1.4', '>= 1.4.1'
     gem 'bio', '~> 2.0'
@@ -34,7 +34,7 @@ if major == 3 && minor >= 1
         gem 'resolv-replace', '~> 0.1.1'
     end
 else
-    gem 'activerecord', '~> 6.0', '>= 6.0.3.3'
+    gem 'activerecord', '~> 7.1'
     gem 'sqlite3', '~> 1.4' 
     gem 'activerecord-import', '~> 1.4', '>= 1.4.1'
     gem 'bio', '~> 2.0'
